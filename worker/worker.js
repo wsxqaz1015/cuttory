@@ -32,6 +32,7 @@ export default {
     try {
       if (path === '/' || path === '/api/health') return json({ ok: true, ai: !!env.OPENAI_API_KEY, kv: !!env.KV }, 200, cors);
       if (!env.KV) return fail('setup', '서버에 KV 저장소가 연결되지 않았어요.', 500, cors);
+      if (path === '/api/samples') return await samples(env, cors);
       if (path === '/api/session') return json(await newSession(req, env), 200, cors);
       if (path.startsWith('/api/admin/')) return await admin(path, req, env, cors);
 
@@ -122,12 +123,29 @@ async function admin(path, req, env, cors) {
     const codes = await Promise.all(list.keys.map(async k => ({ code: k.name.slice(5), ...JSON.parse(await env.KV.get(k.name)) })));
     return json({ codes }, 200, cors);
   }
+  if (path === '/api/admin/image') {
+    if (!env.OPENAI_API_KEY) return fail('setup', '서버에 OpenAI API 키가 없어요.', 500, cors);
+    return json(await image(await req.json(), env), 200, cors);
+  }
+  if (path === '/api/admin/sample') {
+    const b = await req.json();
+    if (!/^[a-z0-9-]{1,20}$/.test(b.name || '') || !/^data:image\/jpeg;base64,/.test(b.data || '') || b.data.length > 2_000_000) return fail('bad_request', '샘플 사진 형식이 맞지 않아요.', 400, cors);
+    await env.KV.put('sample:' + b.name, b.data);
+    return json({ ok: true }, 200, cors);
+  }
   if (path === '/api/admin/feedback') {
     const list = await env.KV.list({ prefix: 'fb:' });
     const items = await Promise.all(list.keys.slice(-200).map(async k => JSON.parse(await env.KV.get(k.name))));
     return json({ items: items.sort((a, b) => b.t - a.t) }, 200, cors);
   }
   return fail('not_found', '없는 주소예요.', 404, cors);
+}
+
+async function samples(env, cors) {
+  const list = await env.KV.list({ prefix: 'sample:' });
+  const out = {};
+  await Promise.all(list.keys.map(async k => { out[k.name.slice(7)] = await env.KV.get(k.name); }));
+  return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300', ...cors } });
 }
 
 // ===== OpenAI =====

@@ -863,6 +863,11 @@
         <button class="ghost" id="btn-new-code">코드 만들기</button>
         <div class="msg" id="new-code-msg"></div>
         <ul class="hist" id="code-list"></ul>
+        <h2 style="margin-top:8px">관리자 · 샘플 사진</h2>
+        <p class="hint">첫 화면과 기본 카드에 쓰는 사진 6장을 GPT로 인물 사진으로 다시 그려요. 모든 방문자에게 바뀐 사진이 보여요. OpenAI 요금이 6장만큼 나가요.</p>
+        <button class="ghost" id="btn-samples">샘플 사진 GPT로 다시 그리기</button>
+        <div class="msg" id="samples-msg"></div>
+        <div class="frames" id="samples-prev"></div>
       </div>
       <div class="acct-card" id="ac-fb" hidden>
         <h2>관리자 · 받은 피드백</h2>
@@ -2963,6 +2968,24 @@ if (HOSTED && /[?&]admin\b/.test(location.search)) {
   if (k) try { sessionStorage.setItem('cuttory_admin', k); } catch {}
 }
 
+$('#btn-samples').onclick = async () => {
+  const btn = $('#btn-samples'), keys = Object.keys(SAMPLE_PROMPTS), prev = $('#samples-prev');
+  btn.disabled = true; prev.innerHTML = '';
+  let done = 0;
+  for (const k of keys) {
+    flash('#samples-msg', `${done + 1}/${keys.length}장 그리는 중이에요. 장마다 30초쯤 걸려요…`);
+    try {
+      const j = await adminCall('/api/admin/image', { prompt: `Photorealistic Instagram magazine editorial photo, vertical composition. ${SAMPLE_PROMPTS[k]}. Natural skin texture, candid, shallow depth of field. A fictional person, not a real or famous person.`, style: 'photo' });
+      const data = await readImage(await (await fetch(j.image)).blob(), 1100);
+      await adminCall('/api/admin/sample', { name: k, data });
+      DEMO_IMG[k] = data; const im = new Image(); im.src = data; images.set(data, im); prev.appendChild(im.cloneNode());
+      done++;
+    } catch (e) { flash('#samples-msg', `${k} 사진에서 멈췄어요: ${(e && e.message) || '오류'}. 다시 누르면 처음부터 그려요.`, true); btn.disabled = false; return; }
+  }
+  flash('#samples-msg', `${done}장 모두 바꿨어요. 첫 화면과 새 카드에 바로 반영돼요.`);
+  btn.disabled = false; drawLandingStatic();
+};
+
 // AI 그림 만들기 (스타일 8종)
 const AI_STYLES = [['photo', '실사 사진'], ['film', '필름 사진'], ['illust', '일러스트'], ['3d', '3D'], ['water', '수채화'], ['anime', '애니'], ['pop', '팝아트'], ['minimal', '미니멀']];
 let aiStyle = 'photo';
@@ -3197,6 +3220,23 @@ function paintScene(kind) {
   const id = x.getImageData(0, 0, w, h), d = id.data; for (let i = 0; i < d.length; i += 4) { const n = (R() - .5) * 14; d[i] += n; d[i + 1] += n; d[i + 2] += n; } x.putImageData(id, 0, 0);
   return c.toDataURL('image/jpeg', .86);
 }
+// 내 사이트: 관리자가 GPT로 그려 둔 샘플 사진이 있으면 그걸 써요
+const SAMPLE_PROMPTS = {
+  night: 'A Korean woman in her late 20s working late at an office desk with a laptop showing charts, city lights bokeh through the window behind her, cinematic night mood',
+  sunrise: 'A Korean woman in her 20s walking along the Han River park at sunrise in comfortable sportswear, warm golden light, calm morning mood',
+  cafe: 'A smiling Korean woman in her 20s holding a latte in a bright minimal cafe, window light, relaxed weekend mood',
+  office: 'Two young Korean coworkers talking and laughing at a modern bright office table with laptops, candid moment',
+  room: 'A Korean woman in her 20s relaxing on a bed in a cozy studio apartment with plants, soft curtains and warm lamp light',
+  flatlay: 'Top-down photo of hands writing in a notebook on a wooden desk with a latte, smartphone and small plant',
+};
+async function loadServerSamples() {
+  if (!API) return;
+  try {
+    const r = await fetch(API + '/api/samples'); if (!r.ok) return;
+    const got = await r.json();
+    await Promise.all(Object.entries(got).filter(([k, v]) => k in SAMPLE_PROMPTS && v).map(([k, src]) => new Promise(res => { const im = new Image(); im.onload = () => { DEMO_IMG[k] = src; images.set(src, im); res(); }; im.onerror = res; im.src = src; })));
+  } catch {}
+}
 function loadDemoImages() {
   return Promise.all(['night', 'sunrise', 'cafe', 'office', 'room', 'flatlay'].map(k => new Promise(res => {
     const src = paintScene(k), im = new Image(); DEMO_IMG[k] = src; images.set(src, im);
@@ -3420,7 +3460,7 @@ $('#btn-new').onclick = () => { P = norm(newProject()); const c = norm({ cards: 
 openLanding(); renderAcctChip();
 const fontsReady = document.fonts ? Promise.all([document.fonts.load("400 20px 'Pretendard'"), document.fonts.load("900 20px 'Pretendard'")]).catch(() => {}).then(() => document.fonts.ready) : Promise.resolve();
 fontsReady.then(renderAll);
-Promise.all([fontsReady, loadDemoImages()]).then(() => { if (P === P0) { fillStarterImages(P); syncPanel(); renderAll(); } drawLandingStatic(); landStep(); });
+Promise.all([fontsReady, loadDemoImages().then(loadServerSamples)]).then(() => { if (P === P0) { fillStarterImages(P); syncPanel(); renderAll(); } drawLandingStatic(); landStep(); });
 })();
 </script>
 
