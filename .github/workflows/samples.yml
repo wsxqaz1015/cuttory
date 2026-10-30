@@ -1,0 +1,51 @@
+name: 샘플 사진 그리기
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['samples/prompts.json', '.github/workflows/samples.yml']
+permissions:
+  contents: write
+jobs:
+  draw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: GPT로 샘플 사진 그리기
+        env:
+          API: https://cuttory-api.wsxqaz1015.workers.dev
+        run: |
+          node - <<'JS'
+          const fs = require('fs');
+          const prompts = JSON.parse(fs.readFileSync('samples/prompts.json', 'utf8'));
+          const API = process.env.API;
+          let token = '', credits = 0;
+          async function session() {
+            const r = await fetch(API + '/api/session', { method: 'POST' });
+            const j = await r.json(); if (!r.ok) throw new Error('session: ' + JSON.stringify(j));
+            token = j.token; credits = j.credits;
+          }
+          (async () => {
+            for (const [k, p] of Object.entries(prompts)) {
+              if (credits < 20) await session();
+              const prompt = `Photorealistic Instagram magazine editorial photo, vertical composition. ${p}. Natural skin texture, candid, shallow depth of field. A fictional person, not a real or famous person.`;
+              const r = await fetch(API + '/api/image', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ prompt, style: 'photo' }) });
+              const j = await r.json();
+              if (!r.ok) { console.error(k, j); process.exitCode = 1; continue; }
+              credits = j.credits;
+              fs.writeFileSync(`samples/${k}.png`, Buffer.from(j.image.split(',')[1], 'base64'));
+              console.log('drew', k);
+            }
+          })();
+          JS
+      - name: 사진 줄이기
+        run: |
+          for f in samples/*.png; do convert "$f" -resize 900x -quality 82 "${f%.png}.jpg" && rm "$f"; done
+          ls -la samples
+      - name: 저장소에 넣기
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add samples/*.jpg
+          git commit -m "GPT로 그린 샘플 사진" || echo "바뀐 사진 없음"
+          git push

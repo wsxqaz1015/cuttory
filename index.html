@@ -3231,6 +3231,8 @@ const SAMPLE_PROMPTS = {
 };
 async function loadServerSamples() {
   if (!API) return;
+  // 저장소에 들어 있는 GPT 샘플 사진 (samples/*.jpg)
+  await Promise.all(Object.keys(SAMPLE_PROMPTS).map(k => new Promise(res => { const src = `samples/${k}.jpg`, im = new Image(); im.onload = () => { DEMO_IMG[k] = src; images.set(src, im); res(); }; im.onerror = res; im.src = src; })));
   try {
     const r = await fetch(API + '/api/samples'); if (!r.ok) return;
     const got = await r.json();
