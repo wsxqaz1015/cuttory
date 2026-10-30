@@ -1,8 +1,8 @@
-2026-10-30T16:16:59.197Z
-models: {"code":"unauthorized","message":"다시 접속해 주세요."}
-night: 502 {"code":"ai_error","message":"AI가 답하지 못했어요: The model 'gpt-image-1' does not exist."}
-sunrise: 502 {"code":"ai_error","message":"AI가 답하지 못했어요: The model 'gpt-image-1' does not exist."}
-cafe: 502 {"code":"ai_error","message":"AI가 답하지 못했어요: The model 'gpt-image-1' does not exist."}
-office: 502 {"code":"ai_error","message":"AI가 답하지 못했어요: The model 'gpt-image-1' does not exist."}
-room: 502 {"code":"ai_error","message":"AI가 답하지 못했어요: The model 'gpt-image-1' does not exist."}
-flatlay: 502 {"code":"ai_error","message":"AI가 답하지 못했어요: The model 'gpt-image-1' does not exist."}
+2026-10-30T16:29:12.992Z
+models: {"text":"gpt-4o-mini","image":"gpt-image-2.5-flare-2026-09-08","all":["gpt-3.5-turbo-0125","gpt-5.4-2026-03-05","gpt-5-nano","gpt-5.4-mini","gpt-5.1-codex","gpt-live-transcribe","gpt-5.6-luna","gpt-5-mini","gpt-5-mini-2025-08-07","gpt-5.5-pro","gpt-audio-2025-08-28","gpt-4o-mini-transcribe-2025-03-20","gpt-4-turbo-2024-04-09","gpt-realtime-2.1-mini","gpt-realtime-2025-08-28","gpt-4","gpt-realtime-1.5","gpt-realtime","gpt-5.2-pro","gpt-5-chat-latest","gpt-5.4-mini-2026-03-17","gpt-4o-2024-05-13","gpt-realtime-2","gpt-5-search-api","gpt-5.5-2026-04-23","gpt-4o-2024-11-20","gpt-5.1","gpt-5-pro","gpt-realtime-whisper","gpt-audio-1.5","gpt-image-1.5","gpt-5-2025-08-07","gpt-realtime-translate","gpt-5.4-pro-2026-03-05","gpt-4.1-mini","gpt-4o-mini","gpt-4-turbo","gpt-4o-2024-08-06","gpt-4o-mini-search-preview-2025-03-11","gpt-4o-mini-tts-2025-12-15","gpt-image-1","gpt-audio","gpt-5.3-codex","gpt-5-search-api-2025-10-14","gpt-5.5-pro-2026-04-23","gpt-audio-mini-2025-10-06","gpt-5.2-pro-2025-12-11","gpt-4o-mini-transcribe-2025-12-15","gpt-4o-transcribe-diarize","gpt-5-codex","gpt-4-0613","gpt-5.1-2025-11-13","gpt-4o-search-preview","gpt-4o-mini-2024-07-18","gpt-4.1-2025-04-14","gpt-5-pro-2025-10-06","gpt-5.6-sol","gpt-4.1-nano","gpt-image-2","gpt-3.5-turbo-16k","gpt-realtime-2.1","gpt-4.1","gpt-5.5","gpt-realtime-mini","gpt-image-1-mini","gpt-5.6-terra","gpt-3.5-turbo-instruct-0914","gpt-image-2.5-sunburst-2026-09-08","gpt-5","gpt-4o-mini-transcribe","gpt-image-2-2026-04-21","gpt-5.2-chat-latest","gpt-3.5-turbo-instruct","gpt-transcribe","gpt-4.1-nano-2025-04-14","gpt-5.4-pro","gpt-4o-mini-tts","gpt-realtime-mini-2025-12-15","gpt-5.1-codex-max","gpt-5.1-chat-latest"]}
+night: ok
+sunrise: ok
+cafe: ok
+office: ok
+room: ok
+flatlay: ok
