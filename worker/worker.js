@@ -1,6 +1,6 @@
 // 컷토리 서버 (Cloudflare Workers)
 // 필요한 설정: 비밀 값 OPENAI_API_KEY, ADMIN_KEY / KV 바인딩 KV / (선택) ALLOWED_ORIGIN, TEXT_MODEL, IMAGE_MODEL
-const COST = { gen: 10, video: 15, link: 3, person: 5, titles: 2, polish: 1, translate: 5, image: 20, transcribe: 10 };
+const COST = { gen: 10, video: 15, link: 3, person: 5, titles: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
 const START_CREDITS = 100;
 const NEW_USERS_PER_IP_PER_DAY = 3;
 const IMAGE_STYLES = {
@@ -51,6 +51,10 @@ export default {
       if (path === '/api/image') {
         const b = await req.json();
         return json(await charged(user, 'image', env, () => image(b, env)), 200, cors);
+      }
+      if (path === '/api/pose') {
+        const b = await req.json();
+        return json(await charged(user, b.mode === 'sheet' ? 'sheet' : 'pose', env, () => pose(b, env)), 200, cors);
       }
       if (path === '/api/transcribe') {
         const form = await req.formData();
@@ -201,6 +205,41 @@ async function image(b, env) {
     ? { model, prompt: prompt.slice(0, 3900), size: '1024x1792', response_format: 'b64_json', n: 1 }
     : { model, prompt, size: '1024x1536', quality: b.quality === 'high' ? 'high' : 'medium', n: 1 };
   const j = await openai(env, '/images/generations', body);
+  const d = j.data && j.data[0];
+  if (!d || !d.b64_json) throw err('ai_error', '그림을 받지 못했어요.', 502);
+  return { image: 'data:image/png;base64,' + d.b64_json };
+}
+// 캐릭터 포즈: 올린 캐릭터 그림을 그대로 살려 다른 포즈로 다시 그리기 (mode 'sheet'는 앞·옆·뒤 턴어라운드)
+function dataUrlFile(u, name) {
+  const m = /^data:(image\/(png|jpeg|webp));base64,(.+)$/.exec(String(u || ''));
+  if (!m) throw err('bad_request', '그림 파일을 읽지 못했어요. PNG·JPG·WEBP로 올려 주세요.');
+  const bin = atob(m[3]), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  if (bytes.length > 12 * 1024 * 1024) throw err('bad_request', '그림이 너무 커요. 12MB 이하로 올려 주세요.');
+  return new File([bytes], name + '.' + (m[2] === 'jpeg' ? 'jpg' : m[2]), { type: m[1] });
+}
+async function pose(b, env) {
+  const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 2);
+  if (!imgs.length) throw err('bad_request', '먼저 캐릭터 그림을 올려 주세요.');
+  const model = env.IMAGE_MODEL || (await models(env)).image;
+  if (!model || model.startsWith('dall-e')) throw err('ai_error', '포즈 만들기는 gpt-image 모델이 필요해요. OpenAI 조직 인증(Verify Organization)을 해 주세요.', 502);
+  const sheet = b.mode === 'sheet', clear = b.bg !== 'white';
+  const bgText = clear ? 'fully transparent background' : 'plain pure white background';
+  const keep = 'Keep it exactly the same character as the first image: same face, proportions, colors, outfit, accessories, line weight and drawing style. Do not redesign or restyle the character.';
+  const prompt = sheet
+    ? `Make a character turnaround sheet of the character in the image. Show four full-body views in one row at the same scale: front, three-quarter, side, back, in a relaxed neutral standing pose. ${keep} Plain pure white background, no labels, no text.`
+    : `Redraw the character from the first image in a new pose for a webtoon / Instagram comic panel.\nPose: ${String(b.pose || '').slice(0, 800)}\n${keep}${imgs.length > 1 ? ' The second image is a turnaround sheet of the same character; use it for views from the side or back.' : ''} Show only this one character, whole body unless the pose says close-up, centered with a little margin. Small props mentioned in the pose are fine. ${bgText}. No text, speech bubbles, frames or watermarks.`;
+  const send = async (withBg) => {
+    const fd = new FormData();
+    fd.append('model', model); fd.append('prompt', prompt); fd.append('n', '1');
+    fd.append('size', sheet ? '1536x1024' : '1024x1024'); fd.append('quality', b.quality === 'high' ? 'high' : 'medium');
+    if (withBg) { fd.append('background', 'transparent'); fd.append('output_format', 'png'); }
+    imgs.forEach((u, i) => fd.append('image[]', dataUrlFile(u, 'ref' + i)));
+    return openai(env, '/images/edits', fd, true);
+  };
+  let j;
+  try { j = await send(clear && !sheet); }
+  catch (e) { if (clear && !sheet && /background|output_format/i.test(e.message)) j = await send(false); else throw e; }
   const d = j.data && j.data[0];
   if (!d || !d.b64_json) throw err('ai_error', '그림을 받지 못했어요.', 502);
   return { image: 'data:image/png;base64,' + d.b64_json };
