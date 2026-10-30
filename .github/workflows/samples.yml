@@ -26,6 +26,7 @@ jobs:
             token = j.token; credits = j.credits;
           }
           (async () => {
+            try { log.push('models: ' + JSON.stringify(await (await fetch(API + '/api/models')).json())); } catch (e) { log.push('models: ' + e.message); }
             for (const [k, p] of Object.entries(prompts)) {
               if (credits < 20) await session();
               const prompt = `Photorealistic Instagram magazine editorial photo, vertical composition. ${p}. Natural skin texture, candid, shallow depth of field. A fictional person, not a real or famous person.`;

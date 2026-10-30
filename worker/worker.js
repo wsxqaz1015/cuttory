@@ -33,6 +33,7 @@ export default {
       if (path === '/' || path === '/api/health') return json({ ok: true, ai: !!env.OPENAI_API_KEY, kv: !!env.KV }, 200, cors);
       if (!env.KV) return fail('setup', '서버에 KV 저장소가 연결되지 않았어요.', 500, cors);
       if (path === '/api/samples') return await samples(env, cors);
+      if (path === '/api/models') { const m = await models(env).catch(e => ({ error: e.message })); return json({ text: m.text, image: m.image, all: m.all, error: m.error }, 200, cors); }
       if (path === '/api/session') return json(await newSession(req, env), 200, cors);
       if (path.startsWith('/api/admin/')) return await admin(path, req, env, cors);
 
@@ -149,6 +150,20 @@ async function samples(env, cors) {
 }
 
 // ===== OpenAI =====
+// 계정에서 쓸 수 있는 모델을 찾아서 고르기 (설정에 TEXT_MODEL, IMAGE_MODEL이 있으면 그걸 써요)
+let MODELS = null;
+async function models(env) {
+  if (MODELS && Date.now() - MODELS.at < 6 * 3600e3) return MODELS;
+  const r = await fetch('https://api.openai.com/v1/models', { headers: { authorization: 'Bearer ' + env.OPENAI_API_KEY } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw err('ai_error', 'OpenAI 모델 목록을 읽지 못했어요: ' + ((j.error && j.error.message) || r.status), 502);
+  const ids = (j.data || []).map(m => m.id);
+  const ver = (id) => (id.match(/\d+(\.\d+)?/g) || ['0']).map(Number);
+  const newest = (list) => list.sort((a, b) => { const x = ver(a), y = ver(b); for (let i = 0; i < Math.max(x.length, y.length); i++) { if ((x[i] || 0) !== (y[i] || 0)) return (y[i] || 0) - (x[i] || 0); } return a.length - b.length; })[0];
+  const image = newest(ids.filter(id => /^gpt-image-\d/.test(id) && !/mini/.test(id))) || newest(ids.filter(id => /^gpt-image/.test(id))) || (ids.includes('dall-e-3') ? 'dall-e-3' : null);
+  const text = ['gpt-4o-mini', 'gpt-4.1-mini'].find(id => ids.includes(id)) || newest(ids.filter(id => /^gpt-[\d.]+-mini$/.test(id))) || newest(ids.filter(id => /^gpt-[\d.]+o?$/.test(id)));
+  return MODELS = { at: Date.now(), text, image, all: ids.filter(id => /^(gpt|dall-e)/.test(id)).slice(0, 80) };
+}
 async function openai(env, path, body, isForm) {
   const r = await fetch('https://api.openai.com/v1' + path, {
     method: 'POST',
@@ -169,7 +184,7 @@ async function ai(b, env) {
   const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 6).filter(u => /^data:image\//.test(u));
   const content = [{ type: 'text', text: prompt }, ...imgs.map(u => ({ type: 'image_url', image_url: { url: u, detail: 'low' } }))];
   const j = await openai(env, '/chat/completions', {
-    model: env.TEXT_MODEL || 'gpt-4o-mini',
+    model: env.TEXT_MODEL || (await models(env)).text || 'gpt-4o-mini',
     messages: [{ role: 'system', content: b.json ? 'Reply with one valid JSON object only.' : 'You are a helpful Korean copywriter.' }, { role: 'user', content }],
     ...(b.json ? { response_format: { type: 'json_object' } } : {}),
   });
@@ -180,8 +195,12 @@ async function ai(b, env) {
 async function image(b, env) {
   const style = IMAGE_STYLES[b.style] || IMAGE_STYLES.photo;
   const prompt = `${String(b.prompt || '').slice(0, 1500)}\nStyle: ${style}. No text, letters, logos or watermarks in the image.`;
-  const size = b.format === 'reels' ? '1024x1536' : '1024x1536';
-  const j = await openai(env, '/images/generations', { model: env.IMAGE_MODEL || 'gpt-image-1', prompt, size, quality: b.quality === 'high' ? 'high' : 'medium', n: 1 });
+  const model = env.IMAGE_MODEL || (await models(env)).image;
+  if (!model) throw err('ai_error', '이 OpenAI 계정에서 쓸 수 있는 그림 모델이 없어요. OpenAI 조직 인증(Verify Organization)을 해 주세요.', 502);
+  const body = model.startsWith('dall-e')
+    ? { model, prompt: prompt.slice(0, 3900), size: '1024x1792', response_format: 'b64_json', n: 1 }
+    : { model, prompt, size: '1024x1536', quality: b.quality === 'high' ? 'high' : 'medium', n: 1 };
+  const j = await openai(env, '/images/generations', body);
   const d = j.data && j.data[0];
   if (!d || !d.b64_json) throw err('ai_error', '그림을 받지 못했어요.', 502);
   return { image: 'data:image/png;base64,' + d.b64_json };
