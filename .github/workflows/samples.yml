@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['samples/prompts.json', '.github/workflows/samples.yml']
+    paths: ['samples/prompts.json']
 permissions:
   contents: write
 jobs:
@@ -41,7 +41,7 @@ jobs:
           JS
       - name: 사진 줄이기
         run: |
-          for f in samples/*.png; do [ -e "$f" ] || continue; convert "$f" -resize 900x -quality 82 "${f%.png}.jpg" && rm "$f"; done
+          for f in samples/*.png; do [ -e "$f" ] || continue; (magick "$f" -resize 900x -quality 82 "${f%.png}.jpg" || convert "$f" -resize 900x -quality 82 "${f%.png}.jpg") && rm "$f"; done
           ls -la samples
       - name: 저장소에 넣기
         run: |

@@ -2867,7 +2867,8 @@ function styleCanvas(im, st, maxSide) {
   const c = document.createElement('canvas'); c.width = Math.round((im.naturalWidth || im.width) * s); c.height = Math.round((im.naturalHeight || im.height) * s);
   const x = c.getContext('2d'); x.drawImage(im, 0, 0, c.width, c.height);
   if (!st.f) return c;
-  const d = x.getImageData(0, 0, c.width, c.height), p = d.data, W = c.width, H = c.height;
+  let d; try { d = x.getImageData(0, 0, c.width, c.height); } catch { return c; }
+  const p = d.data, W = c.width, H = c.height;
   for (let i = 0; i < p.length; i += 4) {
     let [r, g, b] = st.f(p[i], p[i + 1], p[i + 2]);
     if (st.grain) { const n = (Math.random() - .5) * st.grain; r += n; g += n; b += n; }
@@ -3230,9 +3231,9 @@ const SAMPLE_PROMPTS = {
   flatlay: 'Top-down photo of hands writing in a notebook on a wooden desk with a latte, smartphone and small plant',
 };
 async function loadServerSamples() {
-  if (!API) return;
-  // 저장소에 들어 있는 GPT 샘플 사진 (samples/*.jpg)
+  // GPT로 그려 둔 샘플 사진 (samples/*.jpg)
   await Promise.all(Object.keys(SAMPLE_PROMPTS).map(k => new Promise(res => { const src = `samples/${k}.jpg`, im = new Image(); im.onload = () => { DEMO_IMG[k] = src; images.set(src, im); res(); }; im.onerror = res; im.src = src; })));
+  if (!API) return;
   try {
     const r = await fetch(API + '/api/samples'); if (!r.ok) return;
     const got = await r.json();
