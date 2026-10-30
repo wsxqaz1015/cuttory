@@ -1,6 +1,10 @@
 name: 샘플 사진 그리기
 on:
   workflow_dispatch:
+    inputs:
+      redraw:
+        description: '있는 사진도 다시 그리기'
+        default: ''
   push:
     branches: [main]
     paths: ['samples/prompts.json']
@@ -14,6 +18,7 @@ jobs:
       - name: GPT로 샘플 사진 그리기
         env:
           API: https://cuttory-api.wsxqaz1015.workers.dev
+          REDRAW: ${{ inputs.redraw }}
         run: |
           node - <<'JS'
           const fs = require('fs');
@@ -30,8 +35,8 @@ jobs:
             for (const [k, p] of Object.entries(prompts)) {
               if (fs.existsSync(`samples/${k}.jpg`) && !process.env.REDRAW) { log.push(`${k}: skip`); continue; }
               if (credits < 20) await session();
-              const prompt = `Photorealistic Instagram magazine editorial photo, vertical composition. ${p}. Natural skin texture, candid, shallow depth of field. A fictional person, not a real or famous person.`;
-              const r = await fetch(API + '/api/image', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ prompt, style: 'photo' }) });
+              const prompt = `Candid documentary-style photograph, shot on a 35mm film camera with Kodak Portra 400. Natural available light, muted refined colors, subtle film grain, real skin texture with pores, unposed moment, slightly imperfect framing, calm Korean lifestyle magazine editorial look. Not CGI, not 3D, not an illustration, no plastic or airbrushed skin, no oversaturated colors, no HDR glow, no stock-photo smile at the camera. Vertical 4:5 composition. Scene: ${p}. Any person is fictional, not a real or famous person.`;
+              const r = await fetch(API + '/api/image', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ prompt, style: 'film', quality: 'high' }) });
               const j = await r.json();
               if (!r.ok) { log.push(`${k}: ${r.status} ${JSON.stringify(j)}`); continue; }
               credits = j.credits;

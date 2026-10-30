@@ -2981,7 +2981,7 @@ $('#btn-samples').onclick = async () => {
   for (const k of keys) {
     flash('#samples-msg', `${done + 1}/${keys.length}장 그리는 중이에요. 장마다 30초쯤 걸려요…`);
     try {
-      const j = await adminCall('/api/admin/image', { prompt: `Photorealistic Instagram magazine editorial photo, vertical composition. ${SAMPLE_PROMPTS[k]}. Natural skin texture, candid, shallow depth of field. A fictional person, not a real or famous person.`, style: 'photo' });
+      const j = await adminCall('/api/admin/image', { prompt: `Candid documentary-style photograph, shot on a 35mm film camera with Kodak Portra 400. Natural available light, muted refined colors, subtle film grain, real skin texture with pores, unposed moment, slightly imperfect framing, calm Korean lifestyle magazine editorial look. Not CGI, not 3D, not an illustration, no plastic or airbrushed skin, no oversaturated colors, no HDR glow, no stock-photo smile at the camera. Vertical 4:5 composition. Scene: ${SAMPLE_PROMPTS[k]}. Any person is fictional, not a real or famous person.`, style: 'film', quality: 'high' });
       const data = await readImage(await (await fetch(j.image)).blob(), 1100);
       await adminCall('/api/admin/sample', { name: k, data });
       DEMO_IMG[k] = data; const im = new Image(); im.src = data; images.set(data, im); prev.appendChild(im.cloneNode());
@@ -3228,20 +3228,20 @@ function paintScene(kind) {
 }
 // 내 사이트: 관리자가 GPT로 그려 둔 샘플 사진이 있으면 그걸 써요
 const SAMPLE_PROMPTS = {
-  night: 'A Korean woman in her late 20s working late at an office desk with a laptop showing charts, city lights bokeh through the window behind her, cinematic night mood',
-  sunrise: 'A Korean woman in her 20s walking along the Han River park at sunrise in comfortable sportswear, warm golden light, calm morning mood',
-  cafe: 'A smiling Korean woman in her 20s holding a latte in a bright minimal cafe, window light, relaxed weekend mood',
-  office: 'Two young Korean coworkers talking and laughing at a modern bright office table with laptops, candid moment',
-  room: 'A Korean woman in her 20s relaxing on a bed in a cozy studio apartment with plants, soft curtains and warm lamp light',
-  flatlay: 'Top-down photo of hands writing in a notebook on a wooden desk with a latte, smartphone and small plant',
-  phone: 'A Korean woman in her 20s with glasses and a black blazer talking on the phone at an office cubicle covered with sticky notes, holding a pen, focused expression',
-  coffee: 'A playful Korean woman in a black suit and sunglasses holding a coffee cup toward the camera, high-angle wide-lens shot, white studio background',
-  laptop: 'A laptop on a wooden desk showing a presentation slide with bar charts, sunlit modern office with large windows in the background, no people',
-  meeting: 'A young Korean man in a navy suit presenting confidently in front of a glass whiteboard in a modern meeting room',
-  desk: 'A Korean man in his 30s typing on a laptop at a tidy home desk in the evening, warm desk lamp light, plants on the shelf',
-  lamp: 'A cozy living room corner at dusk with a warm table lamp, a linen armchair and a small side table, no people',
-  tablet: 'A tablet showing colorful app icons on a light wooden table next to a small plant, soft morning light, no people',
-  street: 'A Korean woman in her 20s wearing a beige trench coat walking on a Seoul street lined with autumn ginkgo trees, candid',
+  night: 'A Korean woman in her late 20s working late alone at an office desk, laptop glow on her face, city lights softly blurred through the window behind her, quiet tired focus',
+  sunrise: 'A Korean woman in her 20s in a simple grey sweatshirt walking along the Han River path at early morning, low golden sun, seen from a distance, hair moving in the wind',
+  cafe: 'A Korean woman in her 20s sitting by a window in a minimal concrete cafe, holding a latte with both hands and looking outside, soft overcast window light',
+  office: 'Two young Korean coworkers in casual office clothes talking over laptops at a long wooden table in a bright office, one mid-laugh, caught naturally',
+  room: 'A Korean woman in her 20s reading on a bed with white linen in a small studio apartment, sheer curtains, late afternoon light, plants on the sill',
+  flatlay: 'Top-down photo of a hand writing in an open notebook on an oak desk, a half-finished latte, phone face down and a small plant, natural daylight',
+  phone: 'A Korean woman in her 20s with thin metal glasses and a black blazer on a phone call at her office cubicle, sticky notes on the partition, pen in hand, slightly frowning',
+  coffee: 'A Korean woman in a black suit and sunglasses holding a takeaway coffee toward the camera, playful high-angle wide-lens shot on a light grey floor, fashion editorial',
+  laptop: 'An open laptop on a wooden desk showing a presentation slide with simple bar charts, a sunlit office with tall windows blurred behind, coffee mug beside it, no people',
+  meeting: 'A young Korean man in a navy shirt explaining something at a glass whiteboard in a meeting room, colleagues seen from behind out of focus',
+  desk: 'A Korean man in his 30s in a knit sweater typing on a laptop at a home desk in the evening, warm desk lamp, bookshelf with plants behind',
+  lamp: 'A quiet living room corner at dusk with a glowing linen table lamp, a beige boucle armchair and a small side table with a book, no people',
+  tablet: 'A tablet lying on a light oak table next to a small potted plant and a ceramic cup, soft morning light from the side, no people',
+  street: 'A Korean woman in her 20s in a beige trench coat crossing a Seoul street under yellow ginkgo trees in autumn, shot from across the road, candid',
 };
 const SAMPLE_ALIAS = { phone: 'night', coffee: 'cafe', laptop: 'office', meeting: 'office', desk: 'night', lamp: 'room', tablet: 'flatlay', street: 'sunrise' };
 async function loadServerSamples() {
