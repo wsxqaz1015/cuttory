@@ -1,2 +1,2 @@
-// 컷토리 서버 주소. Cloudflare에 서버를 올린 뒤 받은 주소를 넣어요.
-window.CUTTORY_API = '';
+// 컷토리 서버 주소 (Cloudflare Workers)
+window.CUTTORY_API = 'https://cuttory-api.wsxqaz1015.workers.dev';
