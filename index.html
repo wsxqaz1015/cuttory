@@ -521,6 +521,11 @@
   .sheet.fb { max-width: 460px; grid-template-columns: 1fr; gap: 12px; }
   .sheet.fb textarea { min-height: 140px; }
   nav.side .new-btn { margin-left: 8px; }
+  .canvas-wrap { flex: none; height: auto; width: min(100%, 480px, max(260px, calc((100vh - 330px) * .8))); max-width: none; }
+  .canvas-wrap.reels { width: min(100%, 380px, max(220px, calc((100vh - 330px) * .5625))); max-width: none; }
+  .canvas-wrap canvas { height: auto; aspect-ratio: inherit; }
+  @media (max-width: 820px) { .canvas-wrap { width: min(100%, 480px); } .canvas-wrap.reels { width: min(100%, 380px); } }
+  .logo { cursor: pointer; border: 0; background: none; color: inherit; text-decoration: none; }
   [data-hosted][hidden], [data-hosted-hide][hidden] { display: none !important; }
   #ai-styles .chip.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
   @media (max-width: 640px) { .fb-btn { display: none !important; } nav.side .nav-item { padding-left: 9px; padding-right: 9px; } }
@@ -549,7 +554,7 @@
 
 <div class="shell">
   <nav class="side" aria-label="메뉴">
-    <div class="logo"><svg><use href="#potato"/></svg>컷토리.</div>
+    <a class="logo" href="#" id="logo-home" aria-label="컷토리 홈"><svg><use href="#potato"/></svg>컷토리.</a>
     <button class="new-btn" id="btn-new" aria-label="새로 만들기">＋ 새로 만들기</button>
     <div class="nav-label">만들기</div>
     <button class="nav-item" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7M5 10v10h14V10"/></svg>홈</button>
@@ -871,7 +876,7 @@
 <!-- 첫 화면 -->
 <div class="landing" id="landing">
   <header class="l-top">
-    <div class="logo"><svg><use href="#potato"/></svg>컷토리.</div>
+    <a class="logo" href="#" id="logo-top" aria-label="맨 위로"><svg><use href="#potato"/></svg>컷토리.</a>
     <button class="l-btn ghost" data-start="ai">AI로 시작</button>
     <button class="l-btn" data-start="editor">편집기 열기</button>
   </header>
@@ -1585,19 +1590,33 @@ function drawTrend(G) {
     tHead(G, false);
     const lines = splitLines(card.body), items = [];
     lines.forEach(l => items.push(/[?？]$/.test(l) || l.startsWith('#') ? { h: l.replace(/^#+\s*/, '') } : { t: l }));
-    const tOver = { ...light, ...tk(.6) }, th = card.title.trim() ? tH(G, 'title', maxW, tOver) : 0;
-    const hs = 34 * s, is = 26 * s, ilh = is * 1.6;
+    const big = items.length <= 4 && items.every(it => it.t ? it.t.length <= 22 : true), kk = big ? 1.45 : 1;
+    const tOver = { ...light, ...tk(big ? .82 : .6) }, th = card.title.trim() ? tH(G, 'title', maxW, tOver) : 0;
+    const hs = 34 * s * kk, is = 26 * s * kk, ilh = is * 1.6, boxP = big ? 26 * s : 0;
     ctx.save(); ctx.font = `500 ${is}px 'Pretendard', sans-serif`;
     const wrap = (t, w) => { const out = []; let cur2 = ''; for (const ch2 of t) { if (ctx.measureText(cur2 + ch2).width > w && cur2) { out.push(cur2); cur2 = ch2; } else cur2 += ch2; } if (cur2) out.push(cur2); return out; };
-    const rows = items.map(it => it.h ? { h: it.h, height: hs * 1.5 + 26 * s } : { lines: wrap(it.t, maxW - 50 * s), height: 0 });
-    rows.forEach(r => { if (r.lines) r.height = r.lines.length * ilh + 10 * s; });
-    const total = (th ? th + 50 * s : 0) + rows.reduce((a2, r) => a2 + r.height, 0);
+    const rows = items.map(it => it.h ? { h: it.h, height: hs * 1.5 + 26 * s } : { lines: wrap(it.t, maxW - 50 * s * kk - boxP * 2), height: 0 });
+    rows.forEach(r => { if (r.lines) r.height = r.lines.length * ilh + (big ? boxP * 2 - is * .6 + 18 * s : 10 * s); });
+    const subH = big && card.sub ? 30 * s * 1.6 + 10 * s : 0;
+    const total = (th ? th + 50 * s : 0) + subH + rows.reduce((a2, r) => a2 + r.height, 0);
     let y = Math.max(130 * s, (ch - total) / 2);
     ctx.restore();
-    if (th) { tText(G, 'title', pad, y, maxW, tOver); y += th + 50 * s; }
+    if (th) { tText(G, 'title', pad, y, maxW, tOver); y += th + (subH ? 14 * s : 50 * s); }
+    if (subH) { ctx.save(); ctx.textBaseline = 'top'; ctx.fillStyle = '#777777'; ctx.font = `500 ${30 * s}px 'Pretendard', sans-serif`; ctx.fillText(card.sub, pad, y); ctx.restore(); y += subH + 30 * s; }
     const bodyTop = y;
     rows.forEach(r => {
       ctx.save(); ctx.textBaseline = 'top'; ctx.fillStyle = '#111111';
+      if (big && r.lines) {
+        const bh = r.height - 18 * s;
+        ctx.fillStyle = '#f2f3f5'; rrect(ctx, pad, y, maxW, bh, 22 * s); ctx.fill();
+        const cx = pad + boxP + 22 * s, cy = y + bh / 2;
+        ctx.fillStyle = card.b.accent || '#ff3b30'; ctx.beginPath(); ctx.arc(cx, cy, 22 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 4 * s; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(cx - 10 * s, cy); ctx.lineTo(cx - 3 * s, cy + 8 * s); ctx.lineTo(cx + 11 * s, cy - 8 * s); ctx.stroke();
+        ctx.fillStyle = '#111111'; ctx.font = `700 ${is}px 'Pretendard', sans-serif`;
+        const ty = y + (bh - r.lines.length * ilh) / 2 + (ilh - is) / 2;
+        r.lines.forEach((ln, k) => ctx.fillText(ln, cx + 44 * s, ty + k * ilh));
+        y += r.height; ctx.restore(); return;
+      }
       if (r.h) { if (y > bodyTop) y += 12 * s; ctx.font = `800 ${hs}px 'Pretendard', sans-serif`; ctx.fillText(r.h, pad, y); y += hs * 1.5 + 14 * s; }
       else {
         ctx.font = `500 ${is}px 'Pretendard', sans-serif`;
@@ -2552,7 +2571,6 @@ function go(v) {
   if (v === 'studio') { syncPanel(); renderAll(); }
 }
 $$('.nav-item').forEach(b => b.onclick = () => go(b.dataset.view));
-$('#btn-new').onclick = () => { P = norm(newProject()); P.cards = [norm({ cards: [newCard('제목을 써 주세요', '')] }).cards[0]]; P.cards[0].kind = 'cover'; cur = 0; refPhotos = []; renderThumbs(); savedSig = null; renderCands(); renderDrafts(); go('studio'); };
 
 
 // ===== 계정·크레딧 =====
@@ -3377,10 +3395,32 @@ $('#sh-go').onclick = () => {
 
 buildPatternGrid(); buildStickerButtons(); buildTemplateSelect();
 syncPanel(); renderAll();
+$('#logo-home').onclick = (e) => { e.preventDefault(); go('home'); };
+$('#logo-top').onclick = (e) => { e.preventDefault(); LAND.scrollTo({ top: 0, behavior: 'smooth' }); };
+function styleTrend(p) {
+  const T = TEMPLATES.find(x => x.id === 'trend'); p.template = 'trend';
+  p.cards.forEach(c => { c.bg.color = T.bg; Object.assign(c.t, T.t); Object.assign(c.b, T.b); });
+}
+const STARTER = [
+  ['t-cover', 'sunrise', '하루 10분,\n[작은 습관]이\n만드는 변화', '', { tag: 'TREND', sub: '아침이 바뀌는 걷기 습관' }],
+  ['t-check', '', '걷기가 주는 [변화] 3가지', '수면의 질 23% 상승\n스트레스 지수 17% 감소\n아침 햇빛이면 효과 두 배', { tag: 'POINT', sub: '성인 2천 명을 1년간 추적했어요' }],
+  ['t-chat', 'cafe', '시간이 없다는\n[핑계]는 이제 그만', '하루 10분 걸을 시간도 없어요 😢\n한 정거장 먼저 내려서 걸어 보세요!', {}],
+  ['t-grid2', 'room', '오늘부터 [이렇게]\n걸어 보세요', '엘리베이터 대신 계단을 쓰고, 한 정거장 먼저 내려 걸어요. 아침 햇빛을 받으며 걸으면 더 좋아요.', { tag: 'HOW TO', sub: '✦ 거창한 계획보다 작은 습관', photos: ['flatlay'] }],
+  ['t-profile', 'night', '도움이 됐다면 팔로우 ★', '매일 하나씩 쓸모 있는 카드뉴스를 올려요', {}],
+];
+function starterProject() {
+  const p = norm(newProject());
+  p.cards = STARTER.map(([lay, img, title, body, o], i) => { const c = norm({ cards: [newCard(title, body)] }).cards[0]; c.kind = i === 0 ? 'cover' : i === STARTER.length - 1 ? 'end' : 'body'; c.layout = lay; c.tag = o.tag || ''; c.sub = o.sub || ''; c._img = img; c._photos = o.photos || []; return c; });
+  styleTrend(p); p.series = SERIES; p.source = '건강 연구 기사'; p.handle = '@cuttory';
+  return p;
+}
+function fillStarterImages(p) { p.cards.forEach(c => { if (c._img !== undefined) { c.bg.image = c._img ? DEMO_IMG[c._img] || null : null; c.photos = c._photos.map(k => DEMO_IMG[k]).filter(Boolean); delete c._img; delete c._photos; } }); }
+P = starterProject(); const P0 = P;
+$('#btn-new').onclick = () => { P = norm(newProject()); const c = norm({ cards: [newCard('제목을 써 주세요', '')] }).cards[0]; c.kind = 'cover'; c.layout = 't-cover-white'; c.tag = 'TREND'; P.cards = [c]; styleTrend(P); cur = 0; refPhotos = []; renderThumbs(); savedSig = null; renderCands(); renderDrafts(); go('studio'); };
 openLanding(); renderAcctChip();
 const fontsReady = document.fonts ? Promise.all([document.fonts.load("400 20px 'Pretendard'"), document.fonts.load("900 20px 'Pretendard'")]).catch(() => {}).then(() => document.fonts.ready) : Promise.resolve();
 fontsReady.then(renderAll);
-Promise.all([fontsReady, loadDemoImages()]).then(() => { drawLandingStatic(); landStep(); });
+Promise.all([fontsReady, loadDemoImages()]).then(() => { if (P === P0) { fillStarterImages(P); syncPanel(); renderAll(); } drawLandingStatic(); landStep(); });
 })();
 </script>
 
