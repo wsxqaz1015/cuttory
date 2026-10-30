@@ -42,7 +42,8 @@ jobs:
           JS
       - name: 사진 줄이기
         run: |
-          for f in samples/*.png; do [ -e "$f" ] || continue; (magick "$f" -resize 900x -quality 82 "${f%.png}.jpg" || convert "$f" -resize 900x -quality 82 "${f%.png}.jpg") && rm "$f"; done
+          pip install -q pillow
+          python3 -c "exec('import glob,os\\nfrom PIL import Image\\nfor f in glob.glob(\\'samples/*.png\\'):\\n im=Image.open(f).convert(\\'RGB\\');w,h=im.size;im.resize((900,round(h*900/w))).save(f[:-4]+\\'.jpg\\',quality=82);os.remove(f)')"
           ls -la samples
       - name: 저장소에 넣기
         run: |
