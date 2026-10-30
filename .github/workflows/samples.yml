@@ -28,6 +28,7 @@ jobs:
           (async () => {
             try { log.push('models: ' + JSON.stringify(await (await fetch(API + '/api/models')).json())); } catch (e) { log.push('models: ' + e.message); }
             for (const [k, p] of Object.entries(prompts)) {
+              if (fs.existsSync(`samples/${k}.jpg`) && !process.env.REDRAW) { log.push(`${k}: skip`); continue; }
               if (credits < 20) await session();
               const prompt = `Photorealistic Instagram magazine editorial photo, vertical composition. ${p}. Natural skin texture, candid, shallow depth of field. A fictional person, not a real or famous person.`;
               const r = await fetch(API + '/api/image', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ prompt, style: 'photo' }) });

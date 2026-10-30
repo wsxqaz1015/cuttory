@@ -530,10 +530,25 @@
   #ai-styles .chip.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
   @media (max-width: 640px) { .fb-btn { display: none !important; } nav.side .nav-item { padding-left: 9px; padding-right: 9px; } }
   @media (min-width: 1181px) { .shell { height: 100vh; min-height: 0; } .shell > .col, .shell > .page { min-height: 0; overflow-y: auto; } }
+
+  /* 첫 화면: 가운데 제목 + 카드가 흐르는 갤러리 */
+  .l-hero { display: block; text-align: center; min-height: 0; padding: clamp(48px, 9vh, 96px) 0 clamp(28px, 5vh, 48px); }
+  .l-hero h1 { font-size: clamp(34px, 7vw, 72px); }
+  .l-hero .l-lead { margin: 0 auto 28px; max-width: 34em; }
+  .l-hero-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; opacity: 0; transform: translateY(12px); transition: opacity .7s .35s, transform .7s .35s; }
+  .l-hero.in .l-hero-btns { opacity: 1; transform: none; }
+  .l-btn.big { padding: 15px 28px; font-size: 16px; }
+  .l-marquee { display: grid; gap: 18px; padding: 8px 0 clamp(40px, 7vh, 72px); overflow: hidden; }
+  .l-marquee .track { display: flex; gap: 18px; width: max-content; animation: l-mq 70s linear infinite; }
+  .l-marquee .rev .track { animation-direction: reverse; animation-duration: 80s; }
+  .l-marquee:hover .track { animation-play-state: paused; }
+  .l-marquee canvas { --mq-w: clamp(170px, 20vw, 280px); width: var(--mq-w); aspect-ratio: 4 / 5; height: auto; border-radius: 16px; box-shadow: 0 10px 26px rgba(0,0,0,.12); transition: transform .3s; flex: none; }
+  .l-marquee canvas:hover { transform: translateY(-6px); }
+  @keyframes l-mq { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .l-marquee .track { animation: none; } }
 </style>
 </head>
 <body>
-
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="potato" viewBox="0 -2 100 102">
     <path d="M18 46 Q50 34 82 46 Q86 70 70 86 Q60 96 50 98 Q40 96 30 86 Q14 70 18 46Z" fill="#d9a066" stroke="#7a4a22" stroke-width="3" stroke-linejoin="round"/>
@@ -888,30 +903,20 @@
 
   <div class="l-wrap">
     <section class="l-hero" id="l-s1" data-dot="시작">
-      <div>
-        <p class="l-eyebrow">컷토리 카드뉴스</p>
-        <h1><span class="ln"><span>글 한 편이면</span></span><span class="ln"><span><em>카드뉴스</em>까지 한 번에</span></span></h1>
-        <p class="l-lead">시작 방법만 고르면, 필요한 설정을 순서대로 보여 드려요.</p>
-        <div class="l-start">
-          <button data-start="ai" class="rv" style="--d:3">
-            <span class="ic">✦</span><b>AI가 내용까지 채워 줘</b><small>글이나 기사를 붙여 넣으면 AI가 카드 문구를 써 드려요.</small>
-            <span class="l-tags"><span>글 붙여넣기</span><span>기사</span><span>메모</span></span>
-          </button>
-          <button data-start="direct" class="rv" style="--d:4">
-            <span class="ic">✎</span><b>빈 템플릿에 직접 쓸래</b><small>AI 없이 템플릿을 골라 바로 편집해요.</small>
-            <span class="l-tags"><span>템플릿 고르기</span><span>바로 편집</span></span>
-          </button>
-        </div>
-      </div>
-      <div class="l-stack" id="l-stack"><canvas width="540" height="675"></canvas><canvas width="540" height="675"></canvas><canvas width="540" height="675"></canvas></div>
+      <p class="l-eyebrow">컷토리 카드뉴스</p>
+      <h1><span class="ln"><span>링크 하나로</span></span><span class="ln"><span><em>카드뉴스</em> 완성</span></span></h1>
+      <p class="l-lead">유튜브·기사 링크나 글을 넣으면 AI가 문구부터 이미지까지 만들어 드려요.</p>
+      <div class="l-hero-btns"><button class="l-btn big" data-start="ai">바로 시작하기</button><button class="l-btn big ghost" data-goto="l-s5">템플릿 둘러보기</button></div>
     </section>
-    <div class="l-scroll"><i></i>아래로 내려 보세요</div>
+  </div>
+  <div class="l-marquee" id="l-marquee" aria-hidden="true"><div class="row"><div class="track"></div></div><div class="row rev"><div class="track"></div></div></div>
+  <div class="l-wrap">
 
     <section class="l-sec center" id="l-s2" data-dot="한눈에">
-      <p class="l-eyebrow rv">글만 있으면</p>
+      <p class="l-eyebrow rv">링크만 있으면</p>
       <h2 class="l-h2 rv" style="--d:1">기획부터 저장까지<br>컷토리 안에서 끝나요</h2>
       <div class="l-grid3" style="text-align:left">
-        <div class="l-box rv" style="--d:2"><span class="num">01</span><h3>글로 시작</h3><p>기사, 블로그 글, 메모를 붙여 넣으면 핵심만 뽑아 카드 흐름으로 정리해요.</p></div>
+        <div class="l-box rv" style="--d:2"><span class="num">01</span><h3>링크·문서로 시작</h3><p>유튜브, 기사 링크나 문서, 글을 넣으면 핵심만 뽑아 카드 흐름으로 정리해요.</p></div>
         <div class="l-box rv" style="--d:3"><span class="num">02</span><h3>시안 3가지</h3><p>각도가 다른 시안 중 마음에 드는 걸 고르고, 문구는 한 줄씩 다듬어요.</p></div>
         <div class="l-box rv" style="--d:4"><span class="num">03</span><h3>PNG · MP4 저장</h3><p>글꼴, 색, 배치를 바꾼 뒤 바로 올릴 수 있는 이미지와 영상으로 저장해요.</p></div>
       </div>
@@ -3229,7 +3234,16 @@ const SAMPLE_PROMPTS = {
   office: 'Two young Korean coworkers talking and laughing at a modern bright office table with laptops, candid moment',
   room: 'A Korean woman in her 20s relaxing on a bed in a cozy studio apartment with plants, soft curtains and warm lamp light',
   flatlay: 'Top-down photo of hands writing in a notebook on a wooden desk with a latte, smartphone and small plant',
+  phone: 'A Korean woman in her 20s with glasses and a black blazer talking on the phone at an office cubicle covered with sticky notes, holding a pen, focused expression',
+  coffee: 'A playful Korean woman in a black suit and sunglasses holding a coffee cup toward the camera, high-angle wide-lens shot, white studio background',
+  laptop: 'A laptop on a wooden desk showing a presentation slide with bar charts, sunlit modern office with large windows in the background, no people',
+  meeting: 'A young Korean man in a navy suit presenting confidently in front of a glass whiteboard in a modern meeting room',
+  desk: 'A Korean man in his 30s typing on a laptop at a tidy home desk in the evening, warm desk lamp light, plants on the shelf',
+  lamp: 'A cozy living room corner at dusk with a warm table lamp, a linen armchair and a small side table, no people',
+  tablet: 'A tablet showing colorful app icons on a light wooden table next to a small plant, soft morning light, no people',
+  street: 'A Korean woman in her 20s wearing a beige trench coat walking on a Seoul street lined with autumn ginkgo trees, candid',
 };
+const SAMPLE_ALIAS = { phone: 'night', coffee: 'cafe', laptop: 'office', meeting: 'office', desk: 'night', lamp: 'room', tablet: 'flatlay', street: 'sunrise' };
 async function loadServerSamples() {
   // GPT로 그려 둔 샘플 사진 (samples/*.jpg)
   await Promise.all(Object.keys(SAMPLE_PROMPTS).map(k => new Promise(res => { const src = `samples/${k}.jpg`, im = new Image(); im.onload = () => { DEMO_IMG[k] = src; images.set(src, im); res(); }; im.onerror = res; im.src = src; })));
@@ -3244,7 +3258,7 @@ function loadDemoImages() {
   return Promise.all(['night', 'sunrise', 'cafe', 'office', 'room', 'flatlay'].map(k => new Promise(res => {
     const src = paintScene(k), im = new Image(); DEMO_IMG[k] = src; images.set(src, im);
     im.onload = res; im.onerror = res; im.src = src;
-  })));
+  }))).then(() => { for (const [k, v] of Object.entries(SAMPLE_ALIAS)) DEMO_IMG[k] = DEMO_IMG[v]; });
 }
 
 // ===== 첫 화면 =====
@@ -3284,11 +3298,43 @@ function tr(lay, img, title, body, o = {}) {
   });
 }
 const SERIES = '컷토리 카드뉴스 어디까지 만들어 봤니?';
+const GALLERY = [[
+  ['magazine', ['office', '요즘 일 잘하는 사람\n[AI] 이렇게 써요', '보고서 초안은 5분이면 끝', 'cover']],
+  ['trend', () => tr('t-cover', 'phone', '회의록, 이제\n[3분]이면 끝', '', { tag: 'WORK TIP', sub: 'AI 회의 정리 툴 비교' })],
+  ['blog', ['tablet', '제미나이 쓸 때\n[매번] 프롬프트 치시나요?', '1분 만에 업무를 자동화하는 숨은 치트키', 'body']],
+  ['bluecard', ['', '주간보고 1시간이\n[5분]으로 줄어요', '업무 자동화가 실제로 어떻게 돌아가는지 확인해 보세요.', 'body']],
+  ['trend', () => tr('t-check', '', '보고서 쓰기 전 [체크] 3가지', '목적은 한 줄로\n숫자는 표로\n결론은 맨 앞에', { tag: 'POINT', sub: '일 잘하는 사람의 습관' })],
+  ['magazine', ['coffee', '모르면 손해 [5가지]\n요즘 직장인이 몰래 쓰는 앱', '', 'cover']],
+  ['laptop', ['laptop', '눈 깜짝할 사이에\n[PPT] 완성하기', '템플릿 파일만 올리면 회사 스타일 그대로', 'body']],
+  ['pink', ['lamp', '조명 [겹쳐] 쓰기', '천장 등 대신 스탠드와 무드등을 겹쳐 보세요', 'body', ['room']]],
+], [
+  ['trend', () => tr('t-cover', 'meeting', 'AI 팀을\n[거느리는] 일하는 법', '', { tag: 'TREND INSIGHT', sub: '지시하는 사람에서 조율하는 사람으로' })],
+  ['classic', ['cafe', '카페에서 [집중력]\n2배 올리는 자리', '창가 말고 벽을 등진 자리', 'cover']],
+  ['trend', () => tr('t-chat', 'desk', '퇴근 30분 앞당기는\n[AI 업무] 정리법', '팀장님 이거 오늘까지 되나요? 😢\nAI한테 초안 맡기면 10분이면 돼요!')],
+  ['trend', () => tr('t-grid4', 'night', '반복 업무는 [AI]에게', '메일 정리, 회의록, 보고서 초안까지. 매일 하는 일부터 맡겨 보세요.', { tag: 'INTRO', sub: '★ 챗GPT·제미나이 활용법', photos: ['laptop', 'desk', 'tablet'] })],
+  ['magazine', ['street', '가을 [출근룩]\n이렇게 입어요', '트렌치코트 하나로 끝', 'cover']],
+  ['blog', ['flatlay', '[노션] 대신 쓰는\n메모 앱 정리', '한 달 써 보고 남긴 솔직 후기', 'body']],
+  ['trend', () => tr('t-memo', '', '조회수 높이는 [글쓰기]', '짧은 문장으로 끊어 쓰고\n결론부터 말하면\n끝까지 읽혀요', { sub: '02' })],
+  ['trend', () => tr('t-cover', 'sunrise', '하루 10분,\n[작은 습관]이 만드는 변화', '', { tag: 'TREND', sub: '아침이 바뀌는 걷기 습관' })],
+]];
+function drawGallery() {
+  $$('#l-marquee .track').forEach((tk, r) => {
+    tk.innerHTML = '';
+    const cs = GALLERY[r].map(([tpl, d], i) => {
+      const c = document.createElement('canvas'); c.width = 540; c.height = 675;
+      const card = typeof d === 'function' ? d() : sampleCard(tpl, d);
+      const cover = typeof d === 'function' ? /t-cover/.test(card.layout || '') : d[3] === 'cover';
+      try { drawDemo(c, tpl, card, { series: SERIES, idx: cover ? 0 : 1 + i % 4, more: Array.isArray(d) ? d[4] : null }); } catch (e) { console.warn(e); }
+      return c;
+    });
+    // 끊김 없이 돌도록 한 번 더 붙임
+    [...cs, ...cs.map(c => { const d = document.createElement('canvas'); d.width = c.width; d.height = c.height; d.getContext('2d').drawImage(c, 0, 0); return d; })].forEach(c => tk.appendChild(c));
+  });
+}
+$$('[data-goto]').forEach(b => b.onclick = () => $('#' + b.dataset.goto).scrollIntoView({ behavior: 'smooth', block: 'start' }));
 function drawLandingStatic() {
-  const st = $$('#l-stack canvas'), so = { series: SERIES };
-  drawDemo(st[0], 'trend', tr('t-grid4', 'night', '카드뉴스 [어떻게] 만들까?', '한 장 만들면 다음 장이 막히고, 내용을 쓰면 디자인이 애매해져요. 만들다 보면 알게 돼요. 카드뉴스는 흐름이라는 걸!', { tag: 'INTRO', sub: '★ 감성은 빠질 수 없으니까', photos: ['sunrise', 'cafe', 'flatlay'] }), { ...so, idx: 1 });
-  drawDemo(st[1], 'trend', tr('t-chat', 'cafe', '귀여운 폰트가 최고야\n비록 가독성은 [별로]일지라도', '담당자님! 깔끔하면서 가독성도 좋은 폰트로 바꿔 주세요\n다른 폰트 찾아볼게요 🙏'), { ...so, idx: 2 });
-  drawDemo(st[2], 'trend', tr('t-cover', 'room', '감다살 카드뉴스\n[어디까지] 만들어 봤니?', '', { tag: 'INTRO', sub: '컷토리 카드뉴스 템플릿' }), { ...so, idx: 0 });
+  drawGallery();
+  const so = { series: SERIES };
   drawDemo($('#l-save-cv'), 'trend', tr('t-cover', 'sunrise', '출근 전 [10분],\n하루가 바뀌는 루틴', '', { tag: 'TREND', sub: '아침이 바뀌는 작은 습관' }), { ...so, idx: 0 });
   const fades = [
     tr('t-cover', 'cafe', '카페에서 [집중력]\n2배 올리는 자리', '', { tag: 'TREND', sub: '작업하기 좋은 자리 고르는 법' }),
