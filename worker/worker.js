@@ -157,8 +157,10 @@ async function openai(env, path, body, isForm) {
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const m = (j.error && j.error.message) || 'OpenAI 오류';
-    throw err(r.status === 429 ? 'rate_limited' : 'ai_error', r.status === 429 ? 'OpenAI 사용 한도에 걸렸어요. 잠시 뒤 다시 해 주세요.' : 'AI가 답하지 못했어요: ' + m.slice(0, 120), 502);
+    const m = (j.error && j.error.message) || 'OpenAI 오류', c = (j.error && j.error.code) || '';
+    if (c === 'insufficient_quota') throw err('no_quota', 'OpenAI 계정에 잔액이 없어요. platform.openai.com 결제 페이지에서 충전해 주세요.', 502);
+    if (r.status === 429) throw err('rate_limited', 'OpenAI 사용 한도에 걸렸어요. 잠시 뒤 다시 해 주세요.', 502);
+    throw err('ai_error', 'AI가 답하지 못했어요: ' + m.slice(0, 160), 502);
   }
   return j;
 }
