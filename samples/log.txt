@@ -1,16 +1,16 @@
-2026-10-30T16:53:11.759Z
-models: {"text":"gpt-4o-mini","image":"gpt-image-2.5-flare-2026-09-08","all":["gpt-4-turbo-2024-04-09","gpt-live-transcribe","gpt-5.6-luna","gpt-realtime-2.1-mini","gpt-realtime-2025-08-28","gpt-realtime-2","gpt-5-search-api","gpt-5.5-2026-04-23","gpt-realtime","gpt-realtime-1.5","gpt-5.2-pro","gpt-5-chat-latest","gpt-4o-mini-transcribe-2025-12-15","gpt-5-pro-2025-10-06","gpt-5.6-sol","gpt-5.4-2026-03-05","gpt-3.5-turbo-0125","gpt-5-nano","gpt-5.1-codex","gpt-5.4-mini","gpt-5-2025-08-07","gpt-5.2-pro-2025-12-11","gpt-audio-mini-2025-10-06","gpt-5.5-pro-2026-04-23","gpt-5.4-pro","gpt-realtime-mini-2025-12-15","gpt-4o-mini-tts","gpt-5.1-codex-max","gpt-4o-mini-search-preview","gpt-5-mini","gpt-5-mini-2025-08-07","gpt-5.5-pro","gpt-4o-mini-transcribe-2025-03-20","gpt-audio-2025-08-28","gpt-5.4-mini-2026-03-17","gpt-4.1-nano","gpt-image-2","gpt-3.5-turbo-16k","gpt-realtime-2.1","gpt-4.1","gpt-5.5","gpt-5.4","gpt-4o-search-preview-2025-03-11","gpt-4o-2024-05-13","gpt-4o-2024-11-20","gpt-5.1","gpt-5-pro","gpt-realtime-whisper","gpt-realtime-mini","gpt-image-1-mini","gpt-5.6-terra","gpt-3.5-turbo-instruct-0914","gpt-5.3-chat-latest","gpt-5.2-2025-12-11","gpt-3.5-turbo","gpt-5.4-pro-2026-03-05","gpt-realtime-translate","gpt-image-1.5","gpt-audio-1.5","gpt-5.1-chat-latest","gpt-5.4-nano","gpt-audio-mini-2025-12-15","gpt-4.1-mini","gpt-4o-mini","gpt-4-turbo","gpt-4o-2024-08-06","gpt-4o-mini-search-preview-2025-03-11","gpt-4o","gpt-audio-mini","gpt-4.1-mini-2025-04-14","gpt-4o-mini-tts-2025-12-15","gpt-image-1","gpt-audio","gpt-5.3-codex","gpt-5-search-api-2025-10-14","gpt-4o-transcribe-diarize","gpt-5-codex","gpt-5.1-2025-11-13","gpt-4-0613","gpt-4o-search-preview"]}
-night: ok
-sunrise: ok
-cafe: ok
-office: ok
-room: ok
-flatlay: ok
-phone: ok
-coffee: ok
-laptop: ok
-meeting: ok
-desk: ok
-lamp: ok
-tablet: ok
-error: fetch failed
+2026-10-30T16:54:16.191Z
+models: {"text":"gpt-4o-mini","image":"gpt-image-2.5-flare-2026-09-08","all":["gpt-5-mini","gpt-5-mini-2025-08-07","gpt-5.4-2026-03-05","gpt-3.5-turbo-0125","gpt-5-nano","gpt-4-turbo-2024-04-09","gpt-realtime-2.1-mini","gpt-realtime-2025-08-28","gpt-live-transcribe","gpt-5.6-luna","gpt-realtime-2","gpt-5-search-api","gpt-5.5-2026-04-23","gpt-5.1-codex","gpt-5.4-mini","gpt-4o-2024-11-20","gpt-5.1","gpt-5-pro","gpt-realtime-whisper","gpt-realtime","gpt-realtime-1.5","gpt-5.2-pro","gpt-5-chat-latest","gpt-5.5-pro","gpt-4o-mini-transcribe-2025-03-20","gpt-audio-2025-08-28","gpt-5.4-pro-2026-03-05","gpt-realtime-translate","gpt-4o-mini-transcribe-2025-12-15","gpt-5-pro-2025-10-06","gpt-5.6-sol","gpt-5.4-mini-2026-03-17","gpt-5-2025-08-07","gpt-5.2-pro-2025-12-11","gpt-audio-mini-2025-10-06","gpt-5.5-pro-2026-04-23","gpt-5.4-pro","gpt-realtime-mini-2025-12-15","gpt-4o-mini-tts","gpt-5.1-codex-max","gpt-4o-mini-search-preview","gpt-4o-2024-05-13","gpt-4-turbo","gpt-4o-2024-08-06","gpt-4o-mini-search-preview-2025-03-11","gpt-4.1-nano","gpt-image-2","gpt-3.5-turbo-16k","gpt-realtime-2.1","gpt-4.1","gpt-5.5","gpt-5.4","gpt-4o-search-preview-2025-03-11","gpt-image-1.5","gpt-audio-1.5","gpt-4o-transcribe-diarize","gpt-5-codex","gpt-5.1-2025-11-13","gpt-4-0613","gpt-4o-search-preview","gpt-realtime-mini","gpt-image-1-mini","gpt-5.6-terra","gpt-3.5-turbo-instruct-0914","gpt-5.3-chat-latest","gpt-5.2-2025-12-11","gpt-3.5-turbo","gpt-4.1-mini","gpt-4o-mini","gpt-5.1-chat-latest","gpt-5.4-nano","gpt-audio-mini-2025-12-15","gpt-4o-mini-tts-2025-12-15","gpt-image-1","gpt-audio","gpt-5.3-codex","gpt-5-search-api-2025-10-14","gpt-5.2-chat-latest","gpt-image-2-2026-04-21","gpt-4o-mini-transcribe"]}
+night: skip
+sunrise: skip
+cafe: skip
+office: skip
+room: skip
+flatlay: skip
+phone: skip
+coffee: skip
+laptop: skip
+meeting: skip
+desk: skip
+lamp: skip
+tablet: skip
+street: ok
