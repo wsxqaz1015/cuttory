@@ -1,0 +1,1431 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>컷토리 트렌드 오피스</title>
+<meta name="description" content="매일 아침 팀원들이 마케팅 트렌드 리포트를 들고 출근하는 작은 픽셀 사무실. 읽고, 퀴즈 풀고, 스크랩하면서 인턴에서 CMO까지 승진해요.">
+<meta property="og:title" content="컷토리 트렌드 오피스">
+<meta property="og:description" content="매일 아침 마케팅 트렌드 리포트가 도착하는 작은 사무실">
+<meta name="theme-color" content="#161827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="트렌드 오피스">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23161827'/><rect x='3' y='5' width='10' height='8' fill='%23ffb347'/><rect x='5' y='2' width='6' height='3' fill='%23ff6b6b'/></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+<script src="config.js"></script>
+<style>
+@font-face { font-family: 'Pretendard'; src: url('fonts/PretendardVariable.woff2') format('woff2-variations'), url('fonts/PretendardVariable.woff2') format('woff2'); font-weight: 45 920; font-style: normal; font-display: swap; }
+:root {
+  --bg: #161827; --panel: #222540; --panel-2: #2c3054; --line: #3d4270; --ink: #f2f0ff; --muted: #a3a6cc;
+  --accent: #ff6b6b; --gold: #ffc94d; --good: #3ccf91;
+  --daily: #ff6b6b; --weekly: #4dabf7; --monthly: #3ccf91; --quarterly: #a98bfa;
+  --paper: #fdf8ee; --paper-ink: #22202c; --paper-muted: #6d6879; --paper-line: #e9e0cd; --paper-card: #ffffff;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", sans-serif; line-height: 1.6; word-break: keep-all; min-height: 100vh; -webkit-text-size-adjust: 100%; }
+.px { font-family: "Galmuri11", "Pretendard", monospace; }
+button { font: inherit; cursor: pointer; color: inherit; }
+a { color: inherit; }
+.app { max-width: 1140px; margin: 0 auto; padding: 14px 16px 64px; }
+
+/* 상단 HUD */
+.hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 12px; }
+.hud h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; white-space: nowrap; }
+.hud h1 a { text-decoration: none; }
+.clock { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.spacer { flex: 1; }
+.chip-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 6px 11px; font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.chip-btn:hover { border-color: var(--accent); }
+.chip-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.me-btn { gap: 10px; padding: 5px 12px; }
+.me-btn .lv { color: var(--gold); font-size: 13px; }
+.me-btn .rk { font-size: 13.5px; }
+.xp { display: flex; flex-direction: column; gap: 2px; }
+.xpbar { width: 104px; height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.xpbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), var(--accent)); transition: width .6s; }
+.xptext { font-size: 10.5px; color: var(--muted); font-weight: 600; line-height: 1; }
+.streak { font-weight: 800; font-size: 14px; white-space: nowrap; }
+
+/* 사무실 + 옆 패널 */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+.stage { position: relative; background: #0d0e19; border: 3px solid var(--line); border-radius: 12px; overflow: hidden; }
+#office { display: block; width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; cursor: default; touch-action: manipulation; }
+#bubbles { position: absolute; inset: 0; pointer-events: none; }
+.bubble { position: absolute; transform: translate(-50%, -100%); background: #fff; color: #1d1b2b; font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 9px; border: 2px solid #1d1b2b; max-width: 200px; line-height: 1.35; box-shadow: 0 2px 0 rgba(0,0,0,.35); animation: pop .18s ease-out; white-space: normal; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -7px; margin-left: -5px; border: 5px solid transparent; border-top-color: #1d1b2b; border-bottom: 0; }
+.bubble.alert { background: var(--gold); }
+@keyframes pop { from { transform: translate(-50%, -90%) scale(.85); opacity: 0; } }
+.stage-tip { position: absolute; right: 8px; bottom: 8px; font-size: 11.5px; background: rgba(13,14,25,.78); color: #e6e4f5; padding: 3px 9px; border-radius: 7px; pointer-events: none; }
+.side { display: grid; gap: 12px; }
+.panel { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 12px 12px 10px; }
+.panel h2 { font-size: 13px; color: var(--muted); margin: 0 0 8px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.member { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; background: var(--panel-2); border: 2px solid transparent; border-radius: 10px; padding: 8px 10px; margin-bottom: 7px; }
+.member:hover { border-color: var(--line); }
+.member img { width: 36px; height: 54px; image-rendering: pixelated; flex: none; }
+.member .nm { font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.member .jb { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.member .st { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.member .st i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.member.has-new { border-color: var(--gold); }
+.kb { display: inline-block; font-size: 10.5px; font-weight: 800; color: #fff; padding: 1px 8px; border-radius: 999px; line-height: 1.6; }
+.log { list-style: none; margin: 0; padding: 0; font-size: 12.5px; color: #d5d3ea; max-height: 220px; overflow: auto; }
+.log li { padding: 5px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 8px; }
+.log li:last-child { border-bottom: 0; }
+.log time { color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
+.tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tools a { font-size: 12px; font-weight: 700; text-decoration: none; background: var(--panel-2); border-radius: 8px; padding: 7px 9px; display: block; }
+.tools a:hover { background: var(--line); }
+
+/* 모달 (종이 느낌) */
+.modal-bg { position: fixed; inset: 0; background: rgba(8,9,18,.66); display: none; align-items: flex-start; justify-content: center; padding: 26px 12px; overflow-y: auto; z-index: 50; }
+.modal-bg.open { display: flex; }
+.modal { background: var(--paper); color: var(--paper-ink); width: 100%; max-width: 860px; border-radius: 14px; border: 3px solid #12131f; box-shadow: 0 8px 0 rgba(0,0,0,.35); position: relative; animation: rise .2s ease-out; }
+.modal.small { max-width: 520px; }
+@keyframes rise { from { transform: translateY(14px); opacity: 0; } }
+.m-head { display: flex; gap: 12px; align-items: center; padding: 14px 18px; border-bottom: 2px solid var(--paper-line); position: sticky; top: 0; background: var(--paper); border-radius: 12px 12px 0 0; z-index: 2; }
+.m-head img { width: 40px; height: 60px; image-rendering: pixelated; flex: none; }
+.m-head .say { flex: 1; min-width: 0; }
+.m-head .from { font-size: 12px; color: var(--paper-muted); font-weight: 600; }
+.m-head .line { font-weight: 800; font-size: 15px; line-height: 1.4; }
+.x { background: none; border: 0; font-size: 26px; line-height: 1; color: var(--paper-muted); padding: 4px 8px; border-radius: 8px; }
+.x:hover { background: var(--paper-line); }
+.m-body { padding: 18px 20px 22px; }
+.center { text-align: center; }
+.r-period { font-size: 13px; color: var(--paper-muted); font-weight: 600; margin: 6px 0 2px; }
+.r-title { font-size: 25px; line-height: 1.32; margin: 2px 0 14px; letter-spacing: -.02em; }
+.r-sum { background: #fff; border: 2px solid var(--paper-line); border-radius: 12px; padding: 12px 16px 12px 34px; margin: 0 0 12px; }
+.r-sum li { margin: 3px 0; }
+.kw { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
+.kw span, .kw a { font-size: 12px; font-weight: 700; background: #ffe9e3; color: #c4472f; padding: 3px 10px; border-radius: 999px; text-decoration: none; }
+.r-sec { margin-top: 26px; }
+.r-sec h3 { font-size: 18px; margin: 0 0 2px; }
+.r-sec .desc { font-size: 12.5px; color: var(--paper-muted); margin: 0 0 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+.card { background: var(--paper-card); border: 2px solid var(--paper-line); border-radius: 12px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
+.card.scrapped { border-color: var(--gold); box-shadow: 0 0 0 2px #fff0c2; }
+.c-meta { display: flex; align-items: center; gap: 7px; font-size: 12px; margin-bottom: 6px; }
+.c-meta .rank { width: 21px; height: 21px; border-radius: 50%; background: var(--paper-ink); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 11.5px; flex: none; }
+.c-meta .tag { font-weight: 800; color: #d94a35; }
+.c-meta .brand { color: var(--paper-muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scrap { margin-left: auto; flex: none; background: #fff; border: 2px solid var(--paper-line); border-radius: 8px; padding: 2px 9px; font-size: 12px; font-weight: 700; color: var(--paper-ink); }
+.scrap.on { background: #fff4cf; border-color: var(--gold); }
+.card h4 { margin: 0 0 6px; font-size: 15.5px; line-height: 1.4; }
+.card p { margin: 0 0 8px; font-size: 14px; color: #3a3746; }
+.note { font-size: 13px; border-radius: 9px; padding: 8px 11px; margin: 0 0 7px; line-height: 1.55; }
+.note b { display: block; font-size: 11.5px; margin-bottom: 1px; }
+.note.why { background: #eef4ff; color: #22396b; }
+.note.act { background: #eafaf2; color: #1d5a40; }
+.srcs { list-style: none; margin: auto 0 0; padding: 6px 0 0; border-top: 1px dashed var(--paper-line); font-size: 11.5px; color: var(--paper-muted); }
+.srcs li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srcs a { color: #4a62b8; }
+.memo { background: #fffbea; border: 2px dashed #f0d98a; border-radius: 10px; padding: 9px 10px; margin: 2px 0 8px; }
+.memo label { display: block; font-size: 11.5px; font-weight: 800; color: #7a5d0f; margin: 4px 0 2px; }
+.memo textarea { width: 100%; font: inherit; font-size: 13px; border: 1.5px solid #eadfb8; border-radius: 7px; padding: 6px 8px; resize: vertical; min-height: 38px; background: #fff; color: var(--paper-ink); }
+.memo .done { font-size: 12px; font-weight: 800; color: #1d7a52; margin-top: 4px; }
+.memo .grow { font-size: 12.5px; margin-top: 6px; }
+.memo .grow li { margin: 2px 0; }
+.r-foot { margin-top: 26px; padding-top: 18px; border-top: 2px solid var(--paper-line); text-align: center; }
+.follow { text-align: left; background: #fff; border: 2px solid var(--paper-line); border-radius: 12px; padding: 12px 16px; margin: 22px 0 0; }
+.follow h3 { margin: 0 0 4px; font-size: 15px; }
+.follow ul { margin: 0; padding-left: 20px; font-size: 14px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--paper-ink); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 14.5px; text-decoration: none; }
+.btn:hover { filter: brightness(1.15); }
+.btn.big { padding: 13px 26px; font-size: 16px; }
+.btn.ghost { background: #fff; color: var(--paper-ink); border: 2px solid var(--paper-line); }
+.btn.gold { background: var(--gold); color: #3b2a05; }
+.btn:disabled { opacity: .45; cursor: default; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.bar.c { justify-content: center; }
+.sub { font-size: 12.5px; color: var(--paper-muted); }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.tabs button { background: #fff; border: 2px solid var(--paper-line); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; color: var(--paper-ink); }
+.tabs button.on { background: var(--paper-ink); border-color: var(--paper-ink); color: #fff; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.list > li > button, .list > li.row { width: 100%; display: flex; gap: 12px; align-items: center; text-align: left; background: #fff; border: 2px solid var(--paper-line); border-radius: 11px; padding: 10px 13px; color: var(--paper-ink); }
+.list > li > button:hover { border-color: var(--paper-ink); }
+.list > li > button:disabled { opacity: .5; }
+.list .ic { font-size: 19px; flex: none; }
+.list .t { font-weight: 800; display: block; font-size: 14px; }
+.list .h { display: block; font-size: 13px; color: var(--paper-muted); }
+.empty { text-align: center; color: var(--paper-muted); padding: 26px 8px; font-size: 14px; }
+.field { display: block; font-size: 13px; font-weight: 700; margin: 10px 0 0; text-align: left; }
+.field input, .field textarea, .field select, input.search { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 14.5px; font-weight: 500; padding: 9px 11px; border: 2px solid var(--paper-line); border-radius: 9px; background: #fff; color: var(--paper-ink); }
+.field input:focus, .field textarea:focus, input.search:focus { outline: none; border-color: var(--paper-ink); }
+.field .opt { font-weight: 500; color: var(--paper-muted); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.looks { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.looks button { background: #fff; border: 2px solid var(--paper-line); border-radius: 10px; padding: 4px; }
+.looks button.on { border-color: var(--paper-ink); box-shadow: 0 0 0 2px var(--gold); }
+.looks img { width: 32px; height: 48px; image-rendering: pixelated; display: block; }
+
+/* 퀴즈 */
+.qprog { font-size: 12.5px; font-weight: 700; color: var(--paper-muted); }
+.qtext { font-size: 18px; font-weight: 800; line-height: 1.45; margin: 6px 0 14px; }
+.qopt { display: block; width: 100%; text-align: left; background: #fff; border: 2px solid var(--paper-line); border-radius: 10px; padding: 11px 14px; margin-bottom: 8px; font-size: 14.5px; color: var(--paper-ink); }
+.qopt:hover:not(:disabled) { border-color: var(--paper-ink); }
+.qopt:disabled { cursor: default; }
+.qopt.right { background: #e3f8ec; border-color: #3ccf91; font-weight: 700; }
+.qopt.wrong { background: #ffe8e6; border-color: #ff6b6b; }
+.qexp { background: #fff; border-radius: 10px; border: 2px solid var(--paper-line); padding: 10px 13px; font-size: 14px; margin: 6px 0 12px; }
+.qscore { font-size: 46px; font-weight: 900; margin: 8px 0 0; letter-spacing: -.02em; }
+.big-ic { font-size: 54px; line-height: 1.1; margin: 6px 0; }
+.levelup h3 { font-size: 22px; margin: 4px 0; }
+
+/* 직급·업적 */
+.lvlist { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.lvlist li { display: flex; gap: 12px; align-items: center; background: #fff; border: 2px solid var(--paper-line); border-radius: 10px; padding: 8px 12px; }
+.lvlist li.cur { border-color: var(--gold); box-shadow: 0 0 0 2px #ffeaa8; }
+.lvlist li.locked { opacity: .55; }
+.lvlist .n { font-weight: 800; width: 42px; flex: none; font-size: 12.5px; color: var(--paper-muted); }
+.lvlist .tt { font-weight: 800; width: 56px; flex: none; }
+.lvlist .u { font-size: 13px; flex: 1; }
+.lvlist .u small { display: block; color: var(--paper-muted); }
+.lvlist .xpn { font-size: 12px; color: var(--paper-muted); flex: none; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.bdg { background: #fff; border: 2px solid var(--paper-line); border-radius: 12px; padding: 12px 10px; text-align: center; }
+.bdg .ic { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 6px; font-size: 26px; border: 3px solid rgba(0,0,0,.12); }
+.bdg.off .ic { background: #eee !important; filter: grayscale(1); opacity: .5; }
+.bdg b { display: block; font-size: 13.5px; }
+.bdg span { display: block; font-size: 11.5px; color: var(--paper-muted); line-height: 1.4; }
+.bdg .pg { height: 5px; background: var(--paper-line); border-radius: 3px; margin-top: 7px; overflow: hidden; }
+.bdg .pg i { display: block; height: 100%; background: var(--gold); }
+.wlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.wlist li { background: #fff; border: 2px solid var(--paper-line); border-radius: 10px; padding: 10px 13px; font-size: 14px; }
+.wlist .src { font-size: 11.5px; color: var(--paper-muted); }
+.wlist .q { font-weight: 700; }
+.wlist details { font-size: 13px; margin-top: 4px; color: #3a3746; }
+.promo { display: flex; gap: 12px; align-items: center; background: linear-gradient(90deg, #fff1d6, #ffe4e4); border: 2px solid #ffd59a; border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; font-size: 13.5px; }
+.promo b { display: block; }
+.promo .btn { margin-left: auto; padding: 7px 12px; font-size: 13px; flex: none; }
+
+/* 리더보드 화면 */
+.board-view { position: fixed; inset: 0; background: var(--bg); z-index: 40; overflow-y: auto; }
+.bv-wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+.bv-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.bv-head h2 { flex: 1; margin: 0; font-size: 20px; text-align: center; }
+.podium { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: end; gap: 10px; margin: 8px 0 18px; }
+.pod { text-align: center; }
+.pod img { width: 48px; height: 72px; image-rendering: pixelated; }
+.pod .blk { background: var(--panel-2); border: 2px solid var(--line); border-radius: 10px 10px 0 0; padding: 8px 4px; }
+.pod .nk { font-weight: 800; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pod .meta { font-size: 11.5px; color: var(--muted); }
+.pod.p1 .blk { height: 120px; border-color: var(--gold); }
+.pod.p2 .blk { height: 92px; }
+.pod.p3 .blk { height: 72px; }
+.pod .medal { font-size: 22px; }
+.rk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rk-list li { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.rk-list li.me { border-color: var(--gold); }
+.rk-list .n { width: 28px; text-align: center; font-weight: 800; color: var(--muted); }
+.rk-list .nk { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-list .xp2 { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.bv-note { font-size: 13px; color: var(--muted); text-align: center; margin: 14px 0; }
+
+/* 토스트·떠 있는 버튼·사용법 */
+.toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 30px); background: #12131f; color: #fff; border: 2px solid var(--line); padding: 10px 16px; border-radius: 11px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 90; max-width: calc(100% - 32px); text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.fab { position: fixed; right: 16px; bottom: 16px; z-index: 30; background: var(--panel); border: 2px solid var(--line); color: var(--ink); border-radius: 999px; padding: 10px 16px; font-weight: 800; font-size: 13.5px; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+.fab:hover { border-color: var(--accent); }
+.coach { position: fixed; inset: 0; z-index: 70; }
+.coach-spot { position: fixed; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(8,9,18,.72); border: 3px solid var(--gold); transition: all .25s; pointer-events: none; }
+.coach-card { position: fixed; width: min(340px, calc(100% - 24px)); background: var(--paper); color: var(--paper-ink); border: 3px solid #12131f; border-radius: 14px; padding: 14px 16px; box-shadow: 0 6px 0 rgba(0,0,0,.3); transition: all .25s; }
+.coach-card h4 { margin: 0 0 4px; font-size: 16px; }
+.coach-card p { margin: 0 0 12px; font-size: 14px; }
+.coach-card .bar { margin: 0; }
+.coach-card .stp { font-size: 12px; color: var(--paper-muted); margin-right: auto; }
+.confetti { position: fixed; top: -12px; width: 8px; height: 12px; z-index: 95; pointer-events: none; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .side { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .app { padding: 10px 10px 90px; }
+  .fab { padding: 8px 13px; font-size: 12.5px; }
+  .hud h1 { font-size: 16px; }
+  .hud .clock { order: 2; }
+  .hud .spacer { display: none; }
+  .hud .chip-btn .lbl { display: none; }
+  .hud .chip-btn { padding: 6px 9px; }
+  .me-btn { order: 3; }
+  .xpbar { width: 70px; }
+  .side { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: 1fr; }
+  .r-title { font-size: 21px; }
+  .m-body { padding: 14px 14px 18px; }
+  .row2 { grid-template-columns: 1fr; }
+  .modal-bg { padding: 10px 6px; }
+  .bubble { font-size: 11px; max-width: 150px; padding: 3px 7px; }
+  .stage-tip { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hud">
+    <h1 class="px"><a href="index.html" title="컷토리 홈">🏢</a> 트렌드 오피스</h1>
+    <span class="clock px" id="clock"></span>
+    <span class="spacer"></span>
+    <button class="chip-btn me-btn" id="btn-level" title="직급표 보기">
+      <span class="lv px" id="hud-lv">Lv.1</span><span class="rk" id="hud-rank">인턴</span>
+      <span class="xp"><span class="xpbar"><i id="hud-xpfill"></i></span><span class="xptext" id="hud-xp"></span></span>
+    </button>
+    <span class="streak" id="hud-streak" title="데일리를 읽은 연속 일수"></span>
+    <button class="chip-btn" id="btn-archive">📥<span class="lbl"> 받은 리포트</span></button>
+    <button class="chip-btn" id="btn-scrap">📌<span class="lbl"> 스크랩북</span></button>
+    <button class="chip-btn" id="btn-wrong">📝<span class="lbl"> 오답노트</span></button>
+    <button class="chip-btn" id="btn-badges">🏅<span class="lbl"> 업적</span></button>
+    <button class="chip-btn" id="btn-board">🏆<span class="lbl"> 리더보드</span></button>
+    <button class="chip-btn" id="btn-settings" aria-label="설정">⚙️</button>
+  </header>
+
+  <div class="main">
+    <div class="stage" id="stage">
+      <canvas id="office" width="320" height="224"></canvas>
+      <div id="bubbles"></div>
+      <span class="stage-tip">팀원이나 내 책상을 눌러 보세요</span>
+    </div>
+    <aside class="side">
+      <section class="panel"><h2>팀원</h2><div id="roster"></div></section>
+      <section class="panel"><h2>오늘의 오피스 로그</h2><ul class="log" id="log"></ul></section>
+      <section class="panel"><h2>모은 트렌드로 바로 만들기</h2>
+        <div class="tools"><a href="index.html">🃏 카드뉴스</a><a href="blog.html">✍️ 블로그 글</a><a href="poses.html">🧍 캐릭터 포즈</a><a href="#" id="tool-md">📋 스크랩 복사</a></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal" role="dialog" aria-modal="true"></div></div>
+<button class="fab" id="btn-fb" type="button">💬 의견 보내기</button>
+<div class="toast" id="toast" role="status"></div>
+<section class="board-view" id="board-view" hidden aria-label="리더보드"><div class="bv-wrap">
+  <header class="bv-head"><button class="chip-btn" id="board-back">← 사무실로</button><h2 class="px">🏆 리더보드</h2><button class="chip-btn" id="board-refresh" aria-label="새로 불러오기">↻</button></header>
+  <div id="board-main"></div>
+</div></section>
+<div class="coach" id="coach" hidden><div class="coach-spot" id="coach-spot"></div><div class="coach-card" id="coach-card" role="dialog" aria-live="polite"></div></div>
+
+<script src="office/reports-data.js"></script>
+<script>
+"use strict";
+/* ═════════════ 기본 설정 ═════════════ */
+const API = String(window.CUTTORY_API || "").replace(/\/$/, "");
+const DATA = window.OFFICE_DATA || { reports: {} };
+const KINDS = ["daily", "weekly", "monthly", "quarterly"];
+const KIND_NAME = { daily: "데일리", weekly: "위클리", monthly: "먼슬리", quarterly: "분기" };
+const KIND_COLOR = { daily: "#ff6b6b", weekly: "#4dabf7", monthly: "#3ccf91", quarterly: "#a98bfa" };
+const XP_READ = { daily: 10, weekly: 25, monthly: 40, quarterly: 60 };
+const OFF_HOUR = 18;
+const STORE_KEY = "trend-office-v1";
+
+// 미리보기: ?at=2026-10-30T09:05 처럼 시각을 정하면 그 시각의 사무실을 보여줘요 (기록은 남기지 않아요)
+const SIM_AT = (location.search.match(/[?&]at=([^&]+)/) || [])[1];
+const SIM_BASE = SIM_AT ? new Date(decodeURIComponent(SIM_AT)) : null, SIM_START = Date.now();
+const SIM = !!(SIM_BASE && !isNaN(SIM_BASE));
+const NOW = () => SIM ? new Date(SIM_BASE.getTime() + (Date.now() - SIM_START)) : new Date();
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const stamp = () => `${ymd(NOW())}T${hm(NOW())}`;
+const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+function isoWeek(d) {
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const wd = (x.getUTCDay() + 6) % 7; x.setUTCDate(x.getUTCDate() - wd + 3);
+  const y = x.getUTCFullYear(), first = new Date(Date.UTC(y, 0, 4));
+  return `${y}-W${pad(1 + Math.round(((x - first) / 864e5 - 3 + ((first.getUTCDay() + 6) % 7)) / 7))}`;
+}
+
+/* ═════════════ 팀원 ═════════════ */
+const TEAM = {
+  daily: {
+    name: "모아", title: "사원", job: "데일리 트렌드 담당", at: [9, 0], when: "매일 09:00",
+    look: { hair: "#2b2135", skin: "#ffd9b8", shirt: "#ff6b6b", shirt2: "#d94f4f", pants: "#2f3554", long: true, pin: "#ffd43b" },
+    deliver: "{me}님! 오늘 아침 트렌드 막 뽑아 왔어요 📰",
+    weekend: "주말판이에요! 가볍게 훑어보세요 🌿",
+    writing: "기사 고르는 중이에요… 금방 가져갈게요!",
+    thanks: "다 읽으셨네요! 내일 아침에도 올게요 🙌",
+    idle: ["오늘 성수에 또 팝업이 열렸대요!", "요즘 릴스는 첫 1초가 전부래요.", "스크랩한 사례, 메모까지 써 두면 면접 때 진짜 든든해요.", "밈은 유통기한이 짧아요. 빨리 써먹어야 해요!"],
+  },
+  weekly: {
+    name: "주원", title: "대리", job: "위클리 이슈 담당", at: [9, 10], when: "매주 월 09:10",
+    look: { hair: "#5a3b22", skin: "#f7d1ad", shirt: "#4dabf7", shirt2: "#2f86d0", pants: "#27304a", tie: "#1d2a4a" },
+    deliver: "{me}님, 지난주에 제일 뜨거웠던 것만 추렸어요.",
+    writing: "지난주 데일리를 다시 훑는 중이에요. 조금만요!",
+    thanks: "한 주 정리 끝! 다음 주 월요일에 봬요.",
+    idle: ["이번 주 데일리, 다 읽으셨어요?", "한 주에 세 번 이상 나온 키워드는 진짜 흐름이에요.", "주간 복습 퀴즈 풀면 경험치가 꽤 쏠쏠해요."],
+  },
+  monthly: {
+    name: "한결", title: "과장", job: "먼슬리 결산 담당", at: [9, 20], when: "매월 1일 09:20",
+    look: { hair: "#1c1c22", skin: "#f1c9a0", shirt: "#3ccf91", shirt2: "#25a571", pants: "#2c2f3d", glasses: true },
+    deliver: "{me}님, 한 달 치 흐름을 한 장으로 정리했어요.",
+    writing: "한 달 치 리포트를 엑셀로 돌리는 중… ☕",
+    thanks: "좋아요. 다음 달 1일에 또 결산해 올게요.",
+    idle: ["월초엔 지난달 캠페인 성적표가 나와요.", "한 달을 봐야 반짝 유행인지 진짜 흐름인지 보여요.", "자소서에 쓸 사례는 먼슬리에서 고르는 게 편해요."],
+  },
+  quarterly: {
+    name: "윤슬", title: "차장", job: "분기 리포트 리서처", at: [9, 30], when: "분기 첫날 09:30",
+    look: { hair: "#8a4f3a", skin: "#ffdcc2", shirt: "#a98bfa", shirt2: "#8665e0", pants: "#33294d", long: true, glasses: true },
+    deliver: "{me}님, 이번 분기 큰 그림 가져왔어요.",
+    writing: "석 달 치를 묶는 중이라 시간이 좀 걸려요!",
+    thanks: "분기 결산 끝! 다음 분기에 또 봬요.",
+    idle: ["분기 리포트는 면접 '최근 관심 트렌드' 질문의 정답지예요.", "큰 흐름을 알면 작은 밈도 다르게 보여요.", "다음 분기 전망, 미리 메모해 두세요."],
+  },
+};
+const DEFAULT_NAME = Object.fromEntries(KINDS.map(k => [k, TEAM[k].name]));
+const ME_LOOKS = [
+  { hair: "#3a2a1e", skin: "#ffd9b8", shirt: "#ffc94d", shirt2: "#e0a92b", pants: "#2f3554" },
+  { hair: "#121212", skin: "#f3cba5", shirt: "#ffffff", shirt2: "#d7d7e6", pants: "#3a3f5c", tie: "#ff6b6b" },
+  { hair: "#9b4f2f", skin: "#ffe0c7", shirt: "#ff9cc2", shirt2: "#e57aa3", pants: "#3b3355", long: true },
+  { hair: "#2e3a5c", skin: "#f7d1ad", shirt: "#7ad0c5", shirt2: "#4fb0a4", pants: "#2c2f3d", glasses: true },
+];
+const COFFEE_LINES = ["커피 한 잔 하고 올게요 ☕", "카페인 충전!", "아아 한 잔이면 기사 열 개 더 읽어요."];
+const LOUNGE_LINES = ["잠깐 쉬어요 🛋", "오늘 본 광고 중에 뭐가 제일 좋았어요?", "이 밈 아세요? ㅋㅋ"];
+
+/* ═════════════ 직급·업적 ═════════════ */
+const LEVELS = [
+  { xp: 0, title: "인턴", unlock: "기본 사무실" },
+  { xp: 30, title: "사원", unlock: "화분 두 개" },
+  { xp: 80, title: "주임", unlock: "커피머신", perk: "팀원들이 가끔 커피를 타러 가요" },
+  { xp: 150, title: "대리", unlock: "화이트보드", perk: "화이트보드를 누르면 오늘의 키워드를 볼 수 있어요" },
+  { xp: 250, title: "과장", unlock: "책장", perk: "책장을 누르면 스크랩북이 열려요" },
+  { xp: 380, title: "차장", unlock: "소파와 러그" },
+  { xp: 540, title: "부장", unlock: "헤드라인 전광판", perk: "벽 전광판에 오늘 데일리 헤드라인이 흘러가요" },
+  { xp: 740, title: "팀장", unlock: "트로피 진열장", perk: "진열장을 누르면 업적이 열려요" },
+  { xp: 1000, title: "본부장", unlock: "휴게 공간", perk: "오후 3시엔 팀원들이 휴게 공간에서 쉬어요" },
+  { xp: 1300, title: "CMO", unlock: "루프탑 전망 창문과 사무실 고양이" },
+];
+const BADGES = [
+  { id: "first", icon: "📄", name: "첫 보고", desc: "리포트 처음 끝까지 읽기", color: "#bdf0d8", goal: 1, count: () => Object.keys(save.read).length },
+  { id: "s3", icon: "🔥", name: "작심삼일 탈출", desc: "3일 연속 데일리 읽기", color: "#ffc9a3", goal: 3, count: () => bestStreak() },
+  { id: "s7", icon: "🔥", name: "일주일 개근", desc: "7일 연속 데일리 읽기", color: "#ff9f80", goal: 7, count: () => bestStreak() },
+  { id: "s30", icon: "👑", name: "한 달 개근", desc: "30일 연속 데일리 읽기", color: "#ffd86b", goal: 30, count: () => bestStreak() },
+  { id: "kinds", icon: "🗂️", name: "올라운더", desc: "데일리·위클리·먼슬리·분기 모두 읽기", color: "#d2c3ff", goal: 4, count: () => KINDS.filter(k => Object.keys(save.read).some(x => x.startsWith(k + "/"))).length },
+  { id: "weekend", icon: "🌿", name: "주말 출근", desc: "주말판 데일리 읽기", color: "#b6ecff", goal: 1, count: () => Object.keys(save.read).filter(x => { const r = findReport(...x.split("/")); return r && r.doc.edition === "weekend"; }).length },
+  { id: "p3", icon: "💯", name: "만점 3회", desc: "확인 퀴즈 만점 3번", color: "#ffc2d6", goal: 3, count: () => save.perfect },
+  { id: "p10", icon: "🧠", name: "퀴즈 마스터", desc: "확인 퀴즈 만점 10번", color: "#f59ac1", goal: 10, count: () => save.perfect },
+  { id: "sc10", icon: "📌", name: "스크랩 10개", desc: "카드 10개 스크랩", color: "#ffe7a3", goal: 10, count: () => Object.keys(save.scraps).length },
+  { id: "sc30", icon: "📚", name: "트렌드 수집가", desc: "카드 30개 스크랩", color: "#e6c27a", goal: 30, count: () => Object.keys(save.scraps).length },
+  { id: "id5", icon: "💡", name: "아이디어 뱅크", desc: "세 칸 메모를 채운 완성 아이디어 5개", color: "#fff38f", goal: 5, count: () => ideaCount() },
+  { id: "grow5", icon: "🌱", name: "생각 키우기", desc: "아이디어에 생각 5번 덧붙이기", color: "#a8e6c4", goal: 5, count: () => Object.values(save.scraps).reduce((n, s) => n + (s.notes || []).length, 0) },
+  { id: "wr10", icon: "📝", name: "오답 정복", desc: "오답노트 문제 10개 해결", color: "#b8ceff", goal: 10, count: () => save.wrongCleared },
+  { id: "wk4", icon: "🗓", name: "복습왕", desc: "주간 복습 4주 풀기", color: "#9cc0ff", goal: 4, count: () => Object.keys(save.weekRev).length },
+];
+// 모은 스크랩·아이디어로 컷토리 도구를 써 보라고 권하는 순간
+const PROMOS = [
+  { key: "card5", at: () => Object.keys(save.scraps).length >= 5, icon: "🃏", head: "스크랩이 5개 모였어요!", body: "모은 사례로 카드뉴스 한 편을 만들어 보면 포트폴리오가 돼요.", btn: "카드뉴스 만들기", url: "index.html" },
+  { key: "blog3", at: () => ideaCount() >= 3, icon: "✍️", head: "완성 아이디어가 3개예요", body: "아이디어를 블로그 글로 정리해 두면 면접 때 바로 꺼내 쓸 수 있어요.", btn: "블로그 글 쓰기", url: "blog.html" },
+];
+
+/* ═════════════ 저장 ═════════════ */
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
+};
+const blankSave = () => ({ v: 1, me: "", look: 0, target: "", joinedAt: "", xp: 0, read: {}, readDays: {}, quiz: {}, perfect: 0, wrong: {}, wrongCleared: 0, weekRev: {}, scraps: {}, badges: {}, arrived: {}, teamNames: {}, tour: 0, promos: {}, log: {}, board: null });
+function parseSave(raw) { try { const s = JSON.parse(raw); return s && s.v ? Object.assign(blankSave(), s) : null; } catch { return null; } }
+let save = parseSave(store.get(STORE_KEY)) || blankSave();
+let boardTimer = null;
+function persist() {
+  if (SIM) return;
+  store.set(STORE_KEY, JSON.stringify(save));
+  clearTimeout(boardTimer); boardTimer = setTimeout(pushScore, 4000);
+}
+const who = k => `${(save.teamNames || {})[k] || TEAM[k].name} ${TEAM[k].title}`;
+const meName = () => save.me || "팀장";
+
+/* ═════════════ 리포트 데이터 ═════════════ */
+const reportsOf = k => (DATA.reports[k] || []);
+const findReport = (k, id) => reportsOf(k).find(r => r.id === id);
+const latestOf = k => reportsOf(k).slice(-1)[0];
+const rkey = (k, id) => `${k}/${id}`;
+const isRead = (k, id) => !!save.read[rkey(k, id)];
+const unreadOf = k => reportsOf(k).filter(r => !isRead(k, r.id));
+// 이번 출근 때 들고 와야 하는 리포트 아이디 (오늘이 보고하는 날이 아니면 null)
+function dueId(k, d) {
+  if (k === "daily") return ymd(d);
+  if (k === "weekly") return d.getDay() === 1 ? isoWeek(addDays(d, -7)) : null;
+  const prev = addDays(d, -1);
+  if (k === "monthly") return d.getDate() === 1 ? `${prev.getFullYear()}-${pad(prev.getMonth() + 1)}` : null;
+  return d.getDate() === 1 && d.getMonth() % 3 === 0 ? `${prev.getFullYear()}-Q${Math.floor(prev.getMonth() / 3) + 1}` : null;
+}
+
+/* ═════════════ 경험치·레벨 ═════════════ */
+const level = (xp = save.xp) => LEVELS.reduce((lv, L, i) => xp >= L.xp ? i + 1 : lv, 1);
+function gainXp(n, why) {
+  if (!n) return;
+  const before = level();
+  save.xp += n; addLog(`+${n} XP · ${why}`); persist(); renderHud();
+  toast(`+${n} XP · ${why}`);
+  const after = level();
+  if (after > before) setTimeout(() => showLevelUp(after), 900);
+}
+function readDaysSorted() { return Object.keys(save.readDays).sort(); }
+function streakNow() {
+  let n = 0, d = NOW();
+  if (!save.readDays[ymd(d)]) d = addDays(d, -1);
+  while (save.readDays[ymd(d)]) { n++; d = addDays(d, -1); }
+  return n;
+}
+function bestStreak() {
+  let best = 0, run = 0, prev = null;
+  for (const s of readDaysSorted()) {
+    const d = new Date(s + "T12:00:00");
+    run = prev && Math.round((d - prev) / 864e5) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = d;
+  }
+  return best;
+}
+const ideaDone = s => !!(s && (s.obs || "").trim() && (s.why || "").trim() && (s.idea || "").trim());
+const ideaCount = () => Object.values(save.scraps).filter(ideaDone).length;
+function checkBadges() {
+  for (const b of BADGES) if (!save.badges[b.id] && b.count() >= b.goal) {
+    save.badges[b.id] = ymd(NOW()); persist();
+    setTimeout(() => toast(`🏅 업적 달성: ${b.icon} ${b.name}`), 1600);
+    addLog(`업적 달성: ${b.name}`);
+  }
+  for (const p of PROMOS) if (!save.promos[p.key] && p.at()) { save.promos[p.key] = "shown"; persist(); }
+}
+
+/* ═════════════ 로그 ═════════════ */
+function addLog(text, time) {
+  const day = ymd(NOW());
+  (save.log[day] = save.log[day] || []).push([time || hm(NOW()), text]);
+  for (const d of Object.keys(save.log).sort().slice(0, -7)) delete save.log[d];
+  renderLog();
+}
+
+/* ═════════════ 픽셀 그림 ═════════════ */
+const cvs = document.getElementById("office"), ctx = cvs.getContext("2d");
+ctx.imageSmoothingEnabled = false;
+const W = 320, H = 224;
+function R(c, x, y, w, h, color) { c.fillStyle = color; c.fillRect(Math.round(x), Math.round(y), w, h); }
+
+// 12×18 캐릭터. dir: down(앞) / up(뒤). step: 걸음 0/1. sit: 앉은 자세(다리 생략)
+function sprite(c, x, y, L, dir = "down", step = 0, o = {}) {
+  x = Math.round(x); y = Math.round(y);
+  const dark = "#1b1a24", back = dir === "up";
+  // 머리
+  R(c, x + 3, y, 6, 1, L.hair); R(c, x + 2, y + 1, 8, 2, L.hair);
+  if (back) { R(c, x + 2, y + 3, 8, 4, L.hair); if (L.long) R(c, x + 2, y + 7, 8, 3, L.hair); }
+  else {
+    R(c, x + 3, y + 3, 6, 4, L.skin); R(c, x + 2, y + 3, 1, 3, L.hair); R(c, x + 9, y + 3, 1, 3, L.hair);
+    R(c, x + 3, y + 2, 6, 1, L.hair);
+    if (L.long) { R(c, x + 1, y + 2, 1, 7, L.hair); R(c, x + 10, y + 2, 1, 7, L.hair); R(c, x + 2, y + 6, 1, 3, L.hair); R(c, x + 9, y + 6, 1, 3, L.hair); }
+    const blink = o.blink;
+    R(c, x + 4, y + 4, 1, blink ? 0.5 : 1, dark); R(c, x + 7, y + 4, 1, blink ? 0.5 : 1, dark);
+    if (L.glasses) { R(c, x + 3, y + 4, 2, 1, dark); R(c, x + 7, y + 4, 2, 1, dark); R(c, x + 5, y + 4, 2, 1, "#555"); R(c, x + 4, y + 4, 1, 1, "#9fd3ff"); R(c, x + 7, y + 4, 1, 1, "#9fd3ff"); }
+    R(c, x + 3, y + 5, 1, 1, "#ff9e9e"); R(c, x + 8, y + 5, 1, 1, "#ff9e9e");
+    R(c, x + 5, y + 6, 2, 1, o.happy ? "#c4473a" : "#d98c7a");
+    if (L.pin) R(c, x + 8, y + 1, 2, 1, L.pin);
+  }
+  // 목·몸통·팔
+  R(c, x + 5, y + 7, 2, 1, L.skin);
+  R(c, x + 2, y + 8, 8, 5, L.shirt);
+  R(c, x + 1, y + 8, 1, 4, L.shirt2); R(c, x + 10, y + 8, 1, 4, L.shirt2);
+  R(c, x + 1, y + 12, 1, 1, L.skin); R(c, x + 10, y + 12, 1, 1, L.skin);
+  if (!back && L.tie) R(c, x + 5, y + 8, 2, 4, L.tie);
+  if (!back) R(c, x + 4, y + 8, 4, 1, L.shirt2);
+  if (o.paper) { R(c, x + 7, y + 9, 5, 5, "#ffffff"); R(c, x + 8, y + 10, 3, 1, "#9aa0c0"); R(c, x + 8, y + 12, 3, 1, "#9aa0c0"); }
+  if (o.cup) { R(c, x + 9, y + 10, 3, 3, "#f5f5f5"); R(c, x + 9, y + 10, 3, 1, "#7a4a2a"); }
+  if (o.sit) return;
+  // 다리·신발
+  const l = step ? 1 : 0, r = step ? 0 : 1;
+  R(c, x + 3, y + 13, 6, 1, L.pants);
+  R(c, x + 3, y + 14, 2, 3 - l, L.pants); R(c, x + 7, y + 14, 2, 3 - r, L.pants);
+  R(c, x + 3, y + 17 - l, 2, 1, dark); R(c, x + 7, y + 17 - r, 2, 1, dark);
+}
+function avatar(L, scale = 4) {
+  const c = document.createElement("canvas"); c.width = 12 * scale; c.height = 18 * scale;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.scale(scale, scale);
+  sprite(g, 0, 0, L, "down", 0, { happy: true });
+  return c.toDataURL();
+}
+const AV = {}; KINDS.forEach(k => AV[k] = avatar(TEAM[k].look));
+const meLook = () => ME_LOOKS[save.look] || ME_LOOKS[0];
+let ME_AV = avatar(meLook());
+
+// 자리
+const DESKS = { daily: { x: 26, y: 116 }, weekly: { x: 84, y: 116 }, monthly: { x: 204, y: 116 }, quarterly: { x: 262, y: 116 } };
+const MY_DESK = { x: 122, y: 62, w: 76, h: 18 };
+const AISLE = 176, MID = 154, DOOR = { x: 20, y: 206 };
+const COFFEE = { x: 282, y: 70 }, LOUNGE = [{ x: 226, y: 182 }, { x: 290, y: 182 }, { x: 240, y: 200 }, { x: 278, y: 200 }];
+const seatOf = k => ({ x: DESKS[k].x + 10, y: 128 });
+const spotOf = k => ({ x: MID + { daily: -34, weekly: -14, monthly: 6, quarterly: 26 }[k], y: 84 });
+
+function drawWindow(x, y, w, h, now, lv) {
+  const t = now.getHours() + now.getMinutes() / 60;
+  const sky = t < 6 || t >= 19.5 ? ["#141a3a", "#0d1128"] : t < 8 ? ["#f7b3a1", "#9fb6f0"] : t < 16.5 ? ["#8fd3ff", "#cbeeff"] : ["#ff9f6b", "#ffcf8a"];
+  R(ctx, x - 2, y - 2, w + 4, h + 4, "#5c5f86");
+  R(ctx, x, y, w, h, sky[1]); R(ctx, x, y, w, h / 2, sky[0]);
+  const night = t < 6 || t >= 19.5;
+  if (night) { for (let i = 0; i < 6; i++) R(ctx, x + (i * 17 + 5) % w, y + (i * 7 + 3) % (h / 2), 1, 1, "#fff8c4"); }
+  else if (t >= 8 && t < 16.5) { const cx = (x + (now.getMinutes() * 0.4) % w); R(ctx, Math.min(cx, x + w - 12), y + 5, 10, 3, "#ffffff"); R(ctx, Math.min(cx, x + w - 12) + 2, y + 3, 6, 2, "#ffffff"); }
+  // 빌딩 실루엣 (CMO는 루프탑 전망이라 더 많이, 밤엔 금빛 창문)
+  const bld = lv >= 10 ? [[0, 10, 8], [9, 16, 7], [17, 8, 9], [27, 19, 8], [36, 12, 10], [47, 15, 9]] : [[2, 8, 9], [14, 12, 8], [30, 7, 10], [42, 10, 9]];
+  for (const [bx, bh, bw] of bld) {
+    if (bx + bw > w) continue;
+    R(ctx, x + bx, y + h - bh, bw, bh, night ? "#232850" : "#6f7aa6");
+    if (night) for (let j = 2; j < bh - 1; j += 3) for (let i = 1; i < bw - 1; i += 3) if ((bx + i + j) % 4) R(ctx, x + bx + i, y + h - bh + j, 1, 1, lv >= 10 ? "#ffcf5a" : "#ffe9a0");
+  }
+  R(ctx, x + w / 2 - 1, y, 2, h, "#5c5f86"); R(ctx, x, y + h / 2 - 1, w, 2, "#5c5f86");
+  R(ctx, x - 3, y + h + 2, w + 6, 2, "#7d80aa");
+}
+function drawRoom(now, lv) {
+  // 벽
+  R(ctx, 0, 0, W, 46, "#c9c4e8"); R(ctx, 0, 0, W, 2, "#b3add8");
+  for (let x = 0; x < W; x += 16) R(ctx, x, 2, 1, 44, "#c0bbe2");
+  R(ctx, 0, 44, W, 4, "#8f89c0");
+  // 바닥
+  for (let y = 48; y < H; y += 12) for (let x = 0; x < W; x += 24) {
+    const off = ((y / 12) % 2) * 12;
+    R(ctx, x - off, y, 24, 12, ((x + off) / 12 + y / 12) % 2 ? "#b78f6c" : "#ae8664");
+    R(ctx, x - off, y + 11, 24, 1, "#9c7656");
+  }
+  drawWindow(18, 8, 54, 28, now, lv); drawWindow(248, 8, 54, 28, now, lv);
+  // 시계
+  R(ctx, 152, 10, 16, 16, "#5c5f86"); R(ctx, 153, 11, 14, 14, "#fdfbf5");
+  const hr = (now.getHours() % 12 + now.getMinutes() / 60) / 12 * Math.PI * 2, mn = now.getMinutes() / 60 * Math.PI * 2;
+  ctx.strokeStyle = "#22202c"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(160, 18); ctx.lineTo(160 + Math.sin(hr) * 4, 18 - Math.cos(hr) * 4); ctx.stroke();
+  ctx.strokeStyle = "#d94f4f"; ctx.beginPath(); ctx.moveTo(160, 18); ctx.lineTo(160 + Math.sin(mn) * 6, 18 - Math.cos(mn) * 6); ctx.stroke();
+  // 문
+  R(ctx, DOOR.x - 6, 198, 28, 26, "#6b4a35"); R(ctx, DOOR.x - 4, 200, 24, 24, "#8a6246"); R(ctx, DOOR.x + 14, 212, 2, 3, "#ffd43b");
+  R(ctx, DOOR.x - 8, 220, 32, 4, "#4a3a8a");
+}
+function drawDesk(x, y, w, color, laptop, glow) {
+  R(ctx, x, y + 4, w, 10, "#7a5338"); R(ctx, x, y + 2, w, 3, "#93684a"); R(ctx, x, y + 14, w, 2, "#5a3c28");
+  R(ctx, x + 2, y + 16, 2, 4, "#5a3c28"); R(ctx, x + w - 4, y + 16, 2, 4, "#5a3c28");
+  if (laptop) { R(ctx, x + w / 2 - 7, y - 6, 14, 9, "#2b2d42"); R(ctx, x + w / 2 - 6, y - 5, 12, 7, glow ? "#9fe3ff" : "#4a5072"); R(ctx, x + w / 2 - 8, y + 3, 16, 2, "#3a3d58"); }
+  if (color) R(ctx, x + 3, y + 3, 6, 2, color);
+}
+function drawChair(x, y) { R(ctx, x, y, 16, 3, "#3d3f66"); R(ctx, x + 1, y + 3, 14, 7, "#5e6196"); R(ctx, x + 2, y + 10, 2, 3, "#2a2c48"); R(ctx, x + 12, y + 10, 2, 3, "#2a2c48"); }
+function drawPlant(x, y, t) {
+  const sway = Math.round(Math.sin(t / 900) * 0.6);
+  R(ctx, x + 2, y + 12, 10, 8, "#c56b45"); R(ctx, x + 1, y + 11, 12, 2, "#a8573a");
+  R(ctx, x + 5 + sway, y, 4, 12, "#3e9e5c"); R(ctx, x + 1 + sway, y + 3, 5, 4, "#4fbf70"); R(ctx, x + 8 + sway, y + 2, 5, 4, "#4fbf70"); R(ctx, x + 3, y + 7, 4, 3, "#3e9e5c"); R(ctx, x + 8, y + 7, 4, 3, "#3e9e5c");
+}
+function drawDecor(lv, now, t) {
+  if (lv >= 2) { drawPlant(4, 54, t); drawPlant(300, 196, t); }
+  if (lv >= 3) { // 커피머신
+    R(ctx, 290, 62, 28, 4, "#93684a"); R(ctx, 290, 66, 28, 20, "#7a5338");
+    R(ctx, 296, 44, 16, 18, "#3a3d58"); R(ctx, 298, 46, 12, 5, "#22243a"); R(ctx, 300, 47, 3, 2, (t / 500 | 0) % 2 ? "#3ccf91" : "#1f6b4c");
+    R(ctx, 302, 56, 4, 5, "#f5f5f5");
+    if ((t / 700 | 0) % 3 === 0) R(ctx, 303, 52 - (t / 200 | 0) % 3, 1, 2, "#ffffffaa");
+  }
+  if (lv >= 4) { // 화이트보드
+    R(ctx, 84, 7, 50, 30, "#8f8fae"); R(ctx, 86, 9, 46, 26, "#fbfbff");
+    R(ctx, 89, 13, 18, 2, "#ff6b6b"); R(ctx, 89, 18, 30, 1, "#4dabf7"); R(ctx, 89, 22, 24, 1, "#4dabf7"); R(ctx, 89, 26, 34, 1, "#3ccf91");
+    R(ctx, 112, 12, 14, 3, "#ffc94d"); R(ctx, 96, 36, 26, 2, "#6c6c88");
+  }
+  if (lv >= 5) { // 책장
+    R(ctx, 0, 76, 18, 38, "#6b4a35"); for (let i = 0; i < 4; i++) { R(ctx, 1, 78 + i * 9, 16, 1, "#4e3626"); for (let j = 0; j < 4; j++) R(ctx, 2 + j * 4, 79 + i * 9, 3, 7, ["#ff6b6b", "#4dabf7", "#ffc94d", "#3ccf91", "#a98bfa"][(i + j) % 5]); }
+  }
+  if (lv >= 6) { // 러그·소파
+    R(ctx, 216, 186, 92, 34, "#c56b8a"); R(ctx, 218, 188, 88, 30, "#e08aa6"); for (let x = 222; x < 304; x += 8) R(ctx, x, 202, 4, 2, "#f6c1d1");
+    R(ctx, 236, 205, 48, 4, "#4c5aa8"); R(ctx, 234, 209, 52, 8, "#5f6fd0"); R(ctx, 232, 205, 4, 12, "#4c5aa8"); R(ctx, 284, 205, 4, 12, "#4c5aa8");
+  }
+  if (lv >= 7) { // 전광판
+    R(ctx, 182, 9, 58, 14, "#22202c"); R(ctx, 184, 11, 54, 10, "#0f0e18");
+    const d = latestOf("daily"), text = d ? `★ ${d.doc.headline} ★` : "★ TREND OFFICE ★";
+    ctx.save(); ctx.beginPath(); ctx.rect(184, 11, 54, 10); ctx.clip();
+    ctx.font = "8px Galmuri11, monospace"; ctx.fillStyle = "#ffc94d"; ctx.textBaseline = "top";
+    const tw = ctx.measureText(text).width + 30, off = (t / 45) % tw;
+    ctx.fillText(text, 238 - off, 12); ctx.fillText(text, 238 - off + tw, 12); ctx.restore();
+  }
+  if (lv >= 8) { // 트로피 진열장
+    R(ctx, 186, 26, 50, 14, "#6b4a35"); R(ctx, 187, 27, 48, 12, "#d8d0f0"); R(ctx, 186, 39, 50, 2, "#4e3626");
+    [[190, "#ffc94d"], [202, "#c9d2e3"], [214, "#e0955e"], [226, "#ffc94d"]].forEach(([x, c], i) => { if (i < 1 + Math.min(3, Object.keys(save.badges).length / 3 | 0)) { R(ctx, x, 29, 6, 4, c); R(ctx, x + 2, 33, 2, 3, c); R(ctx, x + 1, 36, 4, 2, c); } });
+  }
+  if (lv >= 9) { // 휴게 공간 테이블
+    R(ctx, 250, 188, 20, 8, "#93684a"); R(ctx, 252, 196, 2, 4, "#5a3c28"); R(ctx, 266, 196, 2, 4, "#5a3c28"); R(ctx, 255, 186, 3, 3, "#f5f5f5"); R(ctx, 262, 186, 3, 3, "#ff6b6b");
+  }
+  if (lv >= 10) { // 고양이 (창틀 위)
+    const tail = Math.round(Math.sin(t / 400) * 1.5);
+    R(ctx, 280, 30, 10, 6, "#f0a35e"); R(ctx, 287, 27, 6, 5, "#f0a35e"); R(ctx, 287, 26, 1, 1, "#f0a35e"); R(ctx, 292, 26, 1, 1, "#f0a35e");
+    R(ctx, 288, 28, 1, 1, "#22202c"); R(ctx, 291, 28, 1, 1, "#22202c"); R(ctx, 277 + tail, 28, 3, 2, "#e08a45"); R(ctx, 282, 32, 4, 1, "#e08a45");
+  }
+}
+
+/* ═════════════ 팀원 움직임 ═════════════ */
+const chars = {};
+KINDS.forEach(k => chars[k] = { k, x: DOOR.x, y: DOOR.y, dir: "up", path: [], mode: "away", visible: false, step: 0, then: null, delay: 0 });
+const WALKING = ["arriving", "toDeliver", "returning", "leaving", "toCoffee", "fromCoffee", "toLounge", "fromLounge"];
+const toAisle = c => [{ x: c.x, y: AISLE }];
+function walk(k, mode, path, then) { const c = chars[k]; c.mode = mode; c.path = path; c.then = then || null; }
+function goSeat(k, after) { const c = chars[k], s = seatOf(k); walk(k, "returning", [...toAisle(c), { x: s.x, y: AISLE }, s], () => { c.dir = "up"; c.mode = after || "working"; }); }
+
+function arrivalTime(k, d) { const t = new Date(d); t.setHours(TEAM[k].at[0], TEAM[k].at[1], 0, 0); return t; }
+const isWeekend = d => d.getDay() === 0 || d.getDay() === 6;
+// 지금 이 팀원이 있어야 할 상태
+function wantMode(k, now) {
+  if (k !== "daily" && isWeekend(now) && !dueId(k, now)) return "away";
+  if (now < arrivalTime(k, now) || now.getHours() >= OFF_HOUR) return "away";
+  const due = dueId(k, now), latest = latestOf(k);
+  if (latest && !isRead(k, latest.id) && (!due || latest.id >= due || !findReport(k, due))) {
+    if (due && !findReport(k, due) && latest.id < due) return "writing";
+    return "deliver";
+  }
+  if (due && !findReport(k, due)) return "writing";
+  if (level() >= 9 && now.getHours() === 15 && now.getMinutes() < 40) return "lounge";
+  return "working";
+}
+function sync(first) {
+  const now = NOW(), today = ymd(now);
+  save.arrived[today] = save.arrived[today] || {};
+  for (const d of Object.keys(save.arrived)) if (d < ymd(addDays(now, -3))) delete save.arrived[d];
+  let queue = 0;
+  for (const k of KINDS) {
+    const c = chars[k], want = wantMode(k, now);
+    if (WALKING.includes(c.mode) || c.mode === "coffee") continue;
+    if (want === "away") {
+      if (c.visible && !first) { c.mode = "leaving"; walk(k, "leaving", [...toAisle(c), { x: DOOR.x, y: AISLE }, { ...DOOR }], () => { c.visible = false; c.mode = "away"; }); say(k, "퇴근합니다! 내일 봬요 👋", 2500); addLog(`${who(k)} 퇴근`); }
+      else if (!c.visible) c.mode = "away";
+      continue;
+    }
+    if (!c.visible) {
+      const s = seatOf(k);
+      if (!save.arrived[today][k] || first === "replay") {
+        if (!SIM) save.arrived[today][k] = true;
+        Object.assign(c, { visible: true, x: DOOR.x, y: DOOR.y, dir: "up", delay: queue++ * 1.6 });
+        walk(k, "arriving", [{ x: DOOR.x, y: AISLE }, { x: s.x, y: AISLE }, s], () => { c.dir = "up"; c.mode = "working"; sync(); });
+        setTimeout(() => say(k, "출근했습니다!", 2200), (queue - 1) * 1600 + 300);
+        if (!(save.log[today] || []).some(l => l[1] === `${who(k)} 출근`)) addLog(`${who(k)} 출근`, hm(arrivalTime(k, now)));
+        continue;
+      }
+      const at = want === "deliver" ? spotOf(k) : want === "lounge" ? LOUNGE[KINDS.indexOf(k)] : s;
+      Object.assign(c, { visible: true, x: at.x, y: at.y, dir: "up", path: [], mode: want });
+      continue;
+    }
+    if (c.mode === want) continue;
+    if (want === "deliver") {
+      const d = spotOf(k);
+      walk(k, "toDeliver", [...toAisle(c), { x: MID, y: AISLE }, { x: MID, y: 100 }, d], () => { c.dir = "up"; c.mode = "deliver"; say(k, "📄 리포트 가져왔어요!", 4000, true); addLog(`${who(k)}의 ${KIND_NAME[k]} 리포트 도착`); renderRoster(); });
+    } else if (want === "lounge") {
+      const l = LOUNGE[KINDS.indexOf(k)];
+      walk(k, "toLounge", [...toAisle(c), { x: l.x, y: AISLE }, l], () => { c.dir = "down"; c.mode = "lounge"; say(k, LOUNGE_LINES[Math.random() * LOUNGE_LINES.length | 0], 3000); });
+    } else if (c.mode === "deliver" || c.mode === "lounge") {
+      const back = c.mode === "deliver" ? [{ x: MID, y: 100 }, { x: MID, y: AISLE }] : toAisle(c);
+      const s = seatOf(k); walk(k, "returning", [...back, { x: s.x, y: AISLE }, s], () => { c.dir = "up"; c.mode = want; });
+    } else c.mode = want;
+  }
+  persist(); renderRoster(); renderHud();
+}
+// 커피 타러 가기 (주임 이상)
+function coffeeBreak() {
+  if (level() < 3 || document.hidden) return;
+  const idle = KINDS.filter(k => chars[k].visible && chars[k].mode === "working");
+  if (!idle.length) return;
+  const k = idle[Math.random() * idle.length | 0], c = chars[k], s = seatOf(k);
+  walk(k, "toCoffee", [...toAisle(c), { x: COFFEE.x, y: AISLE }, COFFEE], () => {
+    c.dir = "up"; c.mode = "coffee"; say(k, COFFEE_LINES[Math.random() * COFFEE_LINES.length | 0], 2500);
+    setTimeout(() => { c.cup = true; c.dir = "down"; walk(k, "fromCoffee", [{ x: COFFEE.x, y: AISLE }, { x: s.x, y: AISLE }, s], () => { c.dir = "up"; c.mode = "working"; setTimeout(() => c.cup = false, 15000); sync(); }); }, 3200);
+  });
+}
+
+/* ═════════════ 말풍선 ═════════════ */
+const bubbleEl = document.getElementById("bubbles"), bubbles = {};
+function say(k, text, ms = 3500, alert) {
+  if (bubbles[k]) bubbles[k].el.remove();
+  const el = document.createElement("div"); el.className = "bubble" + (alert ? " alert" : ""); el.textContent = text;
+  bubbleEl.appendChild(el); bubbles[k] = { el, until: performance.now() + ms };
+}
+
+/* ═════════════ 그리기 루프 ═════════════ */
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  const now = NOW(), lv = level();
+  for (const k of KINDS) {
+    const c = chars[k];
+    if (!c.visible) continue;
+    if (c.delay > 0) { c.delay -= dt; continue; }
+    if (c.path.length) {
+      const p = c.path[0], dx = p.x - c.x, dy = p.y - c.y, dist = Math.hypot(dx, dy), sp = 44 * dt;
+      if (dist <= sp) { c.x = p.x; c.y = p.y; c.path.shift(); if (!c.path.length && c.then) { const f = c.then; c.then = null; f(); } }
+      else { c.x += dx / dist * sp; c.y += dy / dist * sp; c.dir = dy < -0.1 ? "up" : "down"; }
+      c.step = (t / 160 | 0) % 2;
+    } else c.step = 0;
+  }
+  ctx.clearRect(0, 0, W, H);
+  drawRoom(now, lv); drawDecor(lv, now, t);
+  // 내 자리 (나는 책상 뒤에 앞을 보고 앉아 있어요)
+  R(ctx, MID - 8, 42, 16, 10, "#3d3f66");
+  sprite(ctx, MID - 6, 46, meLook(), "down", 0, { sit: true, blink: (t / 3000 | 0) % 7 === 0 && (t % 3000) < 160 });
+  drawDesk(MY_DESK.x, MY_DESK.y, MY_DESK.w, null, false);
+  R(ctx, MY_DESK.x + 6, MY_DESK.y - 4, 16, 9, "#2b2d42"); R(ctx, MY_DESK.x + 7, MY_DESK.y - 3, 14, 7, "#7fc8ff");
+  const waiting = KINDS.reduce((n, k) => n + unreadOf(k).length, 0);
+  for (let i = 0; i < Math.min(waiting, 4); i++) R(ctx, MY_DESK.x + 50 + i, MY_DESK.y - 1 - i * 2, 14, 2, i % 2 ? "#f2efe4" : "#ffffff");
+  R(ctx, MY_DESK.x + 30, MY_DESK.y + 1, 6, 3, "#ff6b6b");
+  // 팀원 책상 + 의자 + 사람 (y 순서대로)
+  const list = KINDS.map(k => ({ k, y: chars[k].visible ? chars[k].y : -1 }));
+  for (const k of KINDS) {
+    const d = DESKS[k], c = chars[k], writing = c.visible && c.mode === "writing" && !c.path.length;
+    drawDesk(d.x, d.y, 32, KIND_COLOR[k], true, writing ? (t / 250 | 0) % 2 : c.visible && c.mode === "working");
+  }
+  for (const k of KINDS) {
+    const d = DESKS[k], c = chars[k], seated = c.visible && !c.path.length && c.x === seatOf(k).x && c.y === seatOf(k).y;
+    if (seated) { sprite(ctx, c.x, c.y, TEAM[k].look, "up", 0, { sit: true, cup: c.cup }); if (c.mode === "writing") { R(ctx, c.x + ((t / 120 | 0) % 2 ? 1 : 9), c.y + 10, 2, 2, TEAM[k].look.skin); } }
+    drawChair(d.x + 8, 138);
+    if (seated) R(ctx, d.x + 8, 138, 16, 3, "#3d3f66");
+  }
+  list.sort((a, b) => a.y - b.y);
+  for (const { k } of list) {
+    const c = chars[k];
+    if (!c.visible) continue;
+    const seated = !c.path.length && c.x === seatOf(k).x && c.y === seatOf(k).y;
+    if (seated) continue;
+    const lounge = c.mode === "lounge" && !c.path.length;
+    sprite(ctx, c.x, c.y, TEAM[k].look, c.dir, c.step, { paper: c.mode === "toDeliver" || c.mode === "deliver", cup: c.cup || lounge, sit: false, happy: lounge });
+    if (c.mode === "deliver" && !c.path.length) { const b = Math.round(Math.sin(t / 220) * 1.5); R(ctx, c.x + 5, c.y - 9 + b, 2, 5, "#ffc94d"); R(ctx, c.x + 5, c.y - 3 + b, 2, 2, "#ffc94d"); }
+  }
+  // 밤에는 살짝 어둡게
+  const hr = now.getHours();
+  if (hr >= 19 || hr < 6) { ctx.fillStyle = "rgba(10,12,40,.28)"; ctx.fillRect(0, 0, W, H); }
+  // 말풍선 위치
+  const rect = cvs.getBoundingClientRect(), sc = rect.width / W;
+  for (const k of Object.keys(bubbles)) {
+    const b = bubbles[k], c = chars[k];
+    if (performance.now() > b.until || !c.visible) { b.el.remove(); delete bubbles[k]; continue; }
+    b.el.style.left = (c.x + 6) * sc + "px"; b.el.style.top = Math.max(26, (c.y - 3) * sc) + "px";
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ═════════════ 사무실 누르기 ═════════════ */
+function canvasPoint(ev) { const r = cvs.getBoundingClientRect(); return { x: (ev.clientX - r.left) / r.width * W, y: (ev.clientY - r.top) / r.height * H }; }
+function hitTest(p) {
+  const lv = level();
+  for (const k of KINDS) { const c = chars[k]; if (c.visible && p.x >= c.x - 3 && p.x <= c.x + 15 && p.y >= c.y - 4 && p.y <= c.y + 20) return ["char", k]; }
+  if (p.x >= MY_DESK.x && p.x <= MY_DESK.x + MY_DESK.w && p.y >= 40 && p.y <= MY_DESK.y + MY_DESK.h) return ["desk"];
+  for (const k of KINDS) { const d = DESKS[k]; if (p.x >= d.x && p.x <= d.x + 32 && p.y >= d.y - 6 && p.y <= d.y + 30) return ["char", k]; }
+  if (lv >= 4 && p.x >= 84 && p.x <= 134 && p.y <= 38) return ["whiteboard"];
+  if (lv >= 7 && p.x >= 182 && p.x <= 240 && p.y >= 8 && p.y <= 23) return ["led"];
+  if (lv >= 8 && p.x >= 186 && p.x <= 236 && p.y >= 24 && p.y <= 41) return ["trophy"];
+  if (lv >= 5 && p.x <= 18 && p.y >= 74 && p.y <= 116) return ["shelf"];
+  if (lv >= 3 && p.x >= 290 && p.y >= 42 && p.y <= 88) return ["coffee"];
+  if (lv >= 10 && p.x >= 276 && p.x <= 294 && p.y >= 24 && p.y <= 37) return ["cat"];
+  if (p.x <= 44 && p.y >= 196) return ["door"];
+  return null;
+}
+cvs.addEventListener("mousemove", ev => { cvs.style.cursor = hitTest(canvasPoint(ev)) ? "pointer" : "default"; });
+cvs.addEventListener("click", ev => {
+  const h = hitTest(canvasPoint(ev)); if (!h) return;
+  ({ char: () => talkTo(h[1]), desk: openArchive, whiteboard: openKeywords, led: () => { const d = latestOf("daily"); d ? openReport("daily", d.id) : toast("아직 데일리가 없어요"); },
+     trophy: openBadges, shelf: openScrapbook, coffee: () => toast("☕ 오늘도 커피머신은 열일 중"), cat: () => toast("🐈 냐옹… (스크랩북 위에서 자고 싶은 눈치예요)"),
+     door: () => toast(`팀원들은 ${OFF_HOUR}시에 이 문으로 퇴근해요`) })[h[0]]();
+});
+function talkTo(k) {
+  const c = chars[k], m = TEAM[k], latest = latestOf(k);
+  if (latest && !isRead(k, latest.id)) return openReport(k, latest.id);
+  if (!c.visible) return latest ? openReport(k, latest.id) : toast(`${who(k)}의 첫 리포트는 ${m.when}에 도착해요`);
+  if (c.mode === "writing") return say(k, m.writing);
+  if (k === "daily" && wrongList().length >= 3 && Math.random() < .5) { say(k, "오답노트에 문제가 쌓였어요. 같이 풀어요! 📝"); return setTimeout(openReview, 900); }
+  if (k === "daily" && dueIdeas().length) { say(k, "일주일 전에 쓴 아이디어, 다시 볼까요? 💡"); return setTimeout(() => openRevisit(dueIdeas()[0][0]), 900); }
+  if (k === "weekly" && dailyWeeks().some(([w, rs]) => !save.weekRev[w] && weekPool(rs).length >= 3)) { say(k, "주간 복습 아직 안 하셨죠? 🗓"); return setTimeout(() => { archTab = "review"; openArchive(); }, 900); }
+  say(k, m.idle[Math.random() * m.idle.length | 0], 4200);
+}
+
+/* ═════════════ 화면 갱신 ═════════════ */
+function renderHud() {
+  const lv = level(), L = LEVELS[lv - 1], next = LEVELS[lv];
+  document.getElementById("hud-lv").textContent = `Lv.${lv}`;
+  document.getElementById("hud-rank").textContent = `${meName()} · ${L.title}`;
+  const pct = next ? (save.xp - L.xp) / (next.xp - L.xp) * 100 : 100;
+  document.getElementById("hud-xpfill").style.width = pct + "%";
+  document.getElementById("hud-xp").textContent = next ? `${save.xp}/${next.xp} XP` : `${save.xp} XP · 최고 직급`;
+  const s = streakNow();
+  document.getElementById("hud-streak").textContent = `🔥 ${s}일`;
+  const n = KINDS.reduce((a, k) => a + unreadOf(k).length, 0);
+  document.getElementById("btn-archive").innerHTML = `📥<span class="lbl"> 받은 리포트</span>${n ? ` <span class="dot"></span>` : ""}`;
+  const w = wrongList().length;
+  document.getElementById("btn-wrong").innerHTML = `📝<span class="lbl"> 오답노트</span>${w ? ` <b style="color:var(--accent)">${w}</b>` : ""}`;
+}
+function statusOf(k) {
+  const c = chars[k], m = TEAM[k], now = NOW(), latest = latestOf(k);
+  if (c.mode === "deliver" || c.mode === "toDeliver") return ["#ffc94d", `${KIND_NAME[k]} 리포트 보고 대기`];
+  if (c.mode === "writing") return ["#4dabf7", "리포트 쓰는 중…"];
+  if (c.mode === "arriving") return ["#3ccf91", "출근하는 중"];
+  if (c.mode === "lounge" || c.mode === "coffee" || c.mode === "toCoffee" || c.mode === "fromCoffee") return ["#3ccf91", "잠깐 휴식 중 ☕"];
+  if (c.visible) return ["#3ccf91", latest && isRead(k, latest.id) ? "근무 중 · 리포트 읽음 ✓" : "근무 중"];
+  const unread = latest && !isRead(k, latest.id);
+  if (unread) return ["#ffc94d", "책상 위에 안 읽은 리포트가 있어요"];
+  if (now.getHours() >= OFF_HOUR) return ["#6d7099", "퇴근했어요"];
+  if (k !== "daily" && isWeekend(now)) return ["#6d7099", "주말 휴무 🌴"];
+  return ["#6d7099", `${pad(m.at[0])}:${pad(m.at[1])} 출근 예정`];
+}
+function renderRoster() {
+  document.getElementById("roster").innerHTML = KINDS.map(k => {
+    const [col, txt] = statusOf(k), unread = unreadOf(k).length;
+    return `<button class="member${unread ? " has-new" : ""}" data-k="${k}"><img src="${AV[k]}" alt="">
+      <span><span class="nm">${esc(who(k))} <span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}</span>${unread ? `<span class="kb" style="background:#ffc94d;color:#3b2a05">새 ${unread}</span>` : ""}</span>
+      <span class="jb">${TEAM[k].job} · ${TEAM[k].when}</span>
+      <span class="st"><i style="background:${col}"></i>${txt}</span></span></button>`;
+  }).join("");
+  document.querySelectorAll("#roster .member").forEach(b => b.onclick = () => talkTo(b.dataset.k));
+}
+function renderLog() {
+  const day = ymd(NOW()), items = (save.log[day] || []).slice().reverse();
+  document.getElementById("log").innerHTML = items.length ? items.slice(0, 40).map(([t, s]) => `<li><time>${esc(t)}</time><span>${esc(s)}</span></li>`).join("")
+    : `<li><span>${NOW().getHours() >= OFF_HOUR ? "오늘 사무실은 문을 닫았어요. 안 읽은 리포트는 📥 받은 리포트에서 볼 수 있어요." : `아직 조용한 사무실이에요. ${pad(TEAM.daily.at[0])}시에 ${esc(who("daily"))}이 출근해요.`}</span></li>`;
+}
+function tickClock() {
+  const d = NOW();
+  document.getElementById("clock").textContent = `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]}) ${hm(d)}${SIM ? " · 미리보기" : ""}`;
+}
+
+/* ═════════════ 모달 ═════════════ */
+const modalBg = document.getElementById("modal-bg"), modal = document.getElementById("modal");
+function openModal(html, small) {
+  modal.className = "modal" + (small ? " small" : ""); modal.innerHTML = html;
+  modalBg.classList.add("open"); modalBg.scrollTop = 0; document.body.style.overflow = "hidden";
+  modal.querySelectorAll("[data-close]").forEach(b => b.onclick = closeModal);
+}
+function closeModal() { modalBg.classList.remove("open"); modal.innerHTML = ""; document.body.style.overflow = ""; renderHud(); renderRoster(); }
+modalBg.addEventListener("click", e => { if (e.target === modalBg) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && modalBg.classList.contains("open")) closeModal(); });
+const head = (img, from, line) => `<div class="m-head"><img src="${img}" alt=""><div class="say"><div class="from">${from}</div><div class="line">${line}</div></div><button class="x" data-close aria-label="닫기">×</button></div>`;
+let toastT;
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
+function confetti() {
+  const cols = ["#ff6b6b", "#ffc94d", "#4dabf7", "#3ccf91", "#a98bfa"];
+  for (let i = 0; i < 46; i++) {
+    const e = document.createElement("i"); e.className = "confetti";
+    e.style.left = Math.random() * 100 + "vw"; e.style.background = cols[i % 5]; e.style.animationDuration = 1.4 + Math.random() * 1.6 + "s"; e.style.animationDelay = Math.random() * .4 + "s";
+    document.body.appendChild(e); setTimeout(() => e.remove(), 3600);
+  }
+}
+
+/* ═════════════ 리포트 보기 ═════════════ */
+const skey = (k, id, si, ii) => `${k}/${id}/${si}/${ii}`;
+const targetQ = () => save.target ? `🚀 ${save.target}라면 어떻게 할까?` : "🚀 나라면 어떻게 할까?";
+function memoHtml(key) {
+  const s = save.scraps[key]; if (!s) return "";
+  const notes = s.notes || [];
+  return `<div class="memo" data-memo="${esc(key)}">
+    <label>👀 무엇이 눈에 띄었나</label><textarea data-f="obs" rows="2" placeholder="가장 먼저 눈에 들어온 장면이나 숫자">${esc(s.obs || "")}</textarea>
+    <label>🔍 왜 먹혔을까</label><textarea data-f="why" rows="2" placeholder="이 사례가 통한 구조나 장치">${esc(s.why || "")}</textarea>
+    <label>${esc(targetQ())}</label><textarea data-f="idea" rows="2" placeholder="내 아이디어 한두 줄">${esc(s.idea || "")}</textarea>
+    <div class="done">${ideaDone(s) ? "⭐ 완성 아이디어" : "세 칸을 모두 채우면 ⭐ 완성 아이디어 +5 XP"}</div>
+    ${notes.length ? `<ul class="grow">${notes.map(n => `<li>🌱 ${esc(n.text)} <span class="sub">${esc(n.at)}</span></li>`).join("")}</ul>` : ""}
+  </div>`;
+}
+function bindMemo(root) {
+  root.querySelectorAll("[data-memo]").forEach(box => {
+    const key = box.dataset.memo;
+    box.querySelectorAll("textarea").forEach(ta => ta.oninput = () => {
+      const s = save.scraps[key]; if (!s) return;
+      s[ta.dataset.f] = ta.value; s.editedAt = ymd(NOW());
+      if (ideaDone(s) && !s.ideaAt) { s.ideaAt = ymd(NOW()); box.querySelector(".done").textContent = "⭐ 완성 아이디어"; gainXp(5, "완성 아이디어"); checkBadges(); }
+      clearTimeout(ta._t); ta._t = setTimeout(persist, 400);
+    });
+  });
+}
+function cardHtml(k, id, label, si, ii, it) {
+  const key = skey(k, id, si, ii), on = !!save.scraps[key];
+  return `<article class="card${on ? " scrapped" : ""}" data-key="${esc(key)}">
+    <div class="c-meta">${it.rank ? `<span class="rank">${esc(it.rank)}</span>` : ""}${it.tag ? `<span class="tag">${esc(it.tag)}</span>` : ""}${it.brand ? `<span class="brand">${esc(it.brand)}</span>` : ""}
+      <button class="scrap${on ? " on" : ""}" data-scrap>${on ? "★ 스크랩됨" : "☆ 스크랩"}</button></div>
+    <h4>${esc(it.title)}</h4><p>${esc(it.body)}</p>
+    ${(it.points || []).length ? `<ul>${it.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
+    ${it.why ? `<div class="note why"><b>왜 주목할까</b>${esc(it.why)}</div>` : ""}
+    ${it.action ? `<div class="note act"><b>오늘 해볼 것</b>${esc(it.action)}</div>` : ""}
+    ${memoHtml(key)}
+    <ul class="srcs">${(it.sources || []).filter(x => /^https?:/.test(x.url || "")).map(x => `<li>🔗 <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name || x.url)}</a>${x.date ? ` · ${esc(x.date)}` : ""}</li>`).join("")}</ul>
+  </article>`;
+}
+function bindCards(root, k, id, label, rerender) {
+  (root.matches(".card") ? [root] : root.querySelectorAll(".card")).forEach(card => {
+    const btn = card.querySelector("[data-scrap]"); if (!btn) return;
+    btn.onclick = () => {
+      const key = card.dataset.key, [kk, rid, si, ii] = key.split("/");
+      if (save.scraps[key]) {
+        const s = save.scraps[key];
+        if ((s.obs || s.why || s.idea) && !confirm("적어 둔 메모도 같이 지워져요. 스크랩을 해제할까요?")) return;
+        delete save.scraps[key];
+      } else {
+        const r = findReport(kk, rid), it = r.doc.sections[si].items[ii];
+        save.scraps[key] = { kind: kk, id: rid, label: r.doc.period_label, item: it, savedAt: stamp(), obs: "", why: "", idea: "", notes: [] };
+        toast("📌 스크랩했어요. 아래 세 칸에 생각을 적어 보세요");
+        checkBadges();
+      }
+      persist(); rerender(key);
+    };
+  });
+  bindMemo(root);
+}
+function openReport(k, id) {
+  const r = findReport(k, id); if (!r) return;
+  const doc = r.doc, read = isRead(k, id), q = save.quiz[rkey(k, id)];
+  const line = (read ? "다시 보시는군요! 필요한 건 스크랩해 두세요." : (doc.edition === "weekend" && TEAM[k].weekend) || TEAM[k].deliver).replace("{me}", esc(meName()));
+  const secs = (doc.sections || []).map((s, si) => `<section class="r-sec"><h3>${esc(s.title)}</h3>${s.description ? `<p class="desc">${esc(s.description)}</p>` : ""}
+    <div class="cards">${(s.items || []).map((it, ii) => cardHtml(k, id, doc.period_label, si, ii, it)).join("")}</div></section>`).join("");
+  const quizN = (doc.quiz || []).length;
+  openModal(`${head(AV[k], `${esc(who(k))} · ${KIND_NAME[k]} 보고`, line)}
+    <div class="m-body">
+      <span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}${doc.edition === "weekend" ? " · 주말판" : ""}</span>
+      <p class="r-period">${esc(doc.period_label)}</p>
+      <h2 class="r-title">${esc(doc.headline)}</h2>
+      ${(doc.summary || []).length ? `<ol class="r-sum">${doc.summary.map(s => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
+      <div class="kw">${(doc.keywords || []).map(w => `<span>#${esc(w)}</span>`).join("")}</div>
+      ${secs}
+      ${(doc.follow_up || []).length ? `<div class="follow"><h3>👀 이어서 지켜볼 것</h3><ul>${doc.follow_up.map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>` : ""}
+      <div class="r-foot" id="r-foot"></div>
+    </div>`);
+  const foot = () => {
+    const el = document.getElementById("r-foot"); if (!el) return;
+    const rd = isRead(k, id), qq = save.quiz[rkey(k, id)];
+    el.innerHTML = !rd ? `<p class="sub">끝까지 읽으셨나요? 읽음으로 표시하면 경험치를 받아요.</p><button class="btn big gold" id="r-done">✅ 다 읽었어요 (+${XP_READ[k]} XP)</button>`
+      : quizN ? `<p class="sub">${qq ? `확인 퀴즈 ${qq.score}/${qq.total}점` : `확인 퀴즈 ${quizN}문제로 한 번 더 정리해요. 정답마다 +2 XP`}</p><div class="bar c"><button class="btn${qq ? " ghost" : " gold"}" id="r-quiz">🧠 ${qq ? "퀴즈 다시 풀기" : "확인 퀴즈 풀기"}</button><button class="btn ghost" data-close>닫기</button></div>`
+      : `<button class="btn" data-close>닫기</button>`;
+    el.querySelectorAll("[data-close]").forEach(b => b.onclick = closeModal);
+    const d = document.getElementById("r-done"); if (d) d.onclick = () => { markRead(k, id); foot(); };
+    const qb = document.getElementById("r-quiz"); if (qb) qb.onclick = () => openQuiz(k, id);
+  };
+  foot();
+  const rerender = key => {
+    const card = modal.querySelector(`.card[data-key="${CSS.escape(key)}"]`), [kk, rid, si, ii] = key.split("/");
+    const tmp = document.createElement("div"); tmp.innerHTML = cardHtml(kk, rid, doc.period_label, +si, +ii, doc.sections[si].items[ii]);
+    const fresh = tmp.firstElementChild; card.replaceWith(fresh);
+    bindCards(fresh, k, id, doc.period_label, rerender);
+  };
+  bindCards(modal, k, id, doc.period_label, rerender);
+}
+function markRead(k, id) {
+  if (isRead(k, id)) return;
+  save.read[rkey(k, id)] = stamp();
+  if (k === "daily") save.readDays[ymd(NOW())] = true;
+  addLog(`${KIND_NAME[k]} 리포트 읽음`);
+  gainXp(XP_READ[k], `${KIND_NAME[k]} 리포트 읽기`);
+  const c = chars[k];
+  if (c.visible && (c.mode === "deliver" || c.mode === "toDeliver")) { say(k, TEAM[k].thanks, 3500); setTimeout(sync, 400); }
+  checkBadges(); persist(); renderRoster(); renderHud();
+}
+
+/* ═════════════ 퀴즈 ═════════════ */
+const qid = (k, id, i) => `${k}/${id}#${i}`;
+function quizOf(k, id) {
+  const r = findReport(k, id);
+  return ((r && r.doc.quiz) || []).map((q, i) => ({ ...q, id: qid(k, id, i), from: `${KIND_NAME[k]} · ${r.doc.period_label}` }));
+}
+function runQuiz({ k, title, intro, note, qs, onAnswer, onFinish }) {
+  let i = 0, score = 0;
+  const show = () => {
+    const q = qs[i];
+    openModal(`${head(AV[k], `${esc(who(k))} · ${title}`, i ? "다음 문제예요!" : intro)}
+      <div class="m-body"><div class="qprog">${i + 1} / ${qs.length}${note ? ` · ${note}` : ""}</div>
+      <p class="sub" style="margin:2px 0 0">${esc(q.from || "")}</p>
+      <div class="qtext">${esc(q.q)}</div>
+      ${q.options.map((o, oi) => `<button class="qopt" data-oi="${oi}">${"①②③④⑤"[oi]} ${esc(o)}</button>`).join("")}
+      <div id="qafter"></div></div>`, true);
+    modal.querySelectorAll(".qopt").forEach(b => b.onclick = () => {
+      const pick = +b.dataset.oi, ok = pick === q.answer;
+      if (ok) score++;
+      if (onAnswer) onAnswer(q, ok);
+      modal.querySelectorAll(".qopt").forEach(x => { x.disabled = true; if (+x.dataset.oi === q.answer) x.classList.add("right"); });
+      if (!ok) b.classList.add("wrong");
+      const lastQ = i === qs.length - 1;
+      document.getElementById("qafter").innerHTML = `<div class="qexp"><b>${ok ? "⭕ 정답!" : "❌ 아쉬워요"}</b> ${esc(q.explain || "")}${ok ? "" : `<br><span class="sub">📝 오답노트에 담아 뒀어요</span>`}</div>
+        <button class="btn" id="qnext">${lastQ ? "결과 보기" : "다음 문제 →"}</button>`;
+      document.getElementById("qnext").onclick = () => { if (lastQ) finish(); else { i++; show(); } };
+    });
+  };
+  const finish = () => {
+    const res = onFinish(score, qs.length);
+    persist();
+    openModal(`${head(AV[k], `${esc(who(k))} · ${title}`, res.line)}<div class="m-body center">
+      <div class="qscore">${score} / ${qs.length}</div><p>${res.sub}</p>
+      <div class="bar c">${res.back ? `<button class="btn ghost" id="q-back">${res.back.label}</button>` : ""}<button class="btn" data-close>닫기</button></div></div>`, true);
+    if (res.back) document.getElementById("q-back").onclick = res.back.fn;
+    if (score === qs.length && qs.length >= 3) confetti();
+    if (res.xp) gainXp(res.xp, res.why);
+    checkBadges(); renderHud(); renderRoster();
+  };
+  show();
+}
+function noteAnswer(q, ok) {
+  const w = save.wrong[q.id];
+  if (ok) { if (w) { delete save.wrong[q.id]; save.wrongCleared++; return true; } return false; }
+  save.wrong[q.id] = { q: { q: q.q, options: q.options, answer: q.answer, explain: q.explain, from: q.from }, at: ymd(NOW()), misses: (w ? w.misses : 0) + 1 };
+  return false;
+}
+function openQuiz(k, id) {
+  const qs = quizOf(k, id); if (!qs.length) return;
+  const first = !save.quiz[rkey(k, id)];
+  runQuiz({
+    k, title: "확인 퀴즈", intro: "방금 읽은 리포트, 퀴즈로 정리해 볼까요? 🧠", note: first ? "정답마다 +2 XP" : "다시 풀기 (경험치 없음)", qs,
+    onAnswer: (q, ok) => { noteAnswer(q, ok); },
+    onFinish(score, total) {
+      const perfect = score === total;
+      let xp = 0;
+      if (first) { xp = score * 2 + (perfect ? 5 : 0); if (perfect) save.perfect++; save.quiz[rkey(k, id)] = { score, total, at: stamp() }; }
+      else if (score > save.quiz[rkey(k, id)].score) save.quiz[rkey(k, id)] = { score, total, at: stamp() };
+      return {
+        line: perfect ? "만점이에요! 완벽하게 이해하셨네요 👏" : score ? "좋아요! 틀린 문제는 오답노트에 모아 뒀어요." : "괜찮아요, 오답노트로 다시 풀어 봐요!",
+        sub: first ? (xp ? `<b>+${xp} XP</b>${perfect ? " (만점 보너스 +5 포함)" : ""}` : "이번엔 경험치가 없어요") : "다시 풀기는 경험치가 없어요",
+        back: { label: "리포트로 돌아가기", fn: () => openReport(k, id) }, xp, why: `확인 퀴즈 ${score}/${total}`,
+      };
+    },
+  });
+}
+const wrongList = () => Object.entries(save.wrong).sort((a, b) => a[1].at.localeCompare(b[1].at));
+function openWrongNote() {
+  const list = wrongList();
+  openModal(`${head(AV.daily, `${esc(who("daily"))} · 📝 오답노트`, list.length ? `틀린 문제 ${list.length}개 모아 뒀어요. 맞히면 노트에서 빠지고 +3 XP예요!` : "오답노트가 비어 있어요. 깔끔해요! ✨")}
+    <div class="m-body">
+      ${list.length ? `<div class="bar"><button class="btn gold" id="rv-go">📝 복습 퀴즈 풀기 (${Math.min(5, list.length)}문제)</button></div>` : ""}
+      <p class="sub">지금까지 다시 맞혀서 해결한 문제: ${save.wrongCleared}개</p>
+      <ul class="wlist">${list.map(([, w]) => `<li><div class="src">${esc(w.q.from)} · ${esc(w.at)}${w.misses > 1 ? ` · ${w.misses}번 틀림` : ""}</div><div class="q">${esc(w.q.q)}</div>
+        <details><summary>정답 보기</summary><b>${esc(w.q.options[w.q.answer])}</b> — ${esc(w.q.explain)}</details></li>`).join("") || `<li class="empty">퀴즈에서 틀린 문제가 여기 모여요.</li>`}</ul>
+    </div>`);
+  const go = document.getElementById("rv-go"); if (go) go.onclick = openReview;
+}
+function openReview() {
+  const qs = wrongList().slice(0, 5).map(([id, w]) => ({ ...w.q, id }));
+  if (!qs.length) return toast("복습할 문제가 없어요");
+  let cleared = 0;
+  runQuiz({
+    k: "daily", title: "오답 복습", intro: `지난번에 틀린 문제 ${qs.length}개, 다시 풀어 볼까요? 📝`, note: "맞히면 +3 XP", qs,
+    onAnswer(q, ok) { if (noteAnswer(q, ok)) cleared++; },
+    onFinish(score, total) {
+      const left = wrongList().length;
+      return { line: score === total ? "전부 맞혔어요! 이제 안 잊어버리겠죠? 💪" : "남은 문제는 다음에 또 풀어요!", sub: `${cleared ? `<b>+${cleared * 3} XP</b> · ` : ""}오답노트에 남은 문제 ${left}개`, back: left ? { label: "오답노트 보기", fn: openWrongNote } : null, xp: cleared * 3, why: `오답 ${cleared}문제 해결` };
+    },
+  });
+}
+
+/* ═════════════ 주간 복습 ═════════════ */
+function dailyWeeks() {
+  const map = new Map();
+  for (const r of reportsOf("daily")) { const w = isoWeek(new Date(r.id + "T12:00:00")); if (!map.has(w)) map.set(w, []); map.get(w).push(r); }
+  return [...map.entries()].reverse();
+}
+const weekPool = rs => rs.flatMap(r => quizOf("daily", r.id));
+function weekTitle(w) { const rs = (dailyWeeks().find(x => x[0] === w) || [])[1] || []; return rs.length ? `${rs[0].doc.period_label.replace(/\s*\(.+\)/, "")} ~ ${rs[rs.length - 1].doc.period_label.replace(/^\d+년\s*/, "").replace(/\s*\(.+\)/, "")}` : w; }
+function openWeekQuiz(w) {
+  const rs = (dailyWeeks().find(x => x[0] === w) || [])[1] || [], pool = weekPool(rs);
+  if (pool.length < 3) return toast("이 주는 문제가 모자라요");
+  const qs = pool.map(q => [Math.random(), q]).sort((a, b) => a[0] - b[0]).map(x => x[1]).slice(0, 10), first = !save.weekRev[w];
+  runQuiz({
+    k: "weekly", title: "주간 복습", intro: `${weekTitle(w)} 데일리에서 ${qs.length}문제 골라 왔어요 🗓`, note: first ? "정답마다 +3 XP" : "다시 풀기 (경험치 없음)", qs, onAnswer: noteAnswer,
+    onFinish(score, total) {
+      const perfect = score === total; let xp = 0;
+      if (first) { xp = score * 3 + (perfect ? 10 : 0); save.weekRev[w] = { score, total }; } else if (score > save.weekRev[w].score) save.weekRev[w] = { score, total };
+      return { line: perfect ? "한 주를 완벽하게 정리하셨어요! 👏" : "좋아요! 틀린 문제는 오답노트에 담았어요.", sub: first ? `<b>+${xp} XP</b>${perfect ? " (만점 보너스 포함)" : ""}` : "다시 풀기는 경험치가 없어요", back: { label: "주간 복습 목록", fn: () => { archTab = "review"; openArchive(); } }, xp, why: `주간 복습 ${score}/${total}` };
+    },
+  });
+}
+
+/* ═════════════ 아이디어 다시 보기 ═════════════ */
+const GROW = [
+  "그 뒤로 이 사례는 어떻게 됐을까요? 후속 기사를 한 번 찾아보세요.",
+  "이 아이디어를 내일 당장 해본다면, 첫 번째 할 일은?",
+  "전혀 다른 업종(식품·뷰티·금융·앱)에 옮기면 어떻게 바뀔까요?",
+  "예산이 50만 원뿐이라면 어떻게 줄여서 해볼까요?",
+  "이 아이디어가 실패한다면 이유는 뭘까요? 어떻게 막을까요?",
+  "잘 됐는지 무엇으로 확인할까요? 볼 숫자를 하나 정해 보세요.",
+];
+const lastTouch = s => [s.ideaAt || s.savedAt.slice(0, 10), s.revisitedAt || "", ...(s.notes || []).map(n => n.at)].sort().pop();
+function dueIdeas() {
+  const cut = ymd(addDays(NOW(), -7));
+  return Object.entries(save.scraps).filter(([, s]) => ideaDone(s) && lastTouch(s) <= cut).sort((a, b) => lastTouch(a[1]).localeCompare(lastTouch(b[1])));
+}
+function openRevisit(key) {
+  const s = save.scraps[key]; if (!s) return;
+  const prompt = GROW[(s.notes || []).length % GROW.length];
+  openModal(`${head(AV.daily, `${esc(who("daily"))} · 💡 아이디어 다시 보기`, "일주일 전에 쓴 아이디어예요. 생각을 한 줄 더 얹어 볼까요?")}
+    <div class="m-body">
+      <p class="sub">${esc(s.label)} · ${esc(s.item.brand || "")}</p><h3 style="margin:0 0 8px">${esc(s.item.title)}</h3>
+      <div class="note why"><b>👀 눈에 띈 점</b>${esc(s.obs)}</div><div class="note why"><b>🔍 왜 먹혔나</b>${esc(s.why)}</div><div class="note act"><b>🚀 내 아이디어</b>${esc(s.idea)}</div>
+      <label class="field">🌱 ${esc(prompt)}<textarea id="grow-t" rows="3"></textarea></label>
+      <div class="bar"><button class="btn gold" id="grow-save">덧붙이기 (+3 XP)</button><button class="btn ghost" id="grow-skip">다음에 할게요</button></div>
+    </div>`, true);
+  document.getElementById("grow-save").onclick = () => {
+    const v = document.getElementById("grow-t").value.trim(); if (!v) return toast("한 줄이라도 적어 주세요");
+    (s.notes = s.notes || []).push({ text: v, at: ymd(NOW()) }); persist(); gainXp(3, "아이디어 키우기"); checkBadges(); closeModal();
+  };
+  document.getElementById("grow-skip").onclick = () => { s.revisitedAt = ymd(NOW()); persist(); closeModal(); };
+}
+
+/* ═════════════ 받은 리포트 ═════════════ */
+let archTab = "daily";
+function openArchive() {
+  const tabs = KINDS.map(k => { const n = unreadOf(k).length; return `<button data-tab="${k}" class="${archTab === k ? "on" : ""}">${KIND_NAME[k]}${n ? ` · 새 ${n}` : ""}</button>`; }).join("")
+    + `<button data-tab="review" class="${archTab === "review" ? "on" : ""}">🗓 주간 복습</button>`;
+  let body;
+  if (archTab === "review") {
+    const weeks = dailyWeeks();
+    body = `<p class="sub" style="margin:0 0 8px">한 주 동안 나온 데일리 퀴즈에서 최대 10문제. 처음 풀 때 정답마다 +3 XP, 만점이면 +10.</p>
+      <ul class="list">${weeks.map(([w, rs]) => { const done = save.weekRev[w], n = weekPool(rs).length; return `<li><button data-week="${w}" ${n < 3 ? "disabled" : ""}><span class="ic">${done ? "✅" : "🗓"}</span><span><span class="t">${esc(weekTitle(w))}</span><span class="h">데일리 ${rs.length}개 · ${Math.min(n, 10)}문제${done ? ` · 최고 ${done.score}/${done.total}` : ""}</span></span></button></li>`; }).join("") || `<li class="empty">데일리가 쌓이면 주차별로 복습할 수 있어요.</li>`}</ul>`;
+  } else {
+    const list = reportsOf(archTab).slice().reverse();
+    body = `<ul class="list">${list.map(r => { const q = save.quiz[rkey(archTab, r.id)]; return `<li><button data-id="${esc(r.id)}"><span class="ic">${isRead(archTab, r.id) ? "✅" : "📄"}</span><span><span class="t">${esc(r.doc.period_label)}${r.doc.edition === "weekend" ? " · 주말판" : ""}${q ? ` · 🧠 ${q.score}/${q.total}` : ""}</span><span class="h">${esc(r.doc.headline)}</span></span></button></li>`; }).join("")
+      || `<li class="empty">${esc(who(archTab))}의 첫 리포트는 ${TEAM[archTab].when}에 도착해요.</li>`}</ul>`;
+  }
+  openModal(`${head(ME_AV, "내 책상", "📥 받은 리포트")}<div class="m-body"><div class="tabs">${tabs}</div>${body}</div>`);
+  modal.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { archTab = b.dataset.tab; openArchive(); });
+  modal.querySelectorAll("[data-id]").forEach(b => b.onclick = () => openReport(archTab, b.dataset.id));
+  modal.querySelectorAll("[data-week]").forEach(b => b.onclick = () => openWeekQuiz(b.dataset.week));
+}
+
+/* ═════════════ 스크랩북 ═════════════ */
+let scrapTag = "", scrapQ = "";
+function scrapMarkdown(list) {
+  return list.map(([, s]) => `## ${s.item.title}\n- ${KIND_NAME[s.kind]} · ${s.label}${s.item.brand ? ` · ${s.item.brand}` : ""}\n- ${s.item.body}\n${s.obs ? `- 👀 ${s.obs}\n` : ""}${s.why ? `- 🔍 ${s.why}\n` : ""}${s.idea ? `- 🚀 ${s.idea}\n` : ""}${(s.notes || []).map(n => `- 🌱 ${n.text}\n`).join("")}${(s.item.sources || []).map(x => `- 출처: ${x.url}\n`).join("")}`).join("\n");
+}
+function copyText(t, ok) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(ok), () => toast("복사하지 못했어요")); }
+function openScrapbook() {
+  const all = Object.entries(save.scraps).sort((a, b) => b[1].savedAt.localeCompare(a[1].savedAt));
+  const tags = [...new Set(all.map(([, s]) => s.item.tag).filter(Boolean))], q = scrapQ.toLowerCase();
+  const shown = all.filter(([, s]) => (!scrapTag || s.item.tag === scrapTag) && (!q || [s.item.title, s.item.body, s.item.brand, s.obs, s.why, s.idea].join(" ").toLowerCase().includes(q)));
+  const promo = PROMOS.filter(p => p.at()).slice(-1)[0], due = dueIdeas().length;
+  openModal(`${head(ME_AV, "책장", `📌 내 스크랩북 (${all.length}) · ⭐ 완성 아이디어 ${ideaCount()}`)}
+    <div class="m-body">
+      ${promo ? `<div class="promo"><span style="font-size:26px">${promo.icon}</span><span><b>${promo.head}</b>${promo.body}</span><a class="btn" href="${promo.url}">${promo.btn}</a></div>` : ""}
+      <input class="search" id="sq" placeholder="제목, 브랜드, 내 메모로 찾기" value="${esc(scrapQ)}">
+      <div class="tabs" style="margin-top:10px"><button data-tag="" class="${scrapTag ? "" : "on"}">전체</button>${tags.map(t => `<button data-tag="${esc(t)}" class="${scrapTag === t ? "on" : ""}">${esc(t)}</button>`).join("")}</div>
+      <div class="bar"><button class="btn ghost" id="sc-md">📋 마크다운으로 복사</button>${due ? `<button class="btn gold" id="sc-rv">💡 다시 볼 아이디어 ${due}개</button>` : ""}</div>
+      <div class="cards">${shown.map(([key, s]) => cardHtml(s.kind, s.id, s.label, ...key.split("/").slice(2).map(Number), s.item).replace('<div class="c-meta">', `<div class="c-meta"><span class="kb" style="background:${KIND_COLOR[s.kind]}">${KIND_NAME[s.kind]}</span>`)).join("")
+        || `<p class="empty">리포트 카드의 ☆ 스크랩을 누르면 여기에 모여요.<br>세 칸 메모까지 채우면 자소서·면접에서 꺼내 쓸 나만의 사례집이 돼요.</p>`}</div>
+    </div>`);
+  const sq = document.getElementById("sq");
+  sq.oninput = () => { scrapQ = sq.value; clearTimeout(sq._t); sq._t = setTimeout(() => { openScrapbook(); const n = document.getElementById("sq"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 300); };
+  modal.querySelectorAll("[data-tag]").forEach(b => b.onclick = () => { scrapTag = b.dataset.tag; openScrapbook(); });
+  document.getElementById("sc-md").onclick = () => copyText(scrapMarkdown(shown), "마크다운을 복사했어요");
+  const rv = document.getElementById("sc-rv"); if (rv) rv.onclick = () => openRevisit(dueIdeas()[0][0]);
+  bindCards(modal, null, null, null, () => { const y = modalBg.scrollTop; openScrapbook(); modalBg.scrollTop = y; });
+}
+
+/* ═════════════ 키워드 (화이트보드) ═════════════ */
+function openKeywords() {
+  const rows = KINDS.map(k => [k, latestOf(k)]).filter(([, r]) => r && (r.doc.keywords || []).length);
+  openModal(`${head(ME_AV, "화이트보드", "🧾 지금 챙겨 둘 키워드")}<div class="m-body">
+    ${rows.map(([k, r]) => `<p class="r-period"><span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}</span> ${esc(r.doc.period_label)}</p>
+      <div class="kw">${r.doc.keywords.map(w => `<a href="https://search.naver.com/search.naver?query=${encodeURIComponent(w)}" target="_blank" rel="noopener">#${esc(w)}</a>`).join("")}</div>
+      <div class="bar"><button class="btn ghost" data-open="${k}|${esc(r.id)}">리포트 보기</button></div>`).join("") || `<p class="empty">아직 키워드가 없어요.</p>`}
+    <p class="sub">키워드를 누르면 네이버 검색으로 이어져요.</p></div>`, true);
+  modal.querySelectorAll("[data-open]").forEach(b => b.onclick = () => openReport(...b.dataset.open.split("|")));
+}
+
+/* ═════════════ 직급표·업적 ═════════════ */
+function openLevels() {
+  const lv = level();
+  openModal(`${head(ME_AV, "인사팀", `📈 ${esc(meName())}님은 지금 ${LEVELS[lv - 1].title} (Lv.${lv})`)}<div class="m-body">
+    <p class="sub" style="margin:0">리포트 읽기 데일리 +10 · 위클리 +25 · 먼슬리 +40 · 분기 +60 / 퀴즈 정답 +2, 만점 +5 / 완성 아이디어 +5 / 오답 해결 +3</p>
+    <ul class="lvlist">${LEVELS.map((L, i) => `<li class="${i + 1 === lv ? "cur" : i + 1 > lv ? "locked" : ""}"><span class="n">Lv.${i + 1}</span><span class="tt">${L.title}</span><span class="u">${i + 1 > lv ? "🔒 " : "✅ "}${L.unlock}${L.perk ? `<small>${L.perk}</small>` : ""}</span><span class="xpn">${L.xp} XP</span></li>`).join("")}</ul>
+  </div>`, true);
+}
+function showLevelUp(lv) {
+  const L = LEVELS[lv - 1];
+  confetti();
+  openModal(`<div class="m-body center levelup"><img src="${ME_AV}" alt="" style="width:60px;height:90px;image-rendering:pixelated">
+    <h3>🎉 ${esc(L.title)}(으)로 승진했어요!</h3><p>Lv.${lv} · 사무실에 <b>${esc(L.unlock)}</b>이(가) 생겼어요.</p>${L.perk ? `<p class="sub">${esc(L.perk)}</p>` : ""}
+    <div class="bar c"><button class="btn gold" data-close>사무실 구경하기</button></div></div>`, true);
+  addLog(`${L.title}(으)로 승진!`);
+}
+function openBadges() {
+  const got = BADGES.filter(b => save.badges[b.id]).length;
+  openModal(`${head(ME_AV, "트로피 진열장", `🏅 업적 ${got} / ${BADGES.length}`)}<div class="m-body"><div class="badges">${BADGES.map(b => {
+    const n = Math.min(b.goal, b.count()), on = !!save.badges[b.id];
+    return `<div class="bdg${on ? "" : " off"}"><div class="ic" style="background:${b.color}">${b.icon}</div><b>${b.name}</b><span>${b.desc}</span>${on ? `<span>🗓 ${esc(save.badges[b.id])}</span>` : `<div class="pg"><i style="width:${n / b.goal * 100}%"></i></div><span>${n} / ${b.goal}</span>`}</div>`;
+  }).join("")}</div></div>`);
+}
+
+/* ═════════════ 리더보드 ═════════════ */
+// 서버(cuttory-api)의 /api/office/* 에 닉네임·XP만 올려요. 서버가 아직 준비되지 않았으면 내 기록만 보여줘요.
+function boardId() {
+  if (!save.board) { const r = crypto.getRandomValues(new Uint8Array(16)); save.board = { id: "o_" + [...r.slice(0, 6)].map(b => b.toString(16).padStart(2, "0")).join(""), key: [...r].map(b => b.toString(16).padStart(2, "0")).join("") }; store.set(STORE_KEY, JSON.stringify(save)); }
+  return save.board;
+}
+let lastPushed = "";
+function pushScore() {
+  if (!API || !save.me || SIM) return Promise.resolve();
+  const b = boardId(), body = { id: b.id, key: b.key, nick: save.me, xp: save.xp, lv: level(), streak: streakNow(), look: save.look, ideas: ideaCount() };
+  const sig = JSON.stringify(body); if (sig === lastPushed) return Promise.resolve();
+  return fetch(API + "/api/office/score", { method: "POST", headers: { "content-type": "application/json" }, body: sig }).then(r => { if (r.ok) lastPushed = sig; }).catch(() => {});
+}
+async function loadBoard() {
+  if (!API) throw new Error("no api");
+  await pushScore();
+  const r = await fetch(API + "/api/office/board", { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(String(r.status));
+  return (await r.json()).rows || [];
+}
+function openBoard() {
+  document.getElementById("board-view").hidden = false; document.body.style.overflow = "hidden";
+  const main = document.getElementById("board-main"), me = boardId().id;
+  main.innerHTML = `<p class="bv-note">순위를 불러오는 중…</p>`;
+  const meRow = { id: me, nick: meName(), xp: save.xp, lv: level(), streak: streakNow(), look: save.look };
+  loadBoard().then(rows => render(rows.some(x => x.id === me) ? rows : rows.concat(meRow).sort((a, b) => b.xp - a.xp)), () => render([meRow], true));
+  function render(rows, offline) {
+    const top = rows.slice(0, 3), order = [top[1], top[0], top[2]], medal = ["🥈", "🥇", "🥉"], cls = ["p2", "p1", "p3"];
+    main.innerHTML = `<div class="podium">${order.map((x, i) => x ? `<div class="pod ${cls[i]}"><img src="${avatar(ME_LOOKS[x.look] || ME_LOOKS[0])}" alt=""><div class="blk"><div class="medal">${medal[i]}</div><div class="nk">${esc(x.nick)}</div><div class="meta">${esc(LEVELS[(x.lv || 1) - 1].title)} · ${x.xp} XP</div></div></div>` : `<div></div>`).join("")}</div>
+      <ol class="rk-list">${rows.map((x, i) => `<li class="${x.id === me ? "me" : ""}"><span class="n">${i + 1}</span><span class="nk">${esc(x.nick)}${x.id === me ? " (나)" : ""}</span><span class="xp2">Lv.${x.lv} ${esc(LEVELS[(x.lv || 1) - 1].title)} · 🔥${x.streak || 0} · ${x.xp} XP</span></li>`).join("")}</ol>
+      <p class="bv-note">${offline ? "리더보드 서버에 연결하지 못해서 내 기록만 보여요. 잠시 뒤 ↻를 눌러 보세요." : "닉네임과 경험치만 공유돼요. 닉네임은 ⚙️ 설정에서 바꿀 수 있어요."}</p>`;
+  }
+}
+document.getElementById("board-back").onclick = () => { document.getElementById("board-view").hidden = true; document.body.style.overflow = ""; };
+document.getElementById("board-refresh").onclick = () => { lastPushed = ""; openBoard(); };
+
+/* ═════════════ 설정 ═════════════ */
+function looksHtml(cur) { return `<div class="looks">${ME_LOOKS.map((L, i) => `<button type="button" data-look="${i}" class="${i === cur ? "on" : ""}"><img src="${avatar(L)}" alt="모습 ${i + 1}"></button>`).join("")}</div>`; }
+function bindLooks(root, set) { root.querySelectorAll("[data-look]").forEach(b => b.onclick = () => { root.querySelectorAll("[data-look]").forEach(x => x.classList.toggle("on", x === b)); set(+b.dataset.look); }); }
+function openSettings() {
+  let look = save.look;
+  openModal(`${head(ME_AV, "설정", "⚙️ 내 오피스 설정")}<div class="m-body">
+    <div class="row2"><label class="field">팀원들이 부를 내 이름<input id="st-me" maxlength="12" value="${esc(save.me)}"></label>
+      <label class="field">🎯 가고 싶은 브랜드 <span class="opt">(선택)</span><input id="st-target" maxlength="20" value="${esc(save.target)}" placeholder="예: 올리브영"></label></div>
+    <p class="sub" style="margin:4px 0 0">브랜드를 적으면 메모의 세 번째 칸이 "○○라면 어떻게 할까?"로 바뀌어요.</p>
+    <div class="field">내 모습${looksHtml(look)}</div>
+    <p class="field" style="margin-top:14px">팀원 이름 <span class="opt">(비워 두면 기본 이름)</span></p>
+    <div class="row2">${KINDS.map(k => `<label class="field" style="margin-top:4px"><span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}</span> ${TEAM[k].title}<input data-tn="${k}" maxlength="8" value="${esc(save.teamNames[k] || "")}" placeholder="${DEFAULT_NAME[k]}"></label>`).join("")}</div>
+    <div class="bar"><button class="btn" id="st-save">저장</button></div>
+    <p class="sub">기록(읽음·경험치·스크랩·메모)은 이 브라우저에 저장돼요. 다른 기기로 옮길 땐 백업 파일을 받아서 불러오세요.</p>
+    <div class="bar"><button class="btn ghost" id="st-export">💾 기록 백업 받기</button><label class="btn ghost">📂 기록 불러오기<input type="file" id="st-import" accept="application/json" hidden></label>
+      <button class="btn ghost" id="st-replay">🚪 출근 장면 다시 보기</button><button class="btn ghost" id="st-tour">❓ 사용법 다시 보기</button><button class="btn ghost" id="st-reset">🗑 처음부터 다시</button></div>
+  </div>`, true);
+  bindLooks(modal, v => look = v);
+  document.getElementById("st-save").onclick = () => {
+    const me = document.getElementById("st-me").value.trim(); if (!me) return toast("이름을 적어 주세요");
+    save.me = me; save.target = document.getElementById("st-target").value.trim(); save.look = look; ME_AV = avatar(meLook());
+    save.teamNames = {}; modal.querySelectorAll("[data-tn]").forEach(i => { const v = i.value.trim(); if (v) save.teamNames[i.dataset.tn] = v; });
+    persist(); renderHud(); renderRoster(); renderLog(); closeModal(); toast("저장했어요");
+  };
+  document.getElementById("st-export").onclick = () => {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(save, null, 1)], { type: "application/json" }));
+    a.download = `trend-office-${ymd(NOW())}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  document.getElementById("st-import").onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    f.text().then(t => { const s = parseSave(t); if (!s) return toast("백업 파일을 읽지 못했어요"); if (!confirm("지금 기록을 백업 파일 내용으로 바꿀까요?")) return; save = s; persist(); location.reload(); });
+  };
+  document.getElementById("st-replay").onclick = () => { closeModal(); KINDS.forEach(k => Object.assign(chars[k], { visible: false, mode: "away", path: [] })); sync("replay"); };
+  document.getElementById("st-tour").onclick = () => { closeModal(); startTour(); };
+  document.getElementById("st-reset").onclick = () => { if (!confirm("경험치·스크랩·메모가 모두 지워져요. 정말 처음부터 할까요?")) return; store.set(STORE_KEY, null); location.reload(); };
+}
+
+/* ═════════════ 의견 보내기 ═════════════ */
+async function apiToken() {
+  let t = store.get("cuttory_token"); if (t) return t;
+  const r = await fetch(API + "/api/session", { method: "POST" }), j = await r.json();
+  if (!r.ok) throw new Error(j.message || "접속하지 못했어요");
+  store.set("cuttory_token", j.token); return j.token;
+}
+function openFeedback() {
+  let kind = "idea";
+  openModal(`${head(ME_AV, "고객의 소리", "💬 의견 보내기")}<div class="m-body">
+    <p class="sub" style="margin:0 0 10px">불편했던 점, 바라는 기능, 리포트에서 틀린 내용 무엇이든 편하게 남겨 주세요.</p>
+    <div class="tabs"><button data-fk="idea" class="on">💡 기능 제안</button><button data-fk="bug">🐛 오류·틀린 내용</button></div>
+    <label class="field">내용<textarea id="fb-t" rows="5" maxlength="1800"></textarea></label>
+    <div class="bar"><button class="btn" id="fb-send">보내기</button><button class="btn ghost" data-close>취소</button></div></div>`, true);
+  modal.querySelectorAll("[data-fk]").forEach(b => b.onclick = () => { kind = b.dataset.fk; modal.querySelectorAll("[data-fk]").forEach(x => x.classList.toggle("on", x === b)); });
+  document.getElementById("fb-send").onclick = async e => {
+    const text = document.getElementById("fb-t").value.trim(); if (!text) return toast("내용을 적어 주세요");
+    if (!API) return toast("서버 주소가 없어요");
+    e.target.disabled = true;
+    try {
+      const send = async () => fetch(API + "/api/feedback", { method: "POST", headers: { authorization: "Bearer " + await apiToken(), "content-type": "application/json" }, body: JSON.stringify({ kind, text: `[트렌드 오피스] ${text}`, ua: navigator.userAgent }) });
+      let r = await send(); if (r.status === 401) { store.set("cuttory_token", null); r = await send(); }
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || "보내지 못했어요");
+      closeModal(); toast("고마워요! 잘 받았어요 🙏");
+    } catch (err) { toast(err.message); e.target.disabled = false; }
+  };
+}
+
+/* ═════════════ 사용법 안내 ═════════════ */
+const TOUR_V = 1;
+const TOUR = [
+  { title: () => `${esc(meName())}님, 입사를 축하해요! 🎉`, text: "여기는 매일 아침 마케팅 트렌드 리포트가 도착하는 작은 사무실이에요. 30초만 같이 둘러봐요." },
+  { sel: "#stage", title: "팀원들이 리포트를 들고 와요", text: () => `출근 시각이 되면 팀원들이 문으로 들어와 자리에 앉고, 리포트를 다 쓰면 내 책상으로 가져와요. ${esc(who("daily"))}의 데일리는 ${TEAM.daily.when}에 와요.` },
+  { sel: "#roster", title: "읽고, 퀴즈로 정리해요", text: "팀원이나 이 목록을 누르면 리포트가 열려요. 끝까지 읽으면 경험치를 받고, 확인 퀴즈로 한 번 더 정리해요. 틀린 문제는 📝 오답노트에 모여요." },
+  { sel: "#btn-level", title: "읽을수록 승진해요", text: "경험치가 쌓이면 인턴에서 CMO까지 승진하고, 직급마다 사무실에 새 가구가 생겨요. 누르면 직급표를 볼 수 있어요." },
+  { sel: "#btn-scrap", title: "스크랩하고 세 칸으로 생각해요", text: "카드의 ☆를 누르면 스크랩북에 모여요. 👀 눈에 띈 점 → 🔍 왜 먹혔나 → 🚀 나라면? 세 칸을 채우면 완성 아이디어(+5 XP)가 되고, 일주일 뒤에 다시 꺼내 생각을 키워요." },
+  { sel: "#btn-board", title: "다른 사람들과 같이 달려요", text: "닉네임과 경험치로 리더보드에 올라가요. 1~3위는 시상대에 서요!" },
+  { sel: "#btn-settings", title: "가고 싶은 브랜드를 정해 보세요", text: "⚙️ 설정에서 브랜드를 적으면 메모 질문이 \"○○라면 어떻게 할까?\"로 바뀌어요. 자소서 지원동기 재료가 쌓여요." },
+  { title: "준비 끝! 🚀", text: "기록은 이 브라우저에 저장돼요. 다른 기기로 옮길 땐 ⚙️ 설정에서 백업하세요. 그럼 첫 리포트를 받아 볼까요?" },
+];
+let tourI = 0;
+function startTour() { tourI = 0; document.getElementById("coach").hidden = false; showTour(); }
+function endTour() { document.getElementById("coach").hidden = true; save.tour = TOUR_V; persist(); sync(); }
+function showTour() {
+  const s = TOUR[tourI], spot = document.getElementById("coach-spot"), card = document.getElementById("coach-card");
+  const val = v => typeof v === "function" ? v() : v;
+  const el = s.sel && document.querySelector(s.sel);
+  if (el) el.scrollIntoView({ block: "center", behavior: "instant" });
+  const r = el ? el.getBoundingClientRect() : null;
+  if (r) Object.assign(spot.style, { display: "block", left: r.left - 6 + "px", top: r.top - 6 + "px", width: r.width + 12 + "px", height: r.height + 12 + "px" });
+  else Object.assign(spot.style, { display: "block", left: "50%", top: "45%", width: "0px", height: "0px" });
+  card.innerHTML = `<h4>${val(s.title)}</h4><p>${val(s.text)}</p><div class="bar"><span class="stp">${tourI + 1} / ${TOUR.length}</span>${tourI ? `<button class="btn ghost" id="tr-prev">이전</button>` : `<button class="btn ghost" id="tr-skip">건너뛰기</button>`}<button class="btn" id="tr-next">${tourI === TOUR.length - 1 ? "시작하기" : "다음"}</button></div>`;
+  const cw = card.offsetWidth, ch = card.offsetHeight, vw = innerWidth, vh = innerHeight;
+  let top = r ? (r.bottom + 14 + ch < vh ? r.bottom + 14 : Math.max(12, r.top - ch - 14)) : vh / 2 - ch / 2;
+  let left = r ? Math.min(Math.max(12, r.left), vw - cw - 12) : vw / 2 - cw / 2;
+  if (r && r.height > vh * .55) { top = Math.min(vh - ch - 12, r.top + 20); left = Math.min(Math.max(12, r.left + 20), vw - cw - 12); }
+  Object.assign(card.style, { top: top + "px", left: left + "px" });
+  const nx = document.getElementById("tr-next"), pv = document.getElementById("tr-prev"), sk = document.getElementById("tr-skip");
+  nx.onclick = () => { if (tourI === TOUR.length - 1) endTour(); else { tourI++; showTour(); } };
+  if (pv) pv.onclick = () => { tourI--; showTour(); };
+  if (sk) sk.onclick = endTour;
+}
+addEventListener("resize", () => { if (!document.getElementById("coach").hidden) showTour(); });
+
+/* ═════════════ 입사 ═════════════ */
+function showJoin() {
+  let look = 0;
+  openModal(`<div class="m-body center levelup">
+    <img src="${AV.daily}" alt="" style="width:48px;height:72px;image-rendering:pixelated">
+    <h3>트렌드 오피스에 오신 걸 환영해요!</h3>
+    <p class="sub" style="font-size:14px">매일 아침 팀원들이 마케팅 트렌드 리포트를 들고 출근해요.<br>읽고, 퀴즈 풀고, 스크랩할수록 승진하고 사무실이 꾸며져요.</p>
+    <label class="field">닉네임<input id="jn-me" maxlength="12" placeholder="팀원들이 부를 이름" autocomplete="nickname"></label>
+    <label class="field">🎯 가고 싶은 브랜드 <span class="opt">(선택)</span><input id="jn-target" maxlength="20" placeholder="예: 무신사, 배민"></label>
+    <div class="field">내 모습 고르기${looksHtml(0)}</div>
+    <div class="bar c" style="margin-top:16px"><button class="btn big gold" id="jn-go">출근하기 →</button></div>
+    <p class="sub">가입 없이 이 브라우저에 기록돼요. 리더보드에는 닉네임과 경험치만 올라가요.</p>
+  </div>`, true);
+  modal.querySelector(".x")?.remove();
+  bindLooks(modal, v => look = v);
+  const go = () => {
+    const me = document.getElementById("jn-me").value.trim(); if (!me) { toast("닉네임을 적어 주세요"); return document.getElementById("jn-me").focus(); }
+    save.me = me; save.target = document.getElementById("jn-target").value.trim(); save.look = look; save.joinedAt = stamp();
+    ME_AV = avatar(meLook()); persist(); closeModal(); renderHud(); renderLog(); startTour();
+  };
+  document.getElementById("jn-go").onclick = go;
+  document.getElementById("jn-me").onkeydown = e => { if (e.key === "Enter") go(); };
+  setTimeout(() => document.getElementById("jn-me").focus(), 100);
+}
+modalBg.addEventListener("click", e => { if (e.target === modalBg && !save.me) setTimeout(showJoin, 0); });
+
+/* ═════════════ 시작 ═════════════ */
+document.getElementById("btn-level").onclick = openLevels;
+document.getElementById("btn-archive").onclick = openArchive;
+document.getElementById("btn-scrap").onclick = openScrapbook;
+document.getElementById("btn-wrong").onclick = openWrongNote;
+document.getElementById("btn-badges").onclick = openBadges;
+document.getElementById("btn-board").onclick = openBoard;
+document.getElementById("btn-settings").onclick = openSettings;
+document.getElementById("btn-fb").onclick = openFeedback;
+document.getElementById("tool-md").onclick = e => { e.preventDefault(); const l = Object.entries(save.scraps); l.length ? copyText(scrapMarkdown(l), `스크랩 ${l.length}개를 마크다운으로 복사했어요`) : toast("아직 스크랩이 없어요"); };
+
+tickClock(); renderHud(); renderRoster(); renderLog();
+requestAnimationFrame(frame);
+if (!save.me) showJoin();
+else if (save.tour < TOUR_V) startTour();
+sync(true);
+setInterval(() => { tickClock(); sync(); }, 15000);
+setInterval(coffeeBreak, 50000);
+setInterval(() => { // 가끔 혼잣말
+  const on = KINDS.filter(k => chars[k].visible && chars[k].mode === "working" && !bubbles[k]);
+  if (on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
+}, 28000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { tickClock(); sync(); } });
+// 새 리포트가 올라왔는지 30분마다 확인
+setInterval(() => {
+  fetch("office/reports-data.js?" + Date.now()).then(r => r.text()).then(t => {
+    const m = t.match(/window\.OFFICE_DATA = (\{[\s\S]*\});/); if (!m) return;
+    const d = JSON.parse(m[1]); if (d.version === DATA.version) return;
+    Object.assign(DATA, d); toast("📬 새 리포트가 도착했어요"); sync();
+  }).catch(() => {});
+}, 30 * 60e3);
+</script>
+</body>
+</html>

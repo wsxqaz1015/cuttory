@@ -1,0 +1,289 @@
+{
+ "type": "daily",
+ "period_id": "2026-10-28",
+ "period_label": "2026년 10월 28일 (수)",
+ "headline": "AI 기반 마케팅의 새로운 방향성",
+ "summary": [
+  "AI와 데이터의 결합이 마케팅의 중심이 되고 있다. 새로운 플랫폼들이 생겨나고 마케팅 전략이 데이터 중심으로 전환되고 있다.",
+  "CJ ENM은 ‘CJ DMP’를 통해 TV광고 타켓팅을 혁신할 계획이다. 이를 통해 소비자의 행동 데이터를 분석하여 광고 효과를 극대화할 수 있을 것으로 기대된다.",
+  "LG전자의 AIDC 냉각 솔루션이 성장하고 있다. 3분기 누적 수주액이 3조원을 넘으며 AI 데이터센터 관련 수요가 증가했고, 실적이 개선되고 있다."
+ ],
+ "keywords": [
+  "AI 마케팅",
+  "CJ DMP",
+  "데이터 기반 광고",
+  "에너지저장장치",
+  "온·오프라인 전략",
+  "디지털 마케팅"
+ ],
+ "sections": [
+  {
+   "title": "오늘의 마케팅 아이디어",
+   "description": "바로 레퍼런스로 쓸 만한 캠페인·광고 사례",
+   "items": [
+    {
+     "rank": 1,
+     "tag": "캠페인",
+     "title": "CJ ENM, 데이터를 통해 TV광고 타겟팅 혁신",
+     "brand": "CJ ENM",
+     "body": "CJ ENM은 계열사 데이터를 통합한 ‘CJ DMP’를 통해 TV 광고 타겟팅 방식을 혁신한다. 데이터 기반의 광고 전략으로 고객 접점을 늘릴 예정이다.",
+     "why": "고객 행동 분석을 통해 잠재 고객을 정교하게 찾아내고 시청 비중에 따라 광고 구좌를 고려하는 방식이 효과적이다.",
+     "action": "CJ ENM의 발표 내용을 보고 TV 광고 타겟팅 전략을 구상해보자.",
+     "keywords": [
+      "CJ DMP",
+      "TV 광고",
+      "데이터 기반"
+     ],
+     "sources": [
+      {
+       "name": "더피알 · 성·연령 공식 깬다…CJ ENM, ‘CJ DMP’로 TV광고 타깃팅 바꾼다",
+       "url": "https://www.the-pr.co.kr/news/articleView.html?idxno=63074",
+       "date": "2026-10-28"
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "tag": "AI",
+     "title": "LG전자, AIDC 사업으로 3분기 수익성 개선",
+     "brand": "LG전자",
+     "body": "LG전자는 AI 데이터센터 냉각 솔루션 사업에서 3분기 누적 수주액이 3조원을 넘었다. 이러한 성장은 AI와 연관된 신기술 수요 덕분이다.",
+     "why": "AI와 IoT의 통합으로 고객의 요구를 충족시키며 안정적인 매출 성장이 가능하게 한다.",
+     "action": "LG전자의 AI 데이터센터 사례를 분석하여 비슷한 방식으로 마케팅 전략을 마련해보자.",
+     "keywords": [
+      "AI 사업",
+      "데이터센터",
+      "성장"
+     ],
+     "sources": [
+      {
+       "name": "더피알 · LG전자, 3분기 영업익 7819억…가전·전장 버티고 AI 냉각 성장",
+       "url": "https://www.the-pr.co.kr/news/articleView.html?idxno=63078",
+       "date": "2026-10-28"
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "tag": "AI",
+     "title": "플레이디, AI 마케팅 역량 인정받아",
+     "brand": "플레이디",
+     "body": "플레이디는 구글 'Accelerate with Google Expert 2026' 콘테스트에서 수상하며 AI 기반 마케팅 역량을 인정받았다. AI 솔루션을 활용한 실적 개선이 주효했다.",
+     "why": "AI를 활용하여 캠페인을 통해 예약건수와 매출을 대폭 증가시킨 점이 효과적이다.",
+     "action": "플레이디 사례를 바탕으로 고객 맞춤형 AI 마케팅 캠페인을 구상해보자.",
+     "keywords": [
+      "AI 마케팅",
+      "구글",
+      "성과"
+     ],
+     "sources": [
+      {
+       "name": "매드타임스 · 플레이디, 구글 ‘Accelerate with Google Expert 2026’ 수상자 배출…AI 마케팅 역량 인정",
+       "url": "https://www.madtimes.co.kr/news/articleView.html?idxno=29461",
+       "date": "2026-10-27"
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "tag": "플랫폼",
+     "title": "위세아이텍, 유튜브 AI 분석 서비스 ‘튜밋’ 출시",
+     "brand": "위세아이텍",
+     "body": "위세아이텍이 유튜브 AI 분석 서비스 ‘튜밋’을 출시하고, 이를 통해 트렌드 분석과 채널 모니터링이 가능해진다.",
+     "why": "AI 분석이 연관된 트렌드와 성과 파악을 효과적으로 수행하게 한다.",
+     "action": "튜밋을 활용한 콘텐츠 기획 방향을 제안해보자.",
+     "keywords": [
+      "AI 분석",
+      "유튜브",
+      "콘텐츠 기획"
+     ],
+     "sources": [
+      {
+       "name": "매드타임스 · “트렌드·채널 데이터 연결해 콘텐츠 기획 지원” 위세아이텍, 유튜브 AI 분석 서비스 ‘튜밋’ 출시",
+       "url": "https://www.madtimes.co.kr/news/articleView.html?idxno=29470",
+       "date": "2026-10-28"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "지금 뜨는 밈·콘텐츠",
+   "description": "SNS에서 도는 포맷과 브랜드의 활용법",
+   "items": [
+    {
+     "rank": 1,
+     "tag": "밈",
+     "title": "삼립, 배우 공명과 호빵 광고 신규 공개",
+     "brand": "삼립",
+     "body": "삼립은 겨울을 맞아 배우 공명과 함께 호빵을 담은 신규 TV 광고를 공개했다. 따뜻한 겨울을 강조하고 소비자에게 다가가고 있다.",
+     "why": "인기 있는 배우를 모델로 내세워 감정적으로 소비자와 소통할 수 있다.",
+     "action": "삼립의 광고를 참고하여 본인의 브랜드와 연결된 콘텐츠를 기획해보자.",
+     "keywords": [
+      "공명",
+      "호빵",
+      "겨울"
+     ],
+     "sources": [
+      {
+       "name": "파이낸셜신문 · 삼립, 배우 공명과 함께 따스함 담은 '삼립호빵' 신규 TV CF 공개",
+       "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE1DalVVS2tibF9UVTRZYWhOZUVKLW05VFpGZzgxUHIxUHpuUENkX2tPVVFWZkxBSU9wTUJzTW9QWmNSMEN6NFJRMG5MOC10dmJXWkZQQjVfVG4xS2VhRDh2NkFjdlRXdGpPUEh3?oc=5",
+       "date": "2026-10-28"
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "tag": "SNS",
+     "title": "LG생건, 피지오겔 앰플의 성공 스토리",
+     "brand": "LG생활건강",
+     "body": "LG생활건강의 피지오겔 앰플이 하루 평균 1000병 판매로 누적 판매량 200만병을 돌파했다. 소비자 니즈를 반영한 적절한 제품이다.",
+     "why": "저자극 제품으로 인한 소비자의 긍정적인 반응이 큰 영향을 미쳤다.",
+     "action": "피지오겔 앰플의 광고 사례를 분석하여 자사 제품에 적합한 캠페인 내용을 기획해보자.",
+     "keywords": [
+      "피지오겔",
+      "앰플",
+      "판매 성공"
+     ],
+     "sources": [
+      {
+       "name": "더피알 · 하루 1000병씩 팔렸다…LG생건 피지오겔 앰플의 흥행",
+       "url": "https://www.the-pr.co.kr/news/articleView.html?idxno=63066",
+       "date": "2026-10-27"
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "tag": "숏폼",
+     "title": "삼립호빵 TV 광고, 숏폼 콘텐츠로 주목받다",
+     "brand": "삼립",
+     "body": "삼립호빵 광고가 숏폼 콘텐츠로 주목받고 있으며, SNS에서 많은 화제를 불러일으키고 있다. 짧은 formats를 통해 소비자와의 접점을 늘린다.",
+     "why": "짧고 강렬한 메시지가 소비자 기억에 남기가 쉽다.",
+     "action": "삼립의 숏폼 광고를 분석하여 유사한 SNS 콘텐츠를 기획해보자.",
+     "keywords": [
+      "숏폼",
+      "브랜드",
+      "소통"
+     ],
+     "sources": [
+      {
+       "name": "아이보스 · '환불 불가 제작비에 5% 성과 수수료' 쿠팡 신규 숏츠 광고",
+       "url": "https://news.google.com/rss/articles/CBMiT0FVX3lxTFBMMFlMTVZZeGF2ZVB2YTE4WXlxWmwzZWgtT0Zfc0c2WUpmclBMOGNxRzJsTWQtSFBGSlh0M0VKRVVuMTVNcFBkNUFrUElzT0E?oc=5",
+       "date": "2026-10-28"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "브랜드·업계 뉴스",
+   "description": "플랫폼·유통·대행사 쪽 움직임",
+   "items": [
+    {
+     "rank": 1,
+     "tag": "광고",
+     "title": "업계의 광고주와 에이전시 간의 인식 차이",
+     "brand": "더드럼",
+     "body": "2026년 조사에 따르면 광고회사와 광고주 간의 광고 지원 필요성 인식에 큰 차이가 있었다. 광고주 23%, 대행사 77%가 필요하다고 응답했다.",
+     "why": "향후 AI 활용이 증가하면 이러한 격차가 더욱 확대될 수 있다.",
+     "action": "이 조사 내용을 바탕으로 광고주와 연계할 수 있는 기획을 마련해보자.",
+     "keywords": [
+      "광고주",
+      "대행사",
+      "인식차이"
+     ],
+     "sources": [
+      {
+       "name": "매드타임스 · 광고회사는 필요한 일을 하고 있을까? 광고주 23% vs 대행사 77%",
+       "url": "https://www.madtimes.co.kr/news/articleView.html?idxno=29449",
+       "date": "2026-10-28"
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "tag": "플랫폼",
+     "title": "애피어, 새로운 글로벌 마케팅 부사장 선임",
+     "brand": "애피어",
+     "body": "AI 기반 마케팅 기업 애피어는 새로운 글로벌 마케팅 부사장으로 사남 루를 선임하여 경쟁력 있는 마케팅 전략을 구축할 예정이다.",
+     "why": "글로벌 시장에서의 성공적인 브랜딩을 위해 인재를 적절히 배치하는 것이 중요하다.",
+     "action": "애피어의 제품과 마케팅 전략을 분석하여 저희 브랜드에도 적용 가능한 방안을 모색해보자.",
+     "keywords": [
+      "애피어",
+      "글로벌 마케팅",
+      "경쟁력"
+     ],
+     "sources": [
+      {
+       "name": "매드타임스 · 애피어, 글로벌 마케팅 부사장에 ‘사남 루’ 선임… 글로벌 성장 기반 강화",
+       "url": "https://www.madtimes.co.kr/news/articleView.html?idxno=29471",
+       "date": "2026-10-28"
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "tag": "플랫폼",
+     "title": "매그나이트, eMpower 행사 개최",
+     "brand": "매그나이트",
+     "body": "매그나이트가 서울에서 커넥티드TV와 스트리밍 광고 시장을 탐구하는 eMpower 행사를 개최한다. 업체들은 변화하는 미디어 환경을 논의할 기회를 가진다.",
+     "why": "이번 행사는 광고 업계 관계자들이 협업을 통해 새로운 기회를 모색하는 데 도움이 된다.",
+     "action": "행사 내용을 공부하여 본인의 마케팅 전략을 실현하는 좋은 기회를 마련해보자.",
+     "keywords": [
+      "매그나이트",
+      "커넥티드TV",
+      "스트리밍 광고"
+     ],
+     "sources": [
+      {
+       "name": "매드타임스 · 매그나이트, 28일 서울서 ‘eMpower by Magnite Korea 2026’ 개최",
+       "url": "https://www.madtimes.co.kr/news/articleView.html?idxno=29469",
+       "date": "2026-10-27"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "follow_up": [
+  "CJ DMP의 적용 결과를 지속적으로 모니터링할 것.",
+  "LG전자의 AI 데이터센터 시장 반응을 분석할 것.",
+  "삼립 호빵 광고의 소비자 반응 분석 후 개선포인트 도출하기."
+ ],
+ "quiz": [
+  {
+   "q": "CJ ENM이 새로운 플랫폼 이름은 무엇인가?",
+   "options": [
+    "CJ DMP",
+    "CJ MAX",
+    "CJ ANALYTICS",
+    "CJ ADS"
+   ],
+   "answer": 0,
+   "explain": "CJ ENM이 발표한 데이터 관리 플랫폼은 CJ DMP이다."
+  },
+  {
+   "q": "LG전자의 3분기 AIDC 사업에서의 성과는?",
+   "options": [
+    "AI 시장 탈환",
+    "3조원 이상의 누적 수주",
+    "5조원 이상의 매출",
+    "고객 감소"
+   ],
+   "answer": 1,
+   "explain": "LG전자가 AI 데이터센터 냉각 솔루션 사업에서 3조원을 넘는 누적 수주 성과를 기록했다."
+  },
+  {
+   "q": "플레이디가 수상을 한 대회 이름은?",
+   "options": [
+    "Accelerate with Google Expert",
+    "Google Outstanding Award",
+    "Google AI Recognition",
+    "AI Marketing Innovation"
+   ],
+   "answer": 0,
+   "explain": "플레이디는 'Accelerate with Google Expert 2026' 콘테스트에서 수상하며 AI 마케팅 역량을 인정받았다."
+  }
+ ]
+}
