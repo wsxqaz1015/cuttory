@@ -341,6 +341,7 @@ a { color: inherit; }
 .rv-dots { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; }
 .rv-dots i { width: 9px; height: 9px; border-radius: 50%; background: #ffb35c; display: inline-block; }
 .rv-dots i.ok { background: #3ccf91; } .rv-dots i.ceo { background: #4dabf7; } .rv-dots i.off { background: #e3e5ea; }
+.ch-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; } .ch-list .btn { flex: none; width: auto; } .ch-list .t b, .ch-list .t .sub { display: block; }
 .ib-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
 .ib-list button { width: 100%; text-align: left; display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit; }
 .ib-list button img { width: 28px; height: 42px; image-rendering: pixelated; flex: none; }
@@ -398,7 +399,7 @@ a { color: inherit; }
 <div class="app">
   <header class="hud">
     <h1 class="office-title"><button id="ag-title" title="회사 이름 바꾸기">에이전시</button></h1>
-    <span class="floors" role="tablist" aria-label="층"><button class="fl on" aria-selected="true">1F 스튜디오</button><button class="fl" disabled title="팀이 늘어나면 열어요">2F 준비 중</button></span>
+    <span class="floors" role="tablist" aria-label="층"><button class="fl on" data-floor="1F" aria-selected="true">1F 스튜디오</button><button class="fl" data-floor="2F" aria-selected="false">2F 대표실 <span id="fl-n"></span></button></span>
     <span class="clock px" id="clock"></span>
     <span class="spacer"></span>
     <button class="chip-btn me-btn" id="btn-level" title="직급표 보기">
@@ -1050,7 +1051,7 @@ const seenItems = () => pendingItems().filter(x => save.seen[x.key]);
 const unseenItems = () => pendingItems().filter(x => !save.seen[x.key]);
 // 지금 이 팀원이 있어야 할 상태 (24시간 근무, 퇴근 없음)
 function wantMode(k, now) {
-  if (k === "lead") return !unseenItems().length && seenItems().length ? "deliver" : "working";
+  if (k === "lead") return "working";  // 결재 서류는 2층 대표실로 올려요
   if (isProd(k)) return "working";
   const due = dueId(k, now);
   return due && !findReport(k, due) ? "writing" : "working";
@@ -1080,6 +1081,9 @@ function sync(first) {
     else if (c.mode === "deliver") walk(k, "returning", seatOf(k), () => { c.dir = k === "lead" ? "down" : "up"; c.mode = wantMode(k, NOW()); sync(); });
     else c.mode = want;
   }
+  const ready = seenItems().length;
+  if (ready > (sync.ready ?? ready) && FLOOR === "1F" && chars.lead.visible) say("lead", `대표님, 2층 대표실에 결재 서류 ${ready}건 올려 뒀어요 📄`, 4500, true);
+  sync.ready = ready; renderFloorBadge();
   persist(); renderRoster(); renderHud();
   setTimeout(startReview, 600);
 }
@@ -1152,12 +1156,12 @@ function windowLine() {
 function wander() {
   if (document.hidden) return;
   const night = darkness() > .7, out = ALL.filter(k => ["toSpot", "spot", "fromSpot"].includes(chars[k].mode)).length;
-  if (out >= (night ? 2 : 3) || Math.random() < .25) return;
+  if (out >= (save.chatty ? (night ? 2 : 3) : 1) || Math.random() < (save.chatty ? .25 : .75)) return;
   const idle = ALL.filter(k => k !== "lead" && chars[k].mode === "working" && atSeat(k) && !bubbles[k] && reviewing?.owner !== k);
   if (!idle.length) return;
   const k = idle[Math.random() * idle.length | 0], c = chars[k];
   let spot;
-  if (Math.random() < .3) { // 동료 자리에 놀러 가기
+  if (save.chatty && Math.random() < .3) { // 동료 자리에 놀러 가기
     const mate = ALL.filter(m => m !== k && m !== "lead" && atSeat(m))[0 | Math.random() * 6];
     if (!mate) return;
     const s = seatOf(mate), dy = s.y < 100 ? 18 : s.y > 200 ? -14 : 22;
@@ -1171,8 +1175,8 @@ function wander() {
   walk(k, "toSpot", spot, () => {
     c.mode = "spot"; c.dir = spot.face || "up"; if (spot.cup) c.cup = true;
     const pool = night && Math.random() < .5 ? NIGHT_LINES : spot.lines || [windowLine()];
-    say(k, pool[Math.random() * pool.length | 0], 3000);
-    if (spot.mate && Math.random() < .7) setTimeout(() => say(spot.mate, ["좋죠!", "오 그거 괜찮은데요?", "잠깐만요, 이것만 끝내고요 😅", "같이 봐요!"][Math.random() * 4 | 0], 2500), 1600);
+    if (save.chatty) say(k, pool[Math.random() * pool.length | 0], 3000);
+    if (save.chatty && spot.mate && Math.random() < .7) setTimeout(() => say(spot.mate, ["좋죠!", "오 그거 괜찮은데요?", "잠깐만요, 이것만 끝내고요 😅", "같이 봐요!"][Math.random() * 4 | 0], 2500), 1600);
     setTimeout(() => {
       walk(k, "fromSpot", seatOf(k), () => { c.dir = "up"; c.mode = wantMode(k, NOW()); c.spot = null; setTimeout(() => c.cup = false, 12000); sync(); });
     }, 7000 + Math.random() * 12000);
@@ -1190,6 +1194,76 @@ function say(k, text, ms = 3500, alert) {
 
 /* ═════════════ 그리기 루프 ═════════════ */
 let last = performance.now();
+// 말풍선 위치 (2F에서는 대표실에 있는 사람 말만 보여요)
+function placeBubbles() {
+  const rect = cvs.getBoundingClientRect(), sc = rect.width / W;
+  for (const k of Object.keys(bubbles)) {
+    const b = bubbles[k], c = FLOOR === "2F" ? (k === "me" ? null : visitorPos(k)) : chars[k];
+    if (performance.now() > b.until || !c || (FLOOR !== "2F" && !c.visible)) { b.el.remove(); delete bubbles[k]; continue; }
+    b.el.style.left = (c.x + 6) * sc + "px"; b.el.style.top = Math.max(26, (c.y - 3) * sc) + "px";
+  }
+}
+/* ═════════════ 2F 대표실: 결재가 필요한 팀원만 올라와요 ═════════════ */
+let FLOOR = "1F";
+const CEO2 = { x: 194, y: 112 }, DESK2 = { x: 150, y: 128, w: 100, h: 18 };
+// 결재 대기 서류를 가진 팀원 (팀장이 먼저 본 것만), 한 사람당 한 자리
+function visitors() {
+  const seen = new Set(), out = [];
+  for (const x of seenItems()) if (!seen.has(x.owner)) { seen.add(x.owner); out.push(x); }
+  return out.slice(0, 6);
+}
+function visitorPos(k) {
+  if (k === "lead") return visitors().length ? { x: 262, y: 120 } : null;
+  const i = visitors().findIndex(x => x.owner === k); if (i < 0) return null;
+  const n = Math.min(visitors().length, 6), x0 = CEO2.x + 6 - (n - 1) * 15;
+  return { x: x0 + i * 30 - 6, y: 166 };
+}
+function drawCeoRoom(now, lv, t) {
+  // 벽: 짙은 네이비 + 원목 웨인스코팅, 바닥: 따뜻한 카펫
+  R(ctx, 0, 0, W, 52, P.navy); for (let x = 0; x < W; x += 24) R(ctx, x, 0, 1, 52, P.navyD);
+  R(ctx, 0, 52, W, 3, P.woodL);
+  for (let y = 55; y < H; y += 8) for (let x = 0; x < W; x += 8) R(ctx, x, y, 8, 8, ((x + y) / 8) % 2 ? "#b9584a" : "#b0503f");
+  R(ctx, 96, 150, 208, 100, "#d9c9a8"); R(ctx, 100, 154, 200, 92, "#e8dcc0"); // 러그
+  drawWindow(76, 8, 212, 32, now, lv, performance.now());
+  // 책장 (왼쪽) · 상패 · 화분
+  R(ctx, 10, 56, 52, 92, P.woodD); for (let i = 0; i < 4; i++) { R(ctx, 12, 60 + i * 22, 48, 2, P.woodL); for (let j = 0; j < 7; j++) R(ctx, 14 + j * 6, 64 + i * 22, 4, 16, ["#d8392b", "#2f8a5f", "#f1ece2", "#24345a", "#e0952e"][(i + j) % 5]); }
+  R(ctx, 330, 14, 30, 22, "#e9e1cf"); R(ctx, 332, 16, 26, 18, "#ffd43b"); R(ctx, 340, 20, 10, 8, "#fff3b0"); // 액자(회사 로고 자리)
+  drawPalm(360, 120, t, true); drawPalm(16, 196, t, false);
+  // 소파 (오른쪽)
+  R(ctx, 318, 210, 70, 14, P.teal); R(ctx, 318, 224, 70, 12, P.tealD); R(ctx, 312, 208, 8, 28, P.tealD); R(ctx, 386, 208, 8, 28, P.tealD);
+  R(ctx, 334, 244, 40, 10, P.woodL);
+  // 문
+  R(ctx, DOOR.x - 8, 256, 32, 32, P.woodD); R(ctx, DOOR.x - 6, 258, 28, 30, P.woodL); R(ctx, DOOR.x + 15, 274, 2, 3, "#ffd43b");
+  R(ctx, DOOR.x - 6, 248, 28, 7, P.cream); ctx.fillStyle = P.navy; ctx.font = "6px sans-serif"; ctx.fillText("1F", DOOR.x + 3, 254);
+  // 대표 책상 + 의자 + 대표
+  R(ctx, CEO2.x - 3, CEO2.y - 6, 18, 12, "#2b2d33");
+  sprite(ctx, CEO2.x, CEO2.y, meLook(), "down", 0, { sit: true, blink: (t / 3000 | 0) % 7 === 0 && (t % 3000) < 160 });
+  R(ctx, DESK2.x, DESK2.y, DESK2.w, 4, P.woodL); R(ctx, DESK2.x, DESK2.y + 4, DESK2.w, DESK2.h - 4, P.wood); R(ctx, DESK2.x, DESK2.y + DESK2.h - 2, DESK2.w, 2, P.woodD);
+  R(ctx, CEO2.x - 4, DESK2.y - 3, 20, 8, "#c9cdd6"); R(ctx, CEO2.x - 3, DESK2.y - 2, 18, 5, "#7fc8ff");
+  R(ctx, DESK2.x + 8, DESK2.y + 1, 12, 3, P.curtain); R(ctx, DESK2.x + 80, DESK2.y - 4, 6, 6, "#f1ece2"); // 명패 · 머그
+  const n = seenItems().length;
+  for (let i = 0; i < Math.min(n, 6); i++) R(ctx, DESK2.x + 24 + i, DESK2.y + 1 - i * 2, 14, 2, i % 2 ? "#f2efe4" : "#ffffff");
+  // 결재 받으러 온 팀원들 (뒷모습, 서류 들고) + 팀장은 옆에서 기록
+  const vs = visitors();
+  for (const v of vs) { const p = visitorPos(v.owner); sprite(ctx, p.x, p.y, TEAM[v.owner].look, "up", 0, { paper: true }); }
+  if (vs.length) { const L = visitorPos("lead"); sprite(ctx, L.x, L.y, TEAM.lead.look, "down", 0, { paper: true }); }
+  else { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.fillText("결재할 서류가 없어요 · 조용한 대표실 ☕", W / 2, 200); ctx.textAlign = "left"; }
+  drawLights(now);
+}
+function setFloor(f) {
+  FLOOR = f; save.floor = f; persist();
+  document.querySelectorAll(".fl[data-floor]").forEach(b => { b.classList.toggle("on", b.dataset.floor === f); b.setAttribute("aria-selected", b.dataset.floor === f); });
+  for (const k of Object.keys(bubbles)) { bubbles[k].el.remove(); delete bubbles[k]; }
+  if (f === "2F") {
+    const vs = visitors();
+    if (!vs.length) return;
+    say("lead", `대표님, 결재 서류 ${seenItems().length}건이에요. 차례로 들어왔어요 📄`, 3500, true);
+    vs.forEach((v, i) => setTimeout(() => FLOOR === "2F" && say(v.owner, `${v.title} 결재 부탁드려요`, 2300), 1400 + i * 2500));
+  }
+}
+document.querySelectorAll(".fl[data-floor]").forEach(b => b.onclick = () => setFloor(b.dataset.floor));
+function renderFloorBadge() { const el = document.getElementById("fl-n"); if (el) el.textContent = seenItems().length ? `· ${seenItems().length}` : ""; }
+
 function frame(t) {
   const dt = Math.min(0.05, (t - last) / 1000); last = t;
   const now = NOW(), lv = level();
@@ -1206,6 +1280,7 @@ function frame(t) {
     } else c.step = 0;
   }
   ctx.clearRect(0, 0, W, H);
+  if (FLOOR === "2F") { drawCeoRoom(now, lv, t); placeBubbles(); requestAnimationFrame(frame); return; }
   drawRoom(now, lv); drawDecor(lv, now, t);
   // 창가 집중석 (트렌드팀): 하얀 책상, 창을 보고 앉아요
   for (const k of KINDS) {
@@ -1215,7 +1290,7 @@ function frame(t) {
   // 회의 테이블 (체크 러그 위): 나는 위쪽 가운데, 포트폴리오 매니저 둘은 맞은편
   drawBigTable();
   R(ctx, ME.x - 1, ME.y - 4, 14, 8, P.chair);
-  sprite(ctx, ME.x, ME.y, meLook(), "down", 0, { sit: true, blink: (t / 3000 | 0) % 7 === 0 && (t % 3000) < 160 });
+  // 대표는 2층 대표실에 있어요. 1층 자리는 비워 둬요
   const LS = SEATS.lead; R(ctx, LS.x - 1, LS.y - 4, 14, 8, P.chairD);
   if (atSeat("lead")) sprite(ctx, LS.x, LS.y, TEAM.lead.look, "down", 0, { sit: true, paper: !!reviewing, blink: (t / 3700 | 0) % 6 === 0 && (t % 3700) < 160 });
   R(ctx, TABLE.x, TABLE.y, TABLE.w, 3, "#ffffff"); R(ctx, TABLE.x, TABLE.y + 3, TABLE.w, TABLE.h - 5, P.white); R(ctx, TABLE.x, TABLE.y + TABLE.h - 2, TABLE.w, 2, P.whiteD);
@@ -1252,19 +1327,20 @@ function frame(t) {
   // 해 질 녘부터 서서히 어둡게 (조명은 켜져 있어요)
   const dk = darkness();
   if (dk > 0) { ctx.fillStyle = `rgba(10,12,40,${(dk * .3).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
-  // 말풍선 위치
-  const rect = cvs.getBoundingClientRect(), sc = rect.width / W;
-  for (const k of Object.keys(bubbles)) {
-    const b = bubbles[k], c = chars[k];
-    if (performance.now() > b.until || !c.visible) { b.el.remove(); delete bubbles[k]; continue; }
-    b.el.style.left = (c.x + 6) * sc + "px"; b.el.style.top = Math.max(26, (c.y - 3) * sc) + "px";
-  }
+  placeBubbles();
   requestAnimationFrame(frame);
 }
 
 /* ═════════════ 사무실 누르기 ═════════════ */
 function canvasPoint(ev) { const r = cvs.getBoundingClientRect(); return { x: (ev.clientX - r.left) / r.width * W, y: (ev.clientY - r.top) / r.height * H }; }
 function hitTest(p) {
+  if (FLOOR === "2F") {
+    for (const v of visitors()) { const q = visitorPos(v.owner); if (p.x >= q.x - 3 && p.x <= q.x + 15 && p.y >= q.y - 4 && p.y <= q.y + 20) return ["visit", v]; }
+    const L = visitorPos("lead"); if (L && p.x >= L.x - 3 && p.x <= L.x + 15 && p.y >= L.y - 4 && p.y <= L.y + 20) return ["inbox"];
+    if (p.x >= DESK2.x - 10 && p.x <= DESK2.x + DESK2.w + 10 && p.y >= CEO2.y - 8 && p.y <= DESK2.y + DESK2.h) return ["inbox"];
+    if (p.x <= 44 && p.y >= 246) return ["down"];
+    return null;
+  }
   const lv = level();
   for (const k of ALL) { const c = chars[k]; if (c.visible && p.x >= c.x - 3 && p.x <= c.x + 15 && p.y >= c.y - 4 && p.y <= c.y + 20) return ["char", k]; }
   if (p.x >= TABLE.x && p.x <= TABLE.x + TABLE.w && p.y >= ME.y - 6 && p.y <= TABLE.y + TABLE.h) return ["desk"];
@@ -1283,7 +1359,7 @@ function hitTest(p) {
 cvs.addEventListener("mousemove", ev => { cvs.style.cursor = hitTest(canvasPoint(ev)) ? "pointer" : "default"; });
 cvs.addEventListener("click", ev => {
   const h = hitTest(canvasPoint(ev)); if (!h) return;
-  ({ char: () => talkTo(h[1]), desk: openArchive, whiteboard: openKeywords, led: () => { const d = latestOf("daily"); d ? openReport("daily", d.id) : toast("아직 데일리가 없어요"); },
+  ({ visit: () => h[1].type === "report" ? openReport(h[1].k, h[1].id) : openDraft(h[1].id, h[1].k), inbox: openInbox, down: () => setFloor("1F"), char: () => talkTo(h[1]), desk: openArchive, whiteboard: openKeywords, led: () => { const d = latestOf("daily"); d ? openReport("daily", d.id) : toast("아직 데일리가 없어요"); },
      trophy: openBadges, shelf: openScrapbook, coffee: () => toast("☕ 카페 바는 늘 열려 있어요. 주임이 되면 팀원들이 커피 타러 와요"),
      booth: () => toast("📞 폰부스예요. 고객 통화나 녹음은 여기서!"), lounge: () => toast("🛋 라운지예요. 팀원들이 수시로 쉬러 와요"), cat: () => toast("🐈 냐옹… (스크랩북 위에서 자고 싶은 눈치예요)"),
      door: () => toast(`🌙 24시간 열려 있는 사무실이에요. 오늘 해는 ${fmtH(SUN.rise)}에 뜨고 ${fmtH(SUN.set)}에 져요`) })[h[0]]();
@@ -1798,7 +1874,7 @@ function confirmMake(k, id, i) {
 }
 async function runMake(k, id, src, max, step) {
   const K = KIT.kinds[k], ref = src.ref, me = who(k), lead = who("lead");
-  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = tasteText(k);
+  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = myContext() + tasteText(k);
   let li = step(`${me}: 시안 1번 쓰는 중…`);
   let draft = await askAI(`${role}
 아래 자료 하나로 ${K.what}을 쓰세요. ${K.guide}
@@ -1895,7 +1971,7 @@ function openInbox() {
   openModal(`${head(AV.lead, `${esc(who("lead"))} · 🗂 대표 결재함`, ready.length ? `대표님, 제가 먼저 검토한 서류 ${ready.length}건이에요. 승인하거나 반려해 주세요.` : items.length ? "지금 팀원 시안을 검토하고 있어요. 끝나면 바로 올릴게요." : "결재할 서류가 없어요. 매일 아침 8시 20분쯤 새 리포트와 시안이 올라와요.")}
     <div class="m-body">
       <p class="sub" style="margin:0">시안은 대표님이 컨펌하실 때만 만들어요. 승인·반려·수정 지시는 팀장이 옆에서 📒 기준 노트로 적어 두고, 팀원은 다음 시안을 쓰기 전에 읽어요. 팀장 검토를 켜면 ● 초록 통과 · 주황 수정 · 파랑 대표 지시로 보여요.</p>
-      ${KIT ? `<h3 style="margin:14px 0 0;font-size:15px">✍️ 시안 만들기 (대표 컨펌)</h3><p class="sub" style="margin:2px 0 0">시안은 AI 크레딧을 많이 써서, 대표님이 고르고 컨펌하실 때만 만들어요.</p>
+      ${KIT ? `<h3 style="margin:14px 0 0;font-size:15px">✍️ 시안 만들기 (대표 컨펌) <button class="btn ghost" style="padding:3px 9px;font-size:12px;margin-left:6px" id="ib-ch">🔗 내 채널 · 프로젝트</button></h3><p class="sub" style="margin:2px 0 0">시안은 AI 크레딧을 많이 써서, 대표님이 고르고 컨펌하실 때만 만들어요.</p>
         <ul class="ib-list">${latestHotId() ? `<li><button data-mk="hot"><img src="${AV.daily}" alt=""><span class="t"><b>카드뉴스 · 모아의 오늘의 핫이슈에서 고르기</b><span class="sub">${esc(latestHotId())} · 후보 ${(hotOf(latestHotId()).items || []).length}개</span></span><span class="st-chip">고르기</span></button></li>` : ""}
         ${KIT.reels ? `<li><button data-mk="reels"><img src="${AV.content}" alt=""><span class="t"><b>릴스 · 리서가 고른 주제</b><span class="sub">${esc(KIT.reels.title)}</span></span><span class="st-chip">컨펌</span></button></li>` : ""}
         <li><button disabled><img src="${AV.blog}" alt=""><span class="t"><b>블로그 · 내 구글 드라이브 자료</b><span class="sub">드라이브 폴더를 연결하면 열려요</span></span><span class="st-chip">준비 중</span></button></li></ul>` : ""}
@@ -1905,6 +1981,7 @@ function openInbox() {
       ${recent.length ? `<h3 style="margin:16px 0 0;font-size:15px">최근 처리한 시안</h3><ul class="ib-list">${recent.slice(0, 8).map(row).join("")}</ul>` : ""}
     </div>`);
   modal.querySelectorAll("[data-open]").forEach(b => b.onclick = () => { const [t, k, id] = b.dataset.open.split("|"); t === "report" ? openReport(k, id) : openDraft(id, k); });
+  { const b = document.getElementById("ib-ch"); if (b) b.onclick = openChannels; }
   modal.querySelectorAll("[data-forget]").forEach(b => b.onclick = () => { save.taste.splice(+b.dataset.forget, 1); persist(); openInbox(); });
   modal.querySelectorAll("[data-mk]").forEach(b => b.onclick = () => b.dataset.mk === "hot" ? openHot(latestHotId()) : confirmMake("reels", ymd(NOW()), 0));
 }
@@ -2118,6 +2195,46 @@ document.getElementById("board-refresh").onclick = () => { lastPushed = ""; open
 /* ═════════════ 설정 ═════════════ */
 function looksHtml(cur) { return `<div class="looks">${ME_LOOKS.map((L, i) => `<button type="button" data-look="${i}" class="${i === cur ? "on" : ""}"><img src="${avatar(L)}" alt="모습 ${i + 1}"></button>`).join("")}</div>`; }
 function bindLooks(root, set) { root.querySelectorAll("[data-look]").forEach(b => b.onclick = () => { root.querySelectorAll("[data-look]").forEach(x => x.classList.toggle("on", x === b)); set(+b.dataset.look); }); }
+/* ── 내 채널 · 프로젝트: 블로그·인스타 주소와 진행 중인 프로젝트(해시태그)를 저장하고 지울 수 있어요 ── */
+const CH_TYPES = { blog: ["📝", "네이버 블로그"], insta: ["📸", "인스타그램"], youtube: ["▶️", "유튜브"], etc: ["🔗", "기타"] };
+function channels() {
+  if (!Array.isArray(save.channels)) save.channels = [{ id: "c1", type: "blog", value: "https://m.blog.naver.com/i__rizi", label: "" }, { id: "c2", type: "insta", value: "@lucky_marketer", label: "" }];
+  return save.channels;
+}
+const projects = () => (save.projects = Array.isArray(save.projects) ? save.projects : []);
+const chLink = c => /^https?:\/\//.test(c.value) ? c.value : c.type === "insta" ? `https://www.instagram.com/${c.value.replace(/^@/, "")}` : c.type === "youtube" && c.value.startsWith("@") ? `https://www.youtube.com/${c.value}` : "";
+// 시안을 쓸 때 팀원이 읽는 대표님 채널·프로젝트 정보
+function myContext() {
+  const ch = channels(), on = projects().filter(x => x.on), off = projects().filter(x => !x.on);
+  if (!ch.length && !projects().length) return "";
+  return `\n[대표님 채널·프로젝트]\n${ch.map(c => `- ${CH_TYPES[c.type][1]}: ${c.value}${c.label ? ` (${c.label})` : ""}`).join("\n")}${on.length ? `\n- 지금 진행 중인 프로젝트: ${on.map(x => `${x.name}${x.tags ? ` ${x.tags}` : ""}`).join(" / ")}` : ""}${off.length ? `\n- 쉬거나 끝난 프로젝트 (언급·해시태그 금지): ${off.map(x => x.name).join(", ")}` : ""}\n`;
+}
+function openChannels() {
+  const ch = channels(), pj = projects();
+  openModal(`${head(ME_AV, "대표 설정", "🔗 내 채널 · 프로젝트")}
+    <div class="m-body">
+      <p class="sub" style="margin:0">주소나 프로젝트가 바뀌면 여기서 바꿔 주세요. 팀원들이 시안을 쓸 때 진행 중인 프로젝트만 해시태그·문구에 넣고, 쉬는 프로젝트는 빼요.</p>
+      <h3 style="margin:14px 0 6px;font-size:15px">채널</h3>
+      <ul class="ch-list">${ch.map(c => `<li><div style="display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--paper-line);border-radius:14px;padding:8px 10px"><span>${CH_TYPES[c.type][0]}</span><span class="t" style="flex:1;min-width:0;overflow-wrap:anywhere"><b>${esc(CH_TYPES[c.type][1])}${c.label ? ` · ${esc(c.label)}` : ""}</b><span class="sub">${chLink(c) ? `<a href="${esc(chLink(c))}" target="_blank" rel="noopener">${esc(c.value)}</a>` : esc(c.value)}</span></span><button class="btn ghost" style="padding:4px 10px;font-size:12px" data-delch="${esc(c.id)}">지우기</button></div></li>`).join("") || `<li class="sub">저장한 채널이 없어요</li>`}</ul>
+      <form id="ch-add" class="row2" style="margin-top:8px;align-items:end">
+        <label class="field">종류<select id="ch-type">${Object.entries(CH_TYPES).map(([k, [ic, n]]) => `<option value="${k}">${ic} ${n}</option>`).join("")}</select></label>
+        <label class="field">주소 또는 아이디<input id="ch-val" maxlength="200" placeholder="https://… 또는 @아이디" required></label>
+        <label class="field">메모 <span class="opt">(선택)</span><input id="ch-label" maxlength="20" placeholder="예: 부계정"></label>
+        <button class="btn" type="submit">＋ 채널 저장</button></form>
+      <h3 style="margin:18px 0 6px;font-size:15px">프로젝트</h3>
+      <ul class="ch-list">${pj.map(x => `<li><div style="display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--paper-line);border-radius:14px;padding:8px 10px;${x.on ? "" : "opacity:.6"}"><label style="display:flex;gap:6px;align-items:center;flex:1;min-width:0"><input type="checkbox" data-pjon="${esc(x.id)}"${x.on ? " checked" : ""}><span style="min-width:0;overflow-wrap:anywhere"><b>${esc(x.name)}</b> <span class="sub">${x.on ? "진행 중" : "쉬는 중"}</span><br><span class="sub">${esc(x.tags || "")}</span></span></label><button class="btn ghost" style="padding:4px 10px;font-size:12px" data-delpj="${esc(x.id)}">지우기</button></div></li>`).join("") || `<li class="sub">예) 독서 굿즈 펀딩 · #독서굿즈 #펀딩준비</li>`}</ul>
+      <form id="pj-add" class="row2" style="margin-top:8px;align-items:end">
+        <label class="field">프로젝트 이름<input id="pj-name" maxlength="30" placeholder="예: 독서 굿즈 펀딩" required></label>
+        <label class="field">해시태그 <span class="opt">(띄어쓰기로)</span><input id="pj-tags" maxlength="200" placeholder="#독서굿즈 #펀딩준비"></label>
+        <button class="btn" type="submit">＋ 프로젝트 저장</button></form>
+    </div>`);
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  document.getElementById("ch-add").onsubmit = e => { e.preventDefault(); const v = document.getElementById("ch-val").value.trim(); if (!v) return; ch.push({ id: uid(), type: document.getElementById("ch-type").value, value: v, label: document.getElementById("ch-label").value.trim() }); persist(); toast("🔗 채널을 저장했어요"); openChannels(); };
+  document.getElementById("pj-add").onsubmit = e => { e.preventDefault(); const n = document.getElementById("pj-name").value.trim(); if (!n) return; const tags = document.getElementById("pj-tags").value.trim().split(/[\s,]+/).filter(Boolean).map(t => "#" + t.replace(/^#/, "")).join(" "); pj.push({ id: uid(), name: n, tags, on: true }); persist(); toast("📁 프로젝트를 저장했어요"); openChannels(); };
+  modal.querySelectorAll("[data-delch]").forEach(b => b.onclick = () => { if (!confirm("이 채널을 지울까요?")) return; save.channels = ch.filter(c => c.id !== b.dataset.delch); persist(); openChannels(); });
+  modal.querySelectorAll("[data-delpj]").forEach(b => b.onclick = () => { if (!confirm("이 프로젝트를 지울까요?")) return; save.projects = pj.filter(x => x.id !== b.dataset.delpj); persist(); openChannels(); });
+  modal.querySelectorAll("[data-pjon]").forEach(b => b.onchange = () => { const x = pj.find(y => y.id === b.dataset.pjon); x.on = b.checked; persist(); openChannels(); });
+}
 function openSettings() {
   let look = save.look;
   openModal(`${head(ME_AV, "설정", "⚙️ 내 오피스 설정")}<div class="m-body">
@@ -2125,6 +2242,8 @@ function openSettings() {
       <label class="field">🏢 회사 이름<input id="st-company" maxlength="20" value="${esc(save.company || "")}" placeholder="${esc(companyName())}"></label>
       <label class="field">🎯 가고 싶은 브랜드 <span class="opt">(선택)</span><input id="st-target" maxlength="20" value="${esc(save.target)}" placeholder="예: 올리브영"></label></div>
     <p class="sub" style="margin:4px 0 0">브랜드를 적으면 메모의 세 번째 칸이 "○○라면 어떻게 할까?"로 바뀌어요.</p>
+    <div class="bar" style="margin:4px 0 8px"><button class="btn ghost" id="st-ch">🔗 내 채널 · 프로젝트 관리</button></div>
+    <label class="check-row field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-chatty"${save.chatty ? " checked" : ""}> 💬 수다 허용 <span class="opt">(끄면 팀원들이 꼭 필요한 말만 하고 일해요)</span></label>
     <div class="field">내 모습${looksHtml(look)}</div>
     <p class="field" style="margin-top:14px">팀원 이름 <span class="opt">(비워 두면 기본 이름)</span></p>
     <div class="row2">${ALL.map(k => `<label class="field" style="margin-top:4px"><span class="kb" style="background:${tagOf(k)[1]}">${tagOf(k)[0]}</span> ${TEAM[k].title}<input data-tn="${k}" maxlength="8" value="${esc(save.teamNames[k] || "")}" placeholder="${DEFAULT_NAME[k]}"></label>`).join("")}</div>
@@ -2134,7 +2253,9 @@ function openSettings() {
       <button class="btn ghost" id="st-replay">🚪 입장 장면 다시 보기</button><button class="btn ghost" id="st-tour">❓ 사용법 다시 보기</button><button class="btn ghost" id="st-reset">🗑 처음부터 다시</button></div>
   </div>`, true);
   bindLooks(modal, v => look = v);
+  document.getElementById("st-ch").onclick = openChannels;
   document.getElementById("st-save").onclick = () => {
+    { const ch = document.getElementById("st-chatty").checked; if (ch !== !!save.chatty) { save.chatty = ch; if (!ch && chars.lead.visible) say("lead", "다들 대표님 말씀 들었죠? 수다는 그만, 일합시다 💼", 4000, true); } }
     const me = document.getElementById("st-me").value.trim(); if (!me) return toast("이름을 적어 주세요");
     save.me = me; save.target = document.getElementById("st-target").value.trim(); save.company = document.getElementById("st-company").value.trim(); save.look = look; ME_AV = avatar(meLook());
     save.teamNames = {}; modal.querySelectorAll("[data-tn]").forEach(i => { const v = i.value.trim(); if (v) save.teamNames[i.dataset.tn] = v; });
@@ -2262,11 +2383,12 @@ requestAnimationFrame(frame);
 if (!save.me) showJoin();
 else if (save.tour < TOUR_V) startTour();
 sync(true);
+if (save.floor === "2F") setFloor("2F");
 setInterval(() => { tickClock(); sync(); }, 15000);
 setInterval(wander, 9000);
 setInterval(() => { // 가끔 혼잣말
   const on = ALL.filter(k => chars[k].visible && chars[k].mode === "working" && !chars[k].path.length && !bubbles[k]);
-  if (on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
+  if (save.chatty && on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
 }, 28000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { tickClock(); sync(); } });
 // 새 리포트가 올라왔는지 30분마다 확인
