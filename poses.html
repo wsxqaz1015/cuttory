@@ -9,6 +9,7 @@
 <meta property="og:description" content="캐릭터 한 장으로 인스타툰 포즈를 한 번에 만들어요.">
 <script src="config.js"></script>
 <script src="poses.js"></script>
+<script src="poses-art.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
@@ -43,6 +44,7 @@
   .tab { padding: 7px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; }
   .tab.on { background: var(--sunk); color: var(--ink); font-weight: 700; }
   .credits { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 700; white-space: nowrap; }
+  @media (max-width: 440px) { .tab { padding: 6px 8px; font-size: 13px; } .logo { font-size: 19px; } .logo svg { width: 26px; height: 26px; } .credits { padding: 5px 9px; font-size: 13px; } }
 
   main { max-width: 1080px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .hero h1 { font: 34px/1.15 var(--f-display); margin: 0 0 6px; letter-spacing: -.01em; }
@@ -87,18 +89,22 @@
   .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
   .chip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }
   .chip small { opacity: .65; margin-left: 2px; }
-  .poses { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-  .pose { position: relative; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); padding: 12px 10px 10px; text-align: left; display: grid; gap: 4px; transition: border-color .12s, background .12s; }
-  .pose:hover { border-color: var(--brand-edge); }
-  .pose.on { border-color: var(--brand-edge); background: color-mix(in srgb, var(--brand) 18%, var(--surface)); }
-  .pose .ic { font-size: 30px; line-height: 1.1; }
-  .pose .t { font-weight: 700; font-size: 14px; }
-  .pose .d { color: var(--muted); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .pose .ck { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 13px; font-weight: 800; color: transparent; }
-  .pose.on .ck { background: var(--brand-edge); border-color: var(--brand-edge); color: #fff; }
-  .pose .more { justify-self: start; border: 0; background: none; color: var(--muted); font-size: 12px; padding: 2px 0; text-decoration: underline; }
-  .pose .edited { position: absolute; top: 10px; right: 36px; font-size: 11px; color: var(--brand-edge); font-weight: 700; }
-  .pose.add { place-items: center; text-align: center; border-style: dashed; color: var(--muted); min-height: 116px; }
+  .poses { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 760px) { .poses { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; } }
+  .pose { position: relative; aspect-ratio: 1; border: 2px solid var(--line); border-radius: 14px; background: #fff; padding: 6px; display: grid; place-items: center; cursor: pointer; transition: border-color .12s, box-shadow .12s; }
+  .pose svg { width: 100%; height: 100%; display: block; }
+  .pose:hover { border-color: color-mix(in srgb, var(--brand-edge) 55%, var(--line)); }
+  .pose.on { border-color: var(--brand-edge); box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 55%, transparent); }
+  .pose .ck { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand-edge); color: #fff; display: none; place-items: center; font-size: 13px; font-weight: 800; }
+  .pose.on .ck { display: grid; }
+  .pose .more { position: absolute; left: 6px; bottom: 6px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid #e3d8c5; background: #fff; color: #5a4a36; font-size: 13px; display: none; place-items: center; padding: 0; }
+  .pose.on .more, .pose:hover .more, .pose:focus-within .more { display: grid; }
+  .pose .edited { position: absolute; top: 6px; left: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--brand-edge); }
+  .pose .mine { font-size: 12.5px; font-weight: 700; color: #3a2a10; text-align: center; padding: 0 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .pose.add { border-style: dashed; background: var(--surface); color: var(--muted); font-size: 12.5px; text-align: center; }
+  .pose.add b { display: block; font-size: 26px; line-height: 1; margin-bottom: 4px; }
+  .pose-tip { color: var(--muted); font-size: 12.5px; margin: 10px 0 0; }
+  .linkbtn { border: 0; background: none; color: var(--brand-edge); font-weight: 700; font-size: 14px; padding: 4px 2px; }
 
   .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px max(16px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); }
   .bar-in { max-width: 1080px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
@@ -106,7 +112,7 @@
   .bar-info b { font-size: 15px; }
   .progress { height: 8px; border-radius: 99px; background: var(--sunk); overflow: hidden; margin-top: 6px; }
   .progress i { display: block; height: 100%; width: 0; background: var(--brand-edge); transition: width .3s; }
-  .bar .btn.primary { padding: 12px 20px; font-size: 15px; white-space: nowrap; }
+  .bar .btn.primary { padding: 14px 28px; font-size: 16px; white-space: nowrap; border-radius: 999px; }
 
   .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
   .res { position: relative; border: 2px solid var(--line); border-radius: 14px; background: var(--check); overflow: hidden; cursor: pointer; }
@@ -207,15 +213,13 @@
   </section>
 
   <section class="card">
-    <h2><span class="step">2</span>포즈 고르기 <span style="color:var(--muted);font-weight:500;font-size:13px" id="pose-count"></span></h2>
     <div class="pose-head">
-      <div class="chips" id="chips"></div>
-      <div class="row">
-        <button class="btn small" id="sel-all">전체 선택</button>
-        <button class="btn small" id="sel-none">선택 해제</button>
-      </div>
+      <h2 style="margin:0"><span class="step">2</span>포즈 고르기 <span style="color:var(--muted);font-weight:500" id="pose-count"></span></h2>
+      <button class="linkbtn" id="sel-all">전체 선택</button>
     </div>
+    <div class="chips" id="chips" style="margin-bottom:14px"></div>
     <div class="poses" id="poses"></div>
+    <p class="pose-tip">그림을 눌러 포즈를 고르세요. 고른 그림의 ✎를 누르면 포즈 설명을 보고 고칠 수 있어요.</p>
   </section>
 
   <section class="card">
@@ -242,6 +246,7 @@
 </div>
 
 <dialog id="dlg-edit">
+  <div id="edit-art" style="width:120px;height:120px;margin:0 auto 8px;border:2px solid var(--line);border-radius:14px;background:#fff;padding:4px" hidden></div>
   <h3 id="edit-title">포즈 설명</h3>
   <p>AI가 이 설명대로 그려요. 방향(정면·옆), 손 모양, 표정, 소품을 구체적으로 적을수록 정확해요.</p>
   <input type="text" id="edit-name" placeholder="포즈 이름 (예: 우산 쓰기)" style="margin-bottom:8px">
@@ -442,19 +447,19 @@ $('#bg-seg').onclick = (e) => { const b = e.target.closest('button'); if (!b) re
 const renderBg = () => $('#bg-seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.bg === S.bg));
 
 // ===== 2. 포즈 고르기 =====
-const CATS = ['전체', '기본', '일상', '기분 좋음', '속상함', '설명용', '내 포즈'];
+const CATS = ['전체', '긍정', '부정', '정보성', '일상', '기본', '내 포즈'];
 function renderPoses() {
   const list = allPoses(), shown = S.cat === '전체' ? list : list.filter(p => p.cat === S.cat);
   $('#chips').innerHTML = CATS.map(c => { const n = c === '전체' ? list.length : list.filter(p => p.cat === c).length; return `<button class="chip${c === S.cat ? ' on' : ''}" data-cat="${c}">${c}<small>${n}</small></button>`; }).join('');
-  $('#poses').innerHTML = shown.map(p => `
-    <div class="pose${S.picked.has(p.id) ? ' on' : ''}" data-id="${p.id}" role="checkbox" aria-checked="${S.picked.has(p.id)}" tabindex="0">
-      <span class="ck">✓</span>${p.edited ? '<span class="edited">수정됨</span>' : ''}
-      <span class="ic" aria-hidden="true">${p.icon}</span>
-      <span class="t">${esc(p.title)}</span>
-      <span class="d">${esc(p.desc)}</span>
-      <button class="more" data-edit="${p.id}">설명 보기·고치기</button>
-    </div>`).join('') + (S.cat === '전체' || S.cat === '내 포즈' ? '<button class="pose add" id="add-pose"><span class="ic">＋</span><span class="t">내 포즈 추가</span><span class="d" style="-webkit-line-clamp:3">원하는 포즈를 글로 적어 만들어요</span></button>' : '');
-  $('#pose-count').textContent = `(${S.picked.size}개 선택)`;
+  $('#poses').innerHTML = shown.map(p => {
+    const art = !p.mine && window.cuttoryPoseSVG && window.CUTTORY_POSE_ART && window.CUTTORY_POSE_ART[p.id];
+    return `<div class="pose${S.picked.has(p.id) ? ' on' : ''}" data-id="${p.id}" role="checkbox" aria-checked="${S.picked.has(p.id)}" aria-label="${esc(p.title)}" title="${esc(p.title)} — ${esc(p.desc)}" tabindex="0">
+      ${art ? window.cuttoryPoseSVG(art) : `<span class="mine">${esc(p.icon)}<br>${esc(p.title)}</span>`}
+      <span class="ck">✓</span>${p.edited ? '<span class="edited" title="설명을 고친 포즈"></span>' : ''}
+      <button class="more" data-edit="${p.id}" aria-label="${esc(p.title)} 설명 보기·고치기">✎</button>
+    </div>`; }).join('') + (S.cat === '전체' || S.cat === '내 포즈' ? '<button class="pose add" id="add-pose"><span><b>＋</b>내 포즈<br>추가</span></button>' : '');
+  $('#pose-count').textContent = `(${list.length}개${S.picked.size ? ` · ${S.picked.size}개 선택` : ''})`;
+  const vis = shown.map(p => p.id); $('#sel-all').textContent = vis.length && vis.every(id => S.picked.has(id)) ? '선택 해제' : '전체 선택';
   renderBar();
 }
 $('#chips').onclick = (e) => { const b = e.target.closest('.chip'); if (b) { S.cat = b.dataset.cat; renderPoses(); } };
@@ -466,13 +471,14 @@ $('#poses').onclick = (e) => {
 };
 $('#poses').onkeydown = (e) => { const c = e.target.closest('.pose[data-id]'); if (c && (e.key === ' ' || e.key === 'Enter') && e.target === c) { e.preventDefault(); togglePose(c.dataset.id); c.focus(); } };
 const visibleIds = () => allPoses().filter(p => S.cat === '전체' || p.cat === S.cat).map(p => p.id);
-$('#sel-all').onclick = () => { visibleIds().forEach(id => S.picked.add(id)); savePicked(); renderPoses(); };
-$('#sel-none').onclick = () => { visibleIds().forEach(id => S.picked.delete(id)); savePicked(); renderPoses(); };
+$('#sel-all').onclick = () => { const ids = visibleIds(), all = ids.every(id => S.picked.has(id)); ids.forEach(id => all ? S.picked.delete(id) : S.picked.add(id)); savePicked(); renderPoses(); };
 
 let editing = null;
 function openEdit(id) {
   editing = id; const p = id ? poseById(id) : null, base = id && window.CUTTORY_POSES.find(x => x.id === id);
-  $('#edit-title').textContent = p ? `${p.icon} ${p.title}` : '내 포즈 추가';
+  const art = p && !p.mine && window.CUTTORY_POSE_ART && window.CUTTORY_POSE_ART[p.id];
+  $('#edit-art').hidden = !art; $('#edit-art').innerHTML = art ? window.cuttoryPoseSVG(art) : '';
+  $('#edit-title').textContent = p ? p.title : '내 포즈 추가';
   $('#edit-name').value = p ? p.title : ''; $('#edit-desc').value = p ? p.desc : '';
   $('#edit-reset').hidden = !(base && S.edits[id]); $('#edit-del').hidden = !(p && p.mine);
   $('#dlg-edit').showModal(); (p ? $('#edit-desc') : $('#edit-name')).focus();
