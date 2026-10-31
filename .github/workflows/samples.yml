@@ -35,8 +35,8 @@ jobs:
             for (const [k, p] of Object.entries(prompts)) {
               if (fs.existsSync(`samples/${k}.jpg`) && !process.env.REDRAW) { log.push(`${k}: skip`); continue; }
               if (credits < 20) await session();
-              const prompt = `Candid documentary-style photograph, shot on a 35mm film camera with Kodak Portra 400. Natural available light, muted refined colors, subtle film grain, real skin texture with pores, unposed moment, slightly imperfect framing, calm Korean lifestyle magazine editorial look. Not CGI, not 3D, not an illustration, no plastic or airbrushed skin, no oversaturated colors, no HDR glow, no stock-photo smile at the camera. Vertical 4:5 composition. Scene: ${p}. Any person is fictional, not a real or famous person.`;
-              const r = await fetch(API + '/api/image', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ prompt, style: 'film', quality: 'high' }) });
+              const prompt = `Casual unedited smartphone snapshot, the kind people post to Instagram stories. Everyday real moment, imperfect framing, natural phone camera look with slight noise, ordinary colors, sometimes direct flash or wide-angle distortion. It must NOT look like a professional, editorial, cinematic, studio or AI photo: no dramatic lighting, no heavy background blur, no color grading, no glossy or airbrushed skin. If a style note follows, keep this phone snapshot look anyway. Scene: ${p}. Any person is fictional, not a real or famous person.`;
+              const r = await fetch(API + '/api/image', { method: 'POST', headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' }, body: JSON.stringify({ prompt, style: 'photo' }) });
               const j = await r.json();
               if (!r.ok) { log.push(`${k}: ${r.status} ${JSON.stringify(j)}`); continue; }
               credits = j.credits;

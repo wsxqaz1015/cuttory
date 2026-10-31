@@ -2983,7 +2983,7 @@ $('#btn-samples').onclick = async () => {
   for (const k of keys) {
     flash('#samples-msg', `${done + 1}/${keys.length}장 그리는 중이에요. 장마다 30초쯤 걸려요…`);
     try {
-      const j = await adminCall('/api/admin/image', { prompt: `Candid documentary-style photograph, shot on a 35mm film camera with Kodak Portra 400. Natural available light, muted refined colors, subtle film grain, real skin texture with pores, unposed moment, slightly imperfect framing, calm Korean lifestyle magazine editorial look. Not CGI, not 3D, not an illustration, no plastic or airbrushed skin, no oversaturated colors, no HDR glow, no stock-photo smile at the camera. Vertical 4:5 composition. Scene: ${SAMPLE_PROMPTS[k]}. Any person is fictional, not a real or famous person.`, style: 'film', quality: 'high' });
+      const j = await adminCall('/api/admin/image', { prompt: `Casual unedited smartphone snapshot, the kind people post to Instagram stories. Everyday real moment, imperfect framing, natural phone camera look with slight noise, ordinary colors, sometimes direct flash or wide-angle distortion. It must NOT look like a professional, editorial, cinematic, studio or AI photo: no dramatic lighting, no heavy background blur, no color grading, no glossy or airbrushed skin. If a style note follows, keep this phone snapshot look anyway. Scene: ${SAMPLE_PROMPTS[k]}. Any person is fictional, not a real or famous person.`, style: 'photo' });
       const data = await readImage(await (await fetch(j.image)).blob(), 1100);
       await adminCall('/api/admin/sample', { name: k, data });
       DEMO_IMG[k] = data; const im = new Image(); im.src = data; images.set(data, im); prev.appendChild(im.cloneNode());
@@ -3230,22 +3230,22 @@ function paintScene(kind) {
 }
 // 내 사이트: 관리자가 GPT로 그려 둔 샘플 사진이 있으면 그걸 써요
 const SAMPLE_PROMPTS = {
-  night: 'A Korean woman in her late 20s working late alone at an office desk, laptop glow on her face, city lights softly blurred through the window behind her, quiet tired focus',
-  sunrise: 'A Korean woman in her 20s in a simple grey sweatshirt walking along the Han River path at early morning, low golden sun, seen from a distance, hair moving in the wind',
-  cafe: 'A Korean woman in her 20s sitting by a window in a minimal concrete cafe, holding a latte with both hands and looking outside, soft overcast window light',
-  office: 'Two young Korean coworkers in casual office clothes talking over laptops at a long wooden table in a bright office, one mid-laugh, caught naturally',
-  room: 'A Korean woman in her 20s reading on a bed with white linen in a small studio apartment, sheer curtains, late afternoon light, plants on the sill',
-  flatlay: 'Top-down photo of a hand writing in an open notebook on an oak desk, a half-finished latte, phone face down and a small plant, natural daylight',
-  phone: 'A Korean woman in her 20s with thin metal glasses and a black blazer on a phone call at her office cubicle, sticky notes on the partition, pen in hand, slightly frowning',
-  coffee: 'A Korean woman in a black suit and sunglasses holding a takeaway coffee toward the camera, playful high-angle wide-lens shot on a light grey floor, fashion editorial',
-  laptop: 'An open laptop on a wooden desk showing a presentation slide with simple bar charts, a sunlit office with tall windows blurred behind, coffee mug beside it, no people',
-  meeting: 'A young Korean man in a navy shirt explaining something at a glass whiteboard in a meeting room, colleagues seen from behind out of focus',
-  desk: 'A Korean man in his 30s in a knit sweater typing on a laptop at a home desk in the evening, warm desk lamp, bookshelf with plants behind',
-  lamp: 'A quiet living room corner at dusk with a glowing linen table lamp, a beige boucle armchair and a small side table with a book, no people',
-  tablet: 'A tablet lying on a light oak table next to a small potted plant and a ceramic cup, soft morning light from the side, no people',
-  street: 'A Korean woman in her 20s in a beige trench coat crossing a Seoul street under yellow ginkgo trees in autumn, shot from across the road, candid',
+  night: 'A young Korean woman still working at her office desk late at night, snack wrappers and a monster energy can on the desk, monitor glow, photo snapped by a coworker with direct phone flash',
+  sunrise: 'A friend in a grey hoodie walking ahead on the Han River path at sunset, shot from behind on a phone while walking, slightly tilted, pink sky',
+  cafe: 'Point-of-view phone photo of a hand holding a glass cup of black coffee on a saucer at a small cafe table',
+  office: 'Two young Korean coworkers squeezing into a wide-angle phone selfie at their office desks, one making a silly face, fluorescent office light',
+  room: 'A messy cozy studio apartment bed with a laptop, a bag of chips and a phone charger, warm string lights, taken from the doorway on a phone',
+  flatlay: 'Phone photo from above of a hand writing a to-do list in a small notebook on a cafe table, iced latte and phone next to it',
+  selfie: 'A young Korean woman taking a mirror selfie in an elevator, phone covering half her face, oversized black jacket, direct flash, playful',
+  coffee: 'A young Korean man in a striped long sleeve shirt holding an iced americano close to a wide-angle phone camera, goofy expression, shot from slightly above',
+  dog: 'A small fluffy shih tzu in a floral harness sitting on a grass field in warm evening light, taken at the dog\'s eye level on a phone',
+  sky: 'Phone photo of a blue evening sky with pink clouds and a string of warm lights hanging across the top of the frame',
+  bingsu: 'Close-up phone photo of strawberry shaved ice bingsu dripping with syrup on a wooden table in a dessert cafe, a spoon beside it',
+  subway: 'An almost empty Seoul subway platform at night with fluorescent lights and screen doors, taken on a phone while waiting',
+  laptop: 'A laptop open on a cafe table showing a spreadsheet, a slice of cake and a phone next to it, taken from the seat on a phone',
+  street: 'A young Korean woman in a beige trench coat laughing while crossing a Seoul street under yellow ginkgo trees, snapped by a friend on a phone',
 };
-const SAMPLE_ALIAS = { phone: 'night', coffee: 'cafe', laptop: 'office', meeting: 'office', desk: 'night', lamp: 'room', tablet: 'flatlay', street: 'sunrise' };
+const SAMPLE_ALIAS = { selfie: 'night', coffee: 'cafe', dog: 'sunrise', sky: 'sunrise', bingsu: 'cafe', subway: 'night', laptop: 'office', street: 'sunrise' };
 async function loadServerSamples() {
   // GPT로 그려 둔 샘플 사진 (samples/*.jpg)
   await Promise.all(Object.keys(SAMPLE_PROMPTS).map(k => new Promise(res => { const src = `samples/${k}.jpg`, im = new Image(); im.onload = () => { DEMO_IMG[k] = src; images.set(src, im); res(); }; im.onerror = res; im.src = src; })));
@@ -3301,23 +3301,23 @@ function tr(lay, img, title, body, o = {}) {
 }
 const SERIES = '컷토리 카드뉴스 어디까지 만들어 봤니?';
 const GALLERY = [[
-  ['magazine', ['office', '요즘 일 잘하는 사람\n[AI] 이렇게 써요', '보고서 초안은 5분이면 끝', 'cover']],
-  ['trend', () => tr('t-cover', 'phone', '회의록, 이제\n[3분]이면 끝', '', { tag: 'WORK TIP', sub: 'AI 회의 정리 툴 비교' })],
-  ['blog', ['tablet', '제미나이 쓸 때\n[매번] 프롬프트 치시나요?', '1분 만에 업무를 자동화하는 숨은 치트키', 'body']],
-  ['bluecard', ['', '주간보고 1시간이\n[5분]으로 줄어요', '업무 자동화가 실제로 어떻게 돌아가는지 확인해 보세요.', 'body']],
-  ['trend', () => tr('t-check', '', '보고서 쓰기 전 [체크] 3가지', '목적은 한 줄로\n숫자는 표로\n결론은 맨 앞에', { tag: 'POINT', sub: '일 잘하는 사람의 습관' })],
-  ['magazine', ['coffee', '모르면 손해 [5가지]\n요즘 직장인이 몰래 쓰는 앱', '', 'cover']],
-  ['laptop', ['laptop', '눈 깜짝할 사이에\n[PPT] 완성하기', '템플릿 파일만 올리면 회사 스타일 그대로', 'body']],
-  ['pink', ['lamp', '조명 [겹쳐] 쓰기', '천장 등 대신 스탠드와 무드등을 겹쳐 보세요', 'body', ['room']]],
+  ['trend', () => tr('t-cover', 'selfie', '야근 끝나고\n[엘리베이터] 셀카', '', { tag: 'TREND', sub: '오늘도 퇴근 성공' })],
+  ['trend', () => tr('t-grid4', 'night', '카드뉴스 [어떻게] 만들까?', '한 장 만들면 다음 장이 막히고, 내용을 쓰면 디자인이 애매해져요. 만들다 보면 알게 돼요. 카드뉴스는 흐름이라는 걸!', { tag: 'INTRO', sub: '★ 감성은 빠질 수 없으니까', photos: ['sky', 'subway', 'cafe'] })],
+  ['trend', () => tr('t-chat', 'office', '귀여운 폰트가 최고야\n비록 가독성은 [별로]일지라도', '담당자님! 깔끔하면서 가독성도 좋은 폰트로 바꿔 주세요\n다른 폰트 찾아볼게요 🙏')],
+  ['trend', () => tr('t-cover', 'dog', '주말엔 무조건\n[산책] 가요', '', { tag: '', sub: '★ 감성은 빠질 수 없으니까' })],
+  ['trend', () => tr('t-memo', '', '카드뉴스 [어떻게] 만들까?', '한 장 만들면 다음 장이 막히고\n내용을 쓰면 디자인이 애매해져요\n예쁘게 만들면 정보가 흐려지고\n정보를 살리면 재미가 없어요', { sub: '01' })],
+  ['trend', () => tr('t-grid2', 'bingsu', '여름엔 역시 [빙수]', '딸기 시럽 듬뿍 올린 빙수 한 그릇이면 더위도 끝. 동네 빙수 맛집만 모았어요.', { tag: 'TREND', sub: '✦ 줄 서도 먹는 곳', photos: ['cafe'] })],
+  ['trend', () => tr('t-cover', 'street', '가을 [출근룩]\n이렇게 입어요', '', { tag: 'TREND', sub: '트렌치코트 하나로 끝' })],
+  ['trend', () => tr('t-profile', 'coffee', '도움이 됐다면 팔로우 ★', '매일 하나씩 쓸모 있는 카드뉴스를 올려요')],
 ], [
-  ['trend', () => tr('t-cover', 'meeting', 'AI 팀을\n[거느리는] 일하는 법', '', { tag: 'TREND INSIGHT', sub: '지시하는 사람에서 조율하는 사람으로' })],
-  ['classic', ['cafe', '카페에서 [집중력]\n2배 올리는 자리', '창가 말고 벽을 등진 자리', 'cover']],
-  ['trend', () => tr('t-chat', 'desk', '퇴근 30분 앞당기는\n[AI 업무] 정리법', '팀장님 이거 오늘까지 되나요? 😢\nAI한테 초안 맡기면 10분이면 돼요!')],
-  ['trend', () => tr('t-grid4', 'night', '반복 업무는 [AI]에게', '메일 정리, 회의록, 보고서 초안까지. 매일 하는 일부터 맡겨 보세요.', { tag: 'INTRO', sub: '★ 챗GPT·제미나이 활용법', photos: ['laptop', 'desk', 'tablet'] })],
-  ['magazine', ['street', '가을 [출근룩]\n이렇게 입어요', '트렌치코트 하나로 끝', 'cover']],
-  ['blog', ['flatlay', '[노션] 대신 쓰는\n메모 앱 정리', '한 달 써 보고 남긴 솔직 후기', 'body']],
-  ['trend', () => tr('t-memo', '', '조회수 높이는 [글쓰기]', '짧은 문장으로 끊어 쓰고\n결론부터 말하면\n끝까지 읽혀요', { sub: '02' })],
-  ['trend', () => tr('t-cover', 'sunrise', '하루 10분,\n[작은 습관]이 만드는 변화', '', { tag: 'TREND', sub: '아침이 바뀌는 걷기 습관' })],
+  ['trend', () => tr('t-cover', 'bingsu', '감다살 카드뉴스\n[어디까지] 만들어 봤니?', '', { tag: 'INTRO', sub: '컷토리 카드뉴스 템플릿' })],
+  ['trend', () => tr('t-check', '', '퇴근 전 [체크] 3가지', '내일 할 일 세 줄 적기\n메일함 비우기\n책상 위 컵 치우기', { tag: 'POINT', sub: '내일의 나를 위한 5분' })],
+  ['trend', () => tr('t-cover', 'coffee', '요즘 직장인이\n[몰래] 쓰는 앱', '', { tag: 'TREND', sub: '회의록, 이제 3분이면 끝' })],
+  ['trend', () => tr('t-grid4', 'room', '자취방 [3만 원]으로 바꾸기', '조명 하나, 커튼 하나만 바꿔도 방 분위기가 확 달라져요.', { tag: 'HOW TO', sub: '★ 가성비 인테리어', photos: ['laptop', 'flatlay', 'sky'] })],
+  ['trend', () => tr('t-chat', 'cafe', '카페에서 일하면\n[집중]이 될까?', '오늘도 카페로 출근했어요 ☕\n창가 말고 벽 보는 자리가 최고예요!')],
+  ['trend', () => tr('t-cover', 'subway', '출근길 [10분]\n이렇게 써요', '', { tag: 'TREND', sub: '지하철에서 끝내는 루틴' })],
+  ['trend', () => tr('t-grid2', 'sunrise', '오늘부터 [이렇게]\n걸어 보세요', '한 정거장 먼저 내려서 걸어요. 노을 보며 걸으면 하루가 정리돼요.', { tag: 'HOW TO', sub: '✦ 거창한 계획보다 작은 습관', photos: ['dog'] })],
+  ['trend', () => tr('t-profile', 'dog', '도움이 됐다면 팔로우 ★', '매일 하나씩 쓸모 있는 카드뉴스를 올려요')],
 ]];
 function drawGallery() {
   $$('#l-marquee .track').forEach((tk, r) => {

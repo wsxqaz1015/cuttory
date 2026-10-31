@@ -62,6 +62,10 @@ const F = {
   squiggle: (x, y) => `<path d="M${x - 24} ${y}q-4 -4 0 -7q4 -3 0 -7M${x + 24} ${y}q4 -4 0 -7q-4 -3 0 -7" ${N}/>`,
   gloom: (x) => `<path d="M${x - 12} 6v12M${x - 4} 4v16M${x + 4} 4v16M${x + 12} 6v12" ${G}/>`,
   clap: (x, y) => `<path d="M${x - 9} ${y - 7}l-3 -3M${x + 9} ${y - 7}l3 -3M${x} ${y - 10}v-4" ${N}/>`,
+  burst: (x, y, r = 30) => `<path d="${[...Array(10)].map((_, i) => { const a = i / 10 * Math.PI * 2 + .3, c = Math.cos(a), d = Math.sin(a); return `M${(x + c * r).toFixed(1)} ${(y + d * r).toFixed(1)}L${(x + c * (r + 8)).toFixed(1)} ${(y + d * (r + 8)).toFixed(1)}`; }).join('')}" ${N}/>`,
+  stars: (x, y) => `<ellipse cx="${x}" cy="${y}" rx="16" ry="4" ${G}/>` + `<path d="M${x - 12} ${y - 4}l1.5 3l3 .5l-2.2 2l.6 3l-2.9 -1.5l-2.9 1.5l.6 -3l-2.2 -2l3 -.5z" ${W}/>`,
+  flower: (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})">${[0, 72, 144, 216, 288].map(a => `<circle cx="${(Math.cos(a * Math.PI / 180) * 4).toFixed(1)}" cy="${(Math.sin(a * Math.PI / 180) * 4).toFixed(1)}" r="3.4" ${W}/>`).join('')}<circle r="2" fill="#222"/></g>`,
+  z: (x, y) => `<path d="M${x} ${y}h5l-5 5h5" ${N}/>`,
   puff: (x, y) => `<path d="M${x} ${y}q3 -3 6 0q3 -3 6 0" ${G}/>`,
 };
 const pt = (a) => a.map(v => +v.toFixed(1));
@@ -85,11 +89,38 @@ window.cuttoryPoseSVG = (f) => {
   const guides = f.back ? '' : `<g transform="rotate(${tilt} ${hx} ${hy})" ${G}><path d="M${hx} ${hy - hr + 1}Q${hx + off * 1.4} ${hy} ${hx} ${hy + hr - 1}"/><path d="M${hx - hr + 1} ${hy + 2}Q${hx + off * 0.6} ${hy + 6} ${hx + hr - 1} ${hy + 2}"/></g>`;
   const head = `<circle cx="${hx}" cy="${hy}" r="${hr}" fill="#fff" stroke="#222" stroke-width="2.4"/>${guides}`;
   const order = f.headBehind ? head + body : body + head;
-  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${f.pb || ''}${order}${f.p || ''}${f.fx || ''}</svg>`;
+  const art = `${f.pb || ''}${order}${f.p || ''}${f.fx || ''}`;
+  const cap = f.t ? `<text x="50" y="15" text-anchor="middle" font-family="'Nanum Pen Script', 'Gaegu', cursive" font-size="${f.t.length > 4 ? 15 : 18}" fill="#222">${f.t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>` : '';
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${f.t ? `<g transform="translate(11 19) scale(.78)">${art}</g>` : art}${cap}</svg>`;
 };
 
 // 포즈별 모양
 const A = {
+  // 이모티콘
+  e01: { t: '네~', h: [48, 32, 0, -8], b: [70, 42, 74, 26], fx: `<path d="M80 20q4 2 4 6M82 32q4 0 6 3" ${N}/>` },
+  e02: { t: '사랑해', h: [50, 32, 0, 8], a: [42, 64, 48, 60], b: [58, 64, 52, 60], fx: F.heart(50, 6, .7) + F.heart(80, 30, .45) },
+  e03: { t: '감사합니다', h: [50, 46], n: [50, 60, 50, 72], a: [42, 72, 48, 76], b: [58, 72, 52, 76], fx: F.sparkle(80, 30, .6) },
+  e04: { t: '좋아!', h: [50, 30], n: [50, 50, 50, 66], a: [34, 38, 30, 20], b: [66, 38, 70, 20], l: [44, 74, 40, 80], r: [56, 74, 60, 80], fx: F.burst(50, 40, 34) },
+  e05: { t: '파이팅!', h: [50, 32], a: [38, 64, 44, 58], b: [62, 64, 56, 58], fx: F.burst(50, 44, 34) },
+  e06: { t: '최고!', h: [48, 30, .4, -4], a: [36, 62, 42, 68], b: [64, 58, 72, 52], p: `<path d="M72 52v-7" stroke="#222" stroke-width="3" stroke-linecap="round"/>`, fx: F.sparkle(84, 40, .6) },
+  e07: { t: 'ㅋㅋㅋ', h: [50, 32, 0, -14], a: [40, 64, 46, 66], b: [60, 64, 54, 66], fx: F.shiver(50, 40) },
+  e08: { t: 'ㅠㅠ', h: [50, 40], n: [50, 60, 50, 74], a: [36, 70, 40, 78], b: [64, 70, 60, 78], l: [36, 82, 44, 88], r: [64, 82, 56, 88], fx: F.tears(50, 42) },
+  e09: { t: '부글부글', h: [50, 34], a: [36, 64, 34, 72], b: [64, 64, 66, 72], fx: F.steam(50, 12) + F.squiggle(50, 50) },
+  e10: { t: '헉!', h: [50, 32, 0, -6], a: [34, 52, 30, 40], b: [66, 52, 70, 40], fx: F.shock(50, 32) },
+  e11: { t: '졸려...', h: [50, 34, 0, 18], a: [42, 66, 40, 74], b: [58, 66, 60, 74], fx: F.z(76, 16) + F.z(84, 8) },
+  e12: { headBehind: true, t: '부끄', h: [50, 32, 0, -8], a: [36, 52, 36, 38], b: [64, 52, 64, 38], fx: F.heart(82, 20, .4) },
+  e13: { headBehind: true, t: '메롱', h: [50, 32, .2], b: [64, 52, 60, 36], a: [36, 62, 40, 70] },
+  e14: { t: '출근 중', h: [50, 34], pb: P.handles(), a: [38, 52, 30, 16], p: P.backpack(56, 64) },
+  e15: { t: '열일 중', pb: P.chair(), h: [50, 34], n: [50, 54, 50, 70], a: [38, 66, 42, 74], b: [62, 66, 58, 74], l: [40, 80, 42, 90], r: [60, 80, 58, 90], p: P.laptop(50, 76), fx: F.speed(30, 60) },
+  e16: { t: '@_@', h: [50, 34, 0, 12], a: [34, 64, 30, 70], b: [66, 64, 70, 70], l: [44, 80, 38, 88], r: [56, 80, 62, 88], fx: F.stars(50, 12) },
+  e17: { t: '축하해!', h: [50, 32], a: [30, 54, 20, 46], b: [70, 54, 80, 46], fx: F.flower(16, 30, .9) + F.flower(84, 30) + F.flower(26, 80, .7) + F.flower(78, 82, .8) },
+  e18: { t: '룰루~', h: [50, 32, 0, -12], b: [66, 50, 70, 38], a: [38, 64, 40, 72], fx: F.notes(20, 30) + F.notes(82, 22) },
+  e19: { t: 'OK!', h: [50, 38], n: [50, 58, 50, 74], a: [28, 32, 46, 14], b: [72, 32, 54, 14] },
+  e20: { t: '잘자~', h: [40, 62, 0, -30], n: [52, 70, 66, 74], a: [44, 80, 40, 84], b: [52, 80, 50, 84], l: [74, 80, 80, 84], r: [72, 76, 82, 78], pb: `<ellipse cx="54" cy="82" rx="40" ry="12" ${W}/>`, fx: F.moon(80, 30) },
+  e21: { t: '배고파', h: [50, 32, 0, 6], a: [40, 64, 46, 62], b: [64, 60, 62, 48], p: `<path d="M62 48v-10" stroke="#222" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="62" cy="36" rx="3" ry="4" ${W}/>`, fx: F.sweat(44, 46) },
+  e22: { t: '??', h: [50, 32, 0, 24], a: [40, 64, 42, 72], b: [60, 64, 58, 72], fx: F.q(80, 24) },
+  e23: { t: '토닥토닥', h: [44, 32, .7], b: [66, 54, 78, 48], fx: F.heart(84, 34, .4) + `<path d="M74 40l2 -4M80 40l2 -3" ${N}/>` },
+  e24: { headBehind: true, t: '넵!', h: [50, 32], b: [66, 46, 60, 22], a: [36, 64, 40, 72], fx: F.sparkle(80, 50, .6) },
   // 기본
   b01: {},
   b02: { h: [50, 30, .7] },
