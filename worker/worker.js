@@ -223,12 +223,15 @@ async function pose(b, env) {
   if (!imgs.length) throw err('bad_request', '먼저 캐릭터 그림을 올려 주세요.');
   const model = env.IMAGE_MODEL || (await models(env)).image;
   if (!model || model.startsWith('dall-e')) throw err('ai_error', '포즈 만들기는 gpt-image 모델이 필요해요. OpenAI 조직 인증(Verify Organization)을 해 주세요.', 502);
-  const sheet = b.mode === 'sheet', clear = b.bg !== 'white';
+  const sheet = b.mode === 'sheet', clear = b.bg !== 'white', doodle = b.style === 'emoticon';
+  const look = doodle
+    ? ' Draw it as a cute Korean messenger emoticon sticker: loose hand-drawn felt-pen doodle, slightly wobbly uneven black outlines, simple flat colors with soft blush, a big exaggerated expression, chubby simple body. Add small hand-drawn comic marks around the character only where they fit the mood (motion lines, sparkles, sweat drops, hearts, tears). Keep the character recognizable: same species/shape, colors, markings and accessories, only simplified into this doodle sticker style.'
+    : '';
   const bgText = clear ? 'fully transparent background' : 'plain pure white background';
-  const keep = 'Keep it exactly the same character as the first image: same face, proportions, colors, outfit, accessories, line weight and drawing style. Do not redesign or restyle the character.';
+  const keep = doodle ? 'Keep the same character identity as the first image.' : 'Keep it exactly the same character as the first image: same face, proportions, colors, outfit, accessories, line weight and drawing style. Do not redesign or restyle the character.';
   const prompt = sheet
     ? `Make a character turnaround sheet of the character in the image. Show four full-body views in one row at the same scale: front, three-quarter, side, back, in a relaxed neutral standing pose. ${keep} Plain pure white background, no labels, no text.`
-    : `Redraw the character from the first image in a new pose for a webtoon / Instagram comic panel.\nPose: ${String(b.pose || '').slice(0, 800)}\n${keep}${imgs.length > 1 ? ' The second image is a turnaround sheet of the same character; use it for views from the side or back.' : ''} Show only this one character, whole body unless the pose says close-up, centered with a little margin. Small props mentioned in the pose are fine. ${bgText}. No text, speech bubbles, frames or watermarks.`;
+    : `Redraw the character from the first image in a new pose for a webtoon / Instagram comic panel.\nPose: ${String(b.pose || '').slice(0, 800)}\n${keep}${imgs.length > 1 ? ' The second image is a turnaround sheet of the same character; use it for views from the side or back.' : ''} Show only this one character, whole body unless the pose says close-up, centered with a little margin. Small props mentioned in the pose are fine.${look} ${bgText}. No text, speech bubbles, frames or watermarks.`;
   const send = async (withBg) => {
     const fd = new FormData();
     fd.append('model', model); fd.append('prompt', prompt); fd.append('n', '1');
