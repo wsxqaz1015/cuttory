@@ -2,7 +2,8 @@
 
 글, 링크, 문서(PDF·Word·TXT), 영상을 넣으면 인스타그램 카드뉴스를 만들어 주는 웹앱이에요.
 
-- `index.html`, `config.js`, `fonts/`: GitHub Pages로 올라가는 화면
+- `index.html`: 첫 주소. 오피스(`office.html`)로 보내고, 주소에 `?`나 `#`가 붙은 예전 카드뉴스 링크는 `cardnews.html`로 보내요
+- `cardnews.html`, `config.js`, `fonts/`: 컷토리 카드뉴스 화면
 - `reels.html`: 컷토리 릴스 (영상 자막·컷 편집)
 - `video.html`: AI 영상 외주 비서. 의뢰 내용과 제품 사진으로 훅 3개, 장면별 AI 프롬프트, 캡컷 편집 순서, 캡션, 견적 메시지를 만들어요 (10 크레딧). 가격표와 의뢰는 브라우저에 저장돼요.
 - `portfolio.html`: 포트폴리오 만들기. 회사용(`?mode=company`)과 프리랜서용(`?mode=free`)으로 나뉘고, 인스타 인사이트 CSV나 캡처(10 크레딧)로 성과 숫자를 불러와요. PDF로 저장할 수 있어요.

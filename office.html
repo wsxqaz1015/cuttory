@@ -350,7 +350,7 @@ a { color: inherit; }
 </svg>
 <header class="ct-top">
   <a class="logo agency" href="office.html" aria-label="오피스 처음으로"><span class="ag-mark" aria-hidden="true"></span><span id="ag-logo">에이전시</span></a>
-  <nav class="ct-tabs" aria-label="오피스와 컷토리 도구"><a href="office.html" class="to-office on" aria-current="page">🏢 오피스</a><a href="index.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html">릴스</a><a href="poses.html">캐릭터 포즈</a><a href="video.html">AI 영상</a><a href="portfolio.html">포트폴리오</a></nav>
+  <nav class="ct-tabs" aria-label="오피스와 컷토리 도구"><a href="office.html" class="to-office on" aria-current="page">🏢 오피스</a><a href="cardnews.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html">릴스</a><a href="poses.html">캐릭터 포즈</a><a href="video.html">AI 영상</a><a href="portfolio.html">포트폴리오</a></nav>
 </header>
 <div class="app">
   <header class="hud">
@@ -466,7 +466,7 @@ const PROD = {
   card: {
     name: "다온", title: "주임", job: "카드뉴스 디자이너", label: "카드뉴스", color: "#ff922b", at: [8, 40], when: "매일 08:40",
     look: { hair: "#4a2f20", skin: "#ffd9b8", shirt: "#ff922b", shirt2: "#e8740f", pants: "#2f3554", long: true, pin: "#ffffff" },
-    tool: { name: "컷토리 카드뉴스", url: "index.html" }, task: "카드뉴스 1편 만들기", useScraps: true,
+    tool: { name: "컷토리 카드뉴스", url: "cardnews.html" }, task: "카드뉴스 1편 만들기", useScraps: true,
     desc: "글, 링크, 영상을 넣으면 인스타 카드뉴스를 만들어요. 스크랩한 트렌드를 소재로 가져가면 좋아요.",
     idle: ["표지 첫 줄이 반은 먹고 들어가요.", "오늘 스크랩한 사례, 카드뉴스로 풀어 볼까요?", "글자는 줄이고 여백은 넉넉하게!"],
   },
@@ -576,7 +576,7 @@ const BADGES = [
 ];
 // 모은 스크랩·아이디어로 컷토리 도구를 써 보라고 권하는 순간
 const PROMOS = [
-  { key: "card5", at: () => Object.keys(save.scraps).length >= 5, icon: "🃏", head: "스크랩이 5개 모였어요!", body: "모은 사례로 카드뉴스 한 편을 만들어 보면 포트폴리오가 돼요.", btn: "카드뉴스 만들기", url: "index.html" },
+  { key: "card5", at: () => Object.keys(save.scraps).length >= 5, icon: "🃏", head: "스크랩이 5개 모였어요!", body: "모은 사례로 카드뉴스 한 편을 만들어 보면 포트폴리오가 돼요.", btn: "카드뉴스 만들기", url: "cardnews.html" },
   { key: "blog3", at: () => ideaCount() >= 3, icon: "✍️", head: "완성 아이디어가 3개예요", body: "아이디어를 블로그 글로 정리해 두면 면접 때 바로 꺼내 쓸 수 있어요.", btn: "블로그 글 쓰기", url: "blog.html" },
 ];
 
