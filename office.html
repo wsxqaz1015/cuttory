@@ -355,7 +355,8 @@ a { color: inherit; }
 .aw-who .aw-more { width: auto; padding: 3px 10px; border-radius: 999px; font-size: 12px; }
 .aw-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .aw-form input { flex: 1 1 120px; min-width: 0; padding: 7px 10px; border: 1px solid var(--paper-line); border-radius: 10px; font: inherit; }
-.ib-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.ib-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+.ib-list > li { min-width: 0; }
 .ib-list button { width: 100%; text-align: left; display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit; }
 .ib-list button img { width: 28px; height: 42px; image-rendering: pixelated; flex: none; }
 .ib-list .t { flex: 1; min-width: 0; } .ib-list .t b { display: block; } .ib-list .t .sub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -497,7 +498,7 @@ const TEAM = {
     idle: ["오늘 성수에 또 팝업이 열렸대요!", "요즘 릴스는 첫 1초가 전부래요.", "스크랩한 사례, 메모까지 써 두면 면접 때 진짜 든든해요.", "밈은 유통기한이 짧아요. 빨리 써먹어야 해요!"],
   },
   weekly: {
-    name: "주원", title: "대리", job: "위클리 이슈 담당", at: [9, 10], when: "매주 월 09:10",
+    name: "주원", title: "대리", job: "위클리 이슈 담당", at: [9, 10], when: "매주 월 09:10", every: "매일 09:10 출근 · 위클리는 월요일", today: "이번 주 키워드 모으는 중 📌",
     look: { hair: "#5a3b22", skin: "#f7d1ad", shirt: "#4dabf7", shirt2: "#2f86d0", pants: "#27304a", tie: "#1d2a4a" },
     deliver: "{me}님, 지난주에 제일 뜨거웠던 것만 추렸어요.",
     writing: "지난주 데일리를 다시 훑는 중이에요. 조금만요!",
@@ -505,7 +506,7 @@ const TEAM = {
     idle: ["이번 주 데일리, 다 읽으셨어요?", "한 주에 세 번 이상 나온 키워드는 진짜 흐름이에요.", "주간 복습 퀴즈 풀면 경험치가 꽤 쏠쏠해요."],
   },
   monthly: {
-    name: "한결", title: "과장", job: "먼슬리 결산 담당", at: [9, 20], when: "매월 1일 09:20",
+    name: "한결", title: "과장", job: "먼슬리 결산 담당", at: [9, 20], when: "매월 1일 09:20", every: "매일 09:20 출근 · 먼슬리 결산은 1일", today: "이번 달 흐름 기록 중 📈",
     look: { hair: "#1c1c22", skin: "#f1c9a0", shirt: "#3ccf91", shirt2: "#25a571", pants: "#2c2f3d", glasses: true },
     deliver: "{me}님, 한 달 치 흐름을 한 장으로 정리했어요.",
     writing: "한 달 치 리포트를 엑셀로 돌리는 중… ☕",
@@ -513,7 +514,7 @@ const TEAM = {
     idle: ["월초엔 지난달 캠페인 성적표가 나와요.", "한 달을 봐야 반짝 유행인지 진짜 흐름인지 보여요.", "자소서에 쓸 사례는 먼슬리에서 고르는 게 편해요."],
   },
   quarterly: {
-    name: "윤슬", title: "차장", job: "분기 리포트 리서처", at: [9, 30], when: "분기 첫날 09:30",
+    name: "윤슬", title: "차장", job: "분기 리포트 리서처", at: [9, 30], when: "분기 첫날 09:30", every: "매일 09:30 출근 · 분기 리포트는 분기 첫날", today: "분기 시장 리서치 중 🔍",
     look: { hair: "#8a4f3a", skin: "#ffdcc2", shirt: "#a98bfa", shirt2: "#8665e0", pants: "#33294d", long: true, glasses: true },
     deliver: "{me}님, 이번 분기 큰 그림 가져왔어요.",
     writing: "석 달 치를 묶는 중이라 시간이 좀 걸려요!",
@@ -1031,7 +1032,7 @@ const WALKING = ["arriving", "toDeliver", "returning", "toSpot", "fromSpot", "to
 // 수다: 방을 나눠서 기본은 켜 둬요 (2층 대표실은 조용)
 const chatty = () => save.chatty !== false;
 // 점심시간 12:30~13:30 (한국 시간) · 휴가 (성과 보상)
-const OUT = ["lunch", "leave"];
+const OUT = ["lunch", "leave", "upstairs"];  // 문(계단)으로 나가서 1층에서 안 보이는 상태
 const lunchNow = now => { const h = kstParts(now).h; return h >= 12.5 && h < 13.5; };
 const leaveUntil = k => Math.max(0, ...(save.awards || []).filter(a => a.k === k && a.type === "leave").map(a => a.until || 0));
 const onLeave = k => leaveUntil(k) > NOW().getTime();
@@ -1082,6 +1083,9 @@ const unseenItems = () => pendingItems().filter(x => !save.seen[x.key]);
 function wantMode(k, now) {
   if (onLeave(k)) return "leave";
   if (lunchNow(now)) return "lunch";
+  // 결재 받을 서류가 있으면 2층 대표실로 올라가 기다려요 (1층과 2층에 동시에 있지 않아요)
+  if (k === "lead") { if (seenItems().length && !unseenItems().length && !reviewing) return "upstairs"; }
+  else if (seenItems().some(x => x.owner === k)) return "upstairs";
   if (k === "lead") return "working";  // 결재 서류는 2층 대표실로 올려요
   if (isProd(k)) return "working";
   const due = dueId(k, now);
@@ -1101,7 +1105,7 @@ function sync(first) {
       if (OUT.includes(c.mode)) { // 점심·휴가 끝나고 문으로 들어와요
         const was = c.mode;
         Object.assign(c, { visible: true, x: DOOR.x, y: DOOR.y, dir: "up", delay: queue++ * 1.1 });
-        walk(k, "arriving", s, () => { c.dir = k === "lead" ? "down" : "up"; c.mode = "working"; if (chatty() && Math.random() < .5) say(k, was === "leave" ? "휴가 잘 다녀왔습니다! 🌴" : ["잘 먹었습니다! 🍚", "배부르다… 졸려요 😪", "오후도 달려 볼게요!"][Math.random() * 3 | 0], 3000); sync(); });
+        walk(k, "arriving", s, () => { c.dir = k === "lead" ? "down" : "up"; c.mode = "working"; if (chatty() && Math.random() < .5) say(k, was === "leave" ? "휴가 잘 다녀왔습니다! 🌴" : was === "upstairs" ? ["결재 받고 왔어요! ✍️", "대표님 결재 끝, 다시 일하러 갑니다", "2층 다녀왔어요 📄"][Math.random() * 3 | 0] : ["잘 먹었습니다! 🍚", "배부르다… 졸려요 😪", "오후도 달려 볼게요!"][Math.random() * 3 | 0], 3000); sync(); });
         continue;
       }
       if (first === "replay") {
@@ -1114,7 +1118,7 @@ function sync(first) {
       continue;
     }
     if (OUT.includes(want)) { // 점심 먹으러 · 휴가 가러 문 밖으로
-      if (c.mode !== "leaving") { c.delay = out++ * .8; if (chatty() && Math.random() < .5) say(k, want === "leave" ? "대표님 감사합니다! 휴가 다녀올게요 🌴" : ["점심 뭐 먹지? 🍜", "오늘은 김치찌개 콜?", "샐러드 먹을래요 🥗"][Math.random() * 3 | 0], 2800); walk(k, "leaving", DOOR, () => { c.visible = false; c.mode = wantMode(k, NOW()); c.cup = false; renderRoster(); }); }
+      if (c.mode !== "leaving") { c.delay = out++ * .8; if (chatty() && Math.random() < .5) say(k, want === "leave" ? "대표님 감사합니다! 휴가 다녀올게요 🌴" : want === "upstairs" ? (k === "lead" ? "결재 서류 들고 2층 올라갈게요 📄" : "대표님께 결재 받으러 2층 가요 📄") : ["점심 뭐 먹지? 🍜", "오늘은 김치찌개 콜?", "샐러드 먹을래요 🥗"][Math.random() * 3 | 0], 2800); walk(k, "leaving", DOOR, () => { c.visible = false; c.mode = wantMode(k, NOW()); c.cup = false; renderRoster(); }); }
       continue;
     }
     if (c.mode === want) continue;
@@ -1369,11 +1373,11 @@ const CEO2 = { x: 194, y: 112 }, DESK2 = { x: 150, y: 128, w: 100, h: 18 };
 // 결재 대기 서류를 가진 팀원 (팀장이 먼저 본 것만), 한 사람당 한 자리
 function visitors() {
   const seen = new Set(), out = [];
-  for (const x of seenItems()) if (!seen.has(x.owner) && !OUT.includes((chars[x.owner] || {}).mode) && (chars[x.owner] || {}).mode !== "leaving") { seen.add(x.owner); out.push(x); }
+  for (const x of seenItems()) if (!seen.has(x.owner) && (chars[x.owner] || {}).mode === "upstairs") { seen.add(x.owner); out.push(x); }
   return out.slice(0, 6);
 }
 function visitorPos(k) {
-  if (k === "lead") return visitors().length ? { x: 262, y: 120 } : null;
+  if (k === "lead") return chars.lead.mode === "upstairs" ? { x: 262, y: 120 } : null;
   const i = visitors().findIndex(x => x.owner === k); if (i < 0) return null;
   const n = Math.min(visitors().length, 6), x0 = CEO2.x + 6 - (n - 1) * 15;
   return { x: x0 + i * 30 - 6, y: 166 };
@@ -1406,8 +1410,8 @@ function drawCeoRoom(now, lv, t) {
   // 결재 받으러 온 팀원들 (뒷모습, 서류 들고) + 팀장은 옆에서 기록
   const vs = visitors();
   for (const v of vs) { const p = visitorPos(v.owner); sprite(ctx, p.x, p.y, TEAM[v.owner].look, "up", 0, { paper: true }); }
-  if (vs.length) { const L = visitorPos("lead"); sprite(ctx, L.x, L.y, TEAM.lead.look, "down", 0, { paper: true }); }
-  else { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.fillText("결재할 서류가 없어요 · 조용한 대표실 ☕", W / 2, 200); ctx.textAlign = "left"; }
+  const L = visitorPos("lead"); if (L) sprite(ctx, L.x, L.y, TEAM.lead.look, "down", 0, { paper: true });
+  if (!vs.length && !L) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.fillText("결재할 서류가 없어요 · 조용한 대표실 ☕", W / 2, 200); ctx.textAlign = "left"; }
   drawLights(now);
 }
 function setFloor(f) {
@@ -1416,8 +1420,8 @@ function setFloor(f) {
   for (const k of Object.keys(bubbles)) { bubbles[k].el.remove(); delete bubbles[k]; }
   if (f === "2F") {
     const vs = visitors();
-    if (!vs.length) return;
-    say("lead", `대표님, 결재 서류 ${seenItems().length}건이에요. 차례로 들어왔어요 📄`, 3500, true);
+    if (!vs.length) return seenItems().length && toast("팀원들이 결재 서류 들고 2층으로 올라오는 중이에요");
+    if (chars.lead.mode === "upstairs") say("lead", `대표님, 결재 서류 ${seenItems().length}건이에요. 차례로 들어왔어요 📄`, 3500, true);
     vs.forEach((v, i) => setTimeout(() => FLOOR === "2F" && say(v.owner, `${v.title} 결재 부탁드려요`, 2300), 1400 + i * 2500));
   }
 }
@@ -1566,6 +1570,7 @@ function renderHud() {
 function statusOf(k) {
   const c = chars[k], latest = KINDS.includes(k) ? latestOf(k) : null;
   if (onLeave(k)) { const d = new Date(leaveUntil(k) + 9 * 3600e3); return ["#adb5bd", `🌴 휴가 중 · ${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} 복귀`]; }
+  if (c.mode === "upstairs" || (c.mode === "leaving" && wantMode(k, NOW()) === "upstairs")) return ["#ffc94d", k === "lead" ? `2층 대표실 · 결재 서류 ${seenItems().length}건 들고 대기` : "2층 대표실에서 결재 기다리는 중"];
   if (c.mode === "lunch" || (c.mode === "leaving" && lunchNow(NOW()))) return ["#adb5bd", "🍚 점심 먹으러 나감 · 13:30 복귀"];
   if (k === "lead") {
     const n = seenItems().length, q = unseenItems().length;
@@ -1580,7 +1585,7 @@ function statusOf(k) {
   const mine = pendingItems().find(x => x.owner === k);
   if (mine) return ["#ffc94d", save.seen[mine.key] ? "팀장 통과 · 대표 결재 대기" : "팀장 검토 대기"];
   if (isProd(k)) return doneToday(k) ? ["#3ccf91", "오늘 할 일 끝 ✓"] : ["#ffc94d", "오늘 할 일 남음"];
-  return ["#3ccf91", latest ? "근무 중 · 최근 리포트 결재 완료 ✓" : "근무 중"];
+  return ["#3ccf91", TEAM[k].today || (latest ? "근무 중 · 최근 리포트 결재 완료 ✓" : "근무 중")];
 }
 function renderRoster() {
   const done = PRODS.filter(doneToday).length;
@@ -1599,7 +1604,7 @@ function renderRoster() {
     const [col, txt] = statusOf(k), unread = unreadOf(k).length;
     return `<button class="member${unread ? " has-new" : ""}" data-k="${k}"><img src="${AV[k]}" alt="">
       <span><span class="nm">${esc(who(k))} <span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}</span>${awardBadge(k)}${unread ? `<span class="kb" style="background:#ffc94d;color:#3b2a05">새 ${unread}</span>` : ""}</span>
-      <span class="jb">${TEAM[k].job} · ${TEAM[k].when}</span>
+      <span class="jb">${TEAM[k].job} · ${TEAM[k].every || TEAM[k].when}</span>
       <span class="st"><i style="background:${col}"></i>${txt}</span></span></button>`;
   }).join("");
   document.querySelectorAll("#roster .member, #roster-prod .member").forEach(b => b.onclick = () => talkTo(b.dataset.k));
