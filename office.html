@@ -352,6 +352,8 @@ a { color: inherit; }
 .ver-tabs button.on { background: #15161a; color: #fff; border-color: #15161a; }
 .slides { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 8px; margin: 8px 0; }
 .slide { background: #fff; border: 1px solid var(--paper-line); border-radius: 12px; padding: 10px; aspect-ratio: 4/5; display: flex; flex-direction: column; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.slide .fact { margin-top: auto; font-size: 11.5px; color: #6b6f78; background: #f4f6fb; border-radius: 8px; padding: 6px 7px; }
+.slide { aspect-ratio: auto !important; min-height: 150px; }
 .slide .n { font-size: 11px; color: #8a8f99; font-weight: 800; } .slide b { font-size: 15px; line-height: 1.3; } .slide p { margin: 0; font-size: 12.5px; color: #4a4f59; }
 .dr-body { background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 12px 14px; overflow-wrap: anywhere; }
 .dr-body h3 { margin: 0 0 6px; } .dr-body h4 { margin: 12px 0 4px; } .dr-body p { margin: 6px 0; line-height: 1.6; }
@@ -1711,7 +1713,7 @@ function draftBody(k, d) {
   if (!d) return "";
   const tags = a => (a || []).length ? `<p class="tagline">${a.map(x => "#" + esc(String(x).replace(/^#/, ""))).join(" ")}</p>` : "";
   const cap = d.caption ? `<h4>캡션</h4><p style="white-space:pre-line">${esc(d.caption)}</p>` : "";
-  if (k === "card") return `${d.title ? `<h3>${esc(d.title)}</h3>` : ""}<div class="slides">${(d.slides || []).map((x, i) => `<div class="slide"><span class="n">${i + 1} / ${(d.slides || []).length}</span><b>${esc(x.head)}</b><p>${esc(x.body)}</p></div>`).join("")}</div>${cap}${tags(d.hashtags)}`;
+  if (k === "card") return `${d.title ? `<h3>${esc(d.title)}</h3>` : ""}<div class="slides">${(d.slides || []).map((x, i) => `<div class="slide"><span class="n">${i + 1} / ${(d.slides || []).length}</span><b>${esc(x.head)}</b><p>${esc(x.body)}</p>${x.fact ? `<p class="fact">🔎 근거: “${esc(x.fact)}”</p>` : ""}</div>`).join("")}</div>${cap}${tags(d.hashtags)}`;
   if (k === "blog") return `<h3>${esc(d.title)}</h3>${(d.keywords || []).length ? `<p class="sub">검색어: ${d.keywords.map(esc).join(", ")}</p>` : ""}<p>${esc(d.intro)}</p>${(d.sections || []).map(x => `<h4>${esc(x.h)}</h4><p>${esc(x.p)}</p>`).join("")}<p>${esc(d.outro)}</p>${tags(d.tags)}`;
   if (k === "reels") return `${d.title ? `<h3>${esc(d.title)}</h3>` : ""}${d.label || d.thumb ? `<p>🖼 썸네일: ${d.label ? `<span class="sub">${esc(d.label)}</span> ` : ""}<b>${esc(d.thumb || "")}</b></p>` : ""}<p>🎬 첫 화면: <b>${esc(d.hook)}</b></p><table class="scn"><tr><th>초</th><th>화면</th><th>자막</th></tr>${(d.scenes || []).map(x => `<tr><td>${esc(x.sec)}</td><td>${esc(x.shot)}</td><td><b>${esc(x.text)}</b>${x.voice ? `<br>${esc(x.voice)}` : ""}</td></tr>`).join("")}</table>${d.ending ? `<p>🔚 엔딩: <b>${esc(d.ending)}</b></p>` : ""}${cap}${tags(d.hashtags)}${(d.fill || []).length ? `<h4>✍️ 직접 채울 것</h4><ul>${d.fill.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}`;
   return `<pre style="white-space:pre-wrap">${esc(JSON.stringify(d, null, 1))}</pre>`;
@@ -1738,7 +1740,8 @@ function openDraft(id, k, showV) {
       ${vers.length > 1 ? `<div class="ver-tabs">${vers.map(x => `<button data-v="${x.v}" class="${x === cur ? "on" : ""}">시안 ${x.v}${x.ceo ? " · 대표 지시" : x.round ? ` · ${x.round.score}점` : ""}</button>`).join("")}</div>` : ""}
       ${cur.ceo ? `<p class="sub">📝 대표 지시: ${esc(cur.note)}</p>` : cur.round && !cur.round.pass ? `<p class="sub">이 시안에 대한 팀장 지적: ${esc((cur.round.feedback || []).join(" / "))}</p>` : ""}
       <div class="dr-body">${draftBody(k, cur.draft)}</div>
-      <div class="bar" style="margin-top:12px"><button class="btn ghost" id="dr-copy">📋 텍스트 복사</button>${TOOL_OF[k] ? `<a class="btn ghost" href="${TOOL_OF[k]}" target="_blank" rel="noopener">🧰 ${esc(PROD[k].label)} 도구 열기</a>` : ""}</div>
+      ${(it.from && (it.from.sources || [])[0]) ? `<p class="sub" style="margin:10px 0 0">📰 팩트체크 원문: <a href="${esc(it.from.sources[0].url)}" target="_blank" rel="noopener">${esc(it.from.sources[0].name || it.from.sources[0].url)}</a></p>` : ""}
+      <div class="bar" style="margin-top:12px">${k === "card" ? `<button class="btn${st.status === "approved" ? " gold" : " ghost"}" id="dr-make">🎨 카드뉴스 이미지로 만들기</button>` : ""}<button class="btn ghost" id="dr-copy">📋 텍스트 복사</button>${TOOL_OF[k] ? `<a class="btn ghost" href="${TOOL_OF[k]}" target="_blank" rel="noopener">🧰 ${esc(PROD[k].label)} 도구 열기</a>` : ""}</div>
       ${decided ? `<p class="sub" style="margin-top:12px">${st.status === "approved" ? "✅ 승인" : "✖ 반려"} · ${esc(st.at || "")}${st.note ? ` · ${esc(st.note)}` : ""}</p>`
       : `<div class="task" style="flex-wrap:wrap"><span style="flex:1;min-width:200px">대표 결재<br><span class="sub">시안 ${vers.length}번 / 최대 5번${left > 0 ? ` · 수정 지시는 ${left}번 더 할 수 있어요` : " · 더 고칠 수 없어요"}</span></span>
           <button class="btn gold" id="dr-ok">✅ 승인 (+5 XP)</button><button class="btn ghost" id="dr-fix"${left > 0 ? "" : " disabled"}>✏️ 수정 지시</button><button class="btn ghost" id="dr-no">✖ 반려</button></div>
@@ -1746,6 +1749,12 @@ function openDraft(id, k, showV) {
           <div class="bar"><button class="btn" id="dr-send">수정 지시 보내기 (AI 10 크레딧)</button></div></div>`}
     </div>`);
   modal.querySelectorAll("[data-v]").forEach(b => b.onclick = () => openDraft(id, k, +b.dataset.v));
+  const mk = document.getElementById("dr-make");
+  if (mk) mk.onclick = () => {
+    const d = cur.draft || {};
+    store.set("cuttory_office_import", JSON.stringify({ title: d.title || "", slides: (d.slides || []).map(x => ({ head: x.head, body: x.body })), caption: [d.caption, (d.hashtags || []).map(x => "#" + String(x).replace(/^#/, "")).join(" ")].filter(Boolean).join("\n\n"), source: it.from && (it.from.sources || [])[0] ? it.from.sources[0].name : "", sub: it.from ? it.from.section || "" : "" }));
+    window.open("cardnews.html?import=office", "_blank", "noopener");
+  };
   document.getElementById("dr-copy").onclick = async () => { try { await navigator.clipboard.writeText(draftText(k, cur.draft)); toast("📋 복사했어요"); } catch { toast("복사하지 못했어요"); } };
   if (decided) return;
   const decide = (status, note) => {
