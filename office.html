@@ -1732,7 +1732,8 @@ function openDraft(id, k, showV) {
   const line = st.status === "approved" ? "승인해 주셔서 감사해요! 바로 올릴 수 있게 정리돼 있어요." : st.status === "rejected" ? "반려된 시안이에요. 다음 시안에 반영할게요." : it.passed ? `${esc((save.teamNames || {}).lead || TEAM.lead.name)} 팀장님 통과 받았어요. 대표님 결재 부탁드려요!` : "팀장님이 5번까지 보고 보류했어요. 대표님 판단이 필요해요.";
   openModal(`${head(AV[k], `${esc(who(k))} · ${esc(it.what || "콘텐츠 시안")}`, line)}
     <div class="m-body">
-      <span class="kb" style="background:${tagOf(k)[1]}">${esc(tagOf(k)[0])} 시안</span> <span class="sub">${esc(id)} 데일리 「${esc(it.from ? it.from.title : "")}」에서</span>
+      <span class="kb" style="background:${tagOf(k)[1]}">${esc(tagOf(k)[0])} 시안</span> <span class="sub">${esc(id)} ${esc(it.from && it.from.section || "데일리")} 「${esc(it.from ? it.from.title : "")}」에서</span>
+      ${it.from && (it.from.signals || []).length ? `<p class="sub" style="margin:4px 0 0">🔥 화제 신호: ${it.from.signals.map(esc).join(" · ")}${(it.from.sources || [])[0] ? ` · <a href="${esc(it.from.sources[0].url)}" target="_blank" rel="noopener">원문 보기</a>` : ""}</p>` : ""}
       ${reviewHtml(it, false)}
       ${vers.length > 1 ? `<div class="ver-tabs">${vers.map(x => `<button data-v="${x.v}" class="${x === cur ? "on" : ""}">시안 ${x.v}${x.ceo ? " · 대표 지시" : x.round ? ` · ${x.round.score}점` : ""}</button>`).join("")}</div>` : ""}
       ${cur.ceo ? `<p class="sub">📝 대표 지시: ${esc(cur.note)}</p>` : cur.round && !cur.round.pass ? `<p class="sub">이 시안에 대한 팀장 지적: ${esc((cur.round.feedback || []).join(" / "))}</p>` : ""}

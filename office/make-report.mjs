@@ -348,9 +348,9 @@ const DRAFT_KINDS = {
   card: {
     who: '카드뉴스 디자이너', what: '인스타그램 카드뉴스 6장 문구',
     spec: '{"title":"작업 이름","slides":[{"head":"장마다 큰 제목 (18자 안쪽)","body":"작은 본문 1~2줄 (60자 안쪽)"} 를 정확히 6장],"caption":"인스타 캡션 3~5줄","hashtags":["해시태그 8개, # 없이"]}',
-    guide: '1장은 스크롤을 멈추게 하는 훅, 2~5장은 사례와 이유, 6장은 저장·공유를 부르는 마무리.',
-    rubric: `- 훅 (30): 1장 제목만 보고도 넘기고 싶어지는가
-- 정확성 (25): 사례 내용이 원본 카드와 맞는가. 없는 숫자를 지어내지 않았는가
+    guide: '오늘 네이버 뉴스에서 가장 화제인 이슈를 다룹니다. 1장은 스크롤을 멈추게 하는 훅, 2~5장은 무슨 일인지·왜 화제인지·나에게 어떤 의미인지, 6장은 저장·공유·댓글을 부르는 마무리.',
+    rubric: `- 훅·바이럴 (30): 1장 제목만 보고도 넘기고 싶고, 저장·공유하고 싶어지는가
+- 정확성 (25): 내용이 원본 기사와 맞는가. 기사에 없는 숫자를 지어내지 않았는가
 - 흐름 (20): 6장이 훅 → 내용 → 마무리로 자연스럽게 이어지는가
 - 형식 (15): 정확히 6장, 제목 18자·본문 60자 안쪽인가
 - 캡션 (10): 캡션과 해시태그가 바로 올릴 수 있는 수준인가`,
@@ -379,21 +379,90 @@ const DRAFT_KINDS = {
     ok: d => d.hook && Array.isArray(d.scenes) && d.scenes.length >= 3,
   },
 };
+
+// ───── 네이버 뉴스 오늘의 이슈 (카드뉴스 소재) ─────
+// 뉴스홈 헤드라인 + 언론사별 많이 본 뉴스 + 댓글 많은 뉴스를 모아, 여러 곳에 걸린 기사일수록 '핫하다'고 봐요.
+async function getBuf(url, ms = 15000) {
+  const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(ms) });
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return Buffer.from(await r.arrayBuffer());
+}
+const artId = u => (String(u).match(/article\/(\d+)\/(\d+)/) || []).slice(1).join('/');
+async function collectNaver() {
+  const pool = new Map();
+  const add = (url, title, signal, w) => {
+    const id = artId(url); title = decode(title); if (!id || !title) return;
+    const it = pool.get(id) || { id, url: `https://n.news.naver.com/article/${id}`, title, signals: [], heat: 0 };
+    if (!it.signals.includes(signal)) it.signals.push(signal); it.heat += w; pool.set(id, it);
+  };
+  try {
+    const home = (await getBuf('https://news.naver.com/')).toString('utf8');
+    let i = 0;
+    for (const m of home.matchAll(/<a href="([^"]+)" class="cnf_news[^"]*"[\s\S]{0,1200}?<strong class="cnf_news_title">([^<]+)<\/strong>/g)) add(m[1], m[2], '뉴스홈 헤드라인', 3 - Math.min(2, i++ / 10));
+  } catch (e) { console.warn('네이버 뉴스홈 실패', e.message); }
+  for (const [path, name, w] of [['popularDay', '언론사별 많이 본', 3], ['popularMemo', '언론사별 댓글 많은', 4]]) {
+    try {
+      const h = new TextDecoder('euc-kr').decode(await getBuf(`https://news.naver.com/main/ranking/${path}.naver`));
+      for (const m of h.matchAll(/<a href="([^"]+)" class="list_title[^"]*"[^>]*data-nlog-params="[^"]*?rank&#034;:(\d+)[^>]*>([^<]+)<\/a>/g)) add(m[1], m[3], `${name} ${m[2]}위`, w * (6 - Math.min(5, +m[2])) / 5);
+    } catch (e) { console.warn('네이버 랭킹 실패', path, e.message); }
+  }
+  return [...pool.values()].sort((a, b) => b.heat - a.heat).slice(0, 60);
+}
+async function naverArticle(url) {
+  const h = (await getBuf(url, 12000)).toString('utf8');
+  const body = (h.match(/<article id="dic_area"[^>]*>([\s\S]*?)<\/article>/) || [])[1] || '';
+  const press = decode((h.match(/<meta property="og:article:author" content="([^"]*)"/) || [])[1] || '');
+  return { text: decode(body.replace(/<br\s*\/?>/g, ' ')).slice(0, 2500), press };
+}
+// 오늘 가장 바이럴 되기 좋은 이슈 하나를 골라 카드뉴스 재료로 만들어요
+async function hotIssue(id) {
+  const list = await collectNaver();
+  if (list.length < 5) throw new Error('네이버 뉴스를 충분히 모으지 못했어요');
+  const pick = await ask(`당신은 인스타그램 카드뉴스 에디터입니다. ${AUDIENCE}
+아래는 ${id} 네이버 뉴스홈 헤드라인과 많이 본·댓글 많은 뉴스입니다. [ ] 안은 이 기사가 걸린 곳과 순위예요. 여러 곳에 걸릴수록 화제성이 큽니다.
+오늘 카드뉴스로 만들었을 때 가장 저장·공유가 많이 될(바이럴 되기 좋은) 이슈 하나와 예비 2개를 고르세요.
+- 고르기 좋은 것: 많은 사람이 공감하거나 놀랄 생활·경제·소비·트렌드·IT·사회 화제, "나도 알아야 하는" 정보
+- 피할 것: 정당 간 공방·정치인 발언 다툼처럼 편이 갈리는 정치 기사, 사망·참사·범죄 피해처럼 비극을 소재로 소비하게 되는 기사, 단순 주가·환율
+JSON으로만 답하세요: {"pick":번호,"backup":[번호,번호],"why":"왜 바이럴 될지 1문장","angle":"카드뉴스로 풀 각도 1문장"}
+
+${list.map((it, i) => `[${i + 1}] ${it.title} [${it.signals.join(', ')}]`).join('\n')}`);
+  for (const n of [pick.pick, ...[].concat(pick.backup || [])].map(Number)) {
+    const it = list[n - 1]; if (!it) continue;
+    try {
+      const a = await naverArticle(it.url);
+      if (a.text.length < 200) continue;
+      return { ...it, ...a, why: n === +pick.pick ? pick.why : '', angle: n === +pick.pick ? pick.angle : '' };
+    } catch (e) { console.warn('기사 읽기 실패', it.url, e.message); }
+  }
+  throw new Error('고른 기사를 읽지 못했어요');
+}
+
 const dfile = id => path.join(DIR, 'drafts', id + '.json');
 async function makeDrafts(id) {
   if (!FORCE && fs.existsSync(dfile(id))) { console.log(`drafts ${id}: 이미 있어요`); return; }
   const daily = load('daily', id);
-  if (!daily) throw new Error('그 날 데일리가 없어서 시안 재료가 없어요');
-  const cards = daily.sections.flatMap(s => s.items.map(it => ({ ...it, section: s.title })));
-  const out = { date: id, source: { kind: 'daily', id, label: daily.period_label, headline: daily.headline }, items: {} };
+  const cards = daily ? daily.sections.flatMap(s => s.items.map(it => ({ ...it, section: s.title }))) : [];
+  const out = { date: id, source: { kind: 'daily', id, label: daily ? daily.period_label : '', headline: daily ? daily.headline : '' }, items: {} };
   let i = 0;
   for (const [k, K] of Object.entries(DRAFT_KINDS)) {
-    const card = cards[i++ % cards.length];
-    const ref = `[원본 카드] ${card.title}\n${card.brand ? `브랜드: ${card.brand}\n` : ''}${card.body}\n왜: ${card.why}\n${(card.sources || []).map(x => `출처: ${x.name} ${x.url}`).join('\n')}`;
+    let card, ref;
+    if (k === 'card') { // 카드뉴스는 오늘 네이버 뉴스에서 가장 핫한 이슈로
+      try {
+        const hot = await hotIssue(id);
+        card = { title: hot.title, section: '오늘의 이슈 · 네이버 뉴스', signals: hot.signals, sources: [{ name: `${hot.press || '네이버 뉴스'} · ${hot.title}`.slice(0, 90), url: hot.url }] };
+        ref = `[오늘의 이슈] ${hot.title}\n화제 신호: ${hot.signals.join(', ')}\n${hot.why ? `바이럴 포인트: ${hot.why}\n` : ''}${hot.angle ? `풀 각도: ${hot.angle}\n` : ''}[기사 본문${hot.press ? ` · ${hot.press}` : ''}] ${hot.text}\n출처: ${hot.url}`;
+        console.log(`  오늘의 이슈: ${hot.title} (${hot.signals.join(', ')})`);
+      } catch (e) { console.warn('  오늘의 이슈를 못 골라서 데일리 카드로 대신해요:', e.message); }
+    }
+    if (!card) {
+      if (!cards.length) { console.warn(`  ${k}: 데일리가 없어서 건너뛰어요`); continue; }
+      card = cards[i++ % cards.length];
+      ref = `[원본 카드] ${card.title}\n${card.brand ? `브랜드: ${card.brand}\n` : ''}${card.body}\n왜: ${card.why}\n${(card.sources || []).map(x => `출처: ${x.name} ${x.url}`).join('\n')}`;
+    }
     try {
       const first = await ask(`당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${AUDIENCE}
-아래 트렌드 리포트 카드 하나로 ${K.what}을 쓰세요. ${K.guide}
-원본 카드에 없는 숫자·결과를 지어내지 마세요. 이모지는 꼭 필요한 곳에만 쓰세요.
+아래 자료 하나로 ${K.what}을 쓰세요. ${K.guide}
+자료에 없는 숫자·결과를 지어내지 마세요. 이모지는 꼭 필요한 곳에만 쓰세요.
 JSON으로만 답하세요: ${K.spec}
 
 ${ref}`);
@@ -410,7 +479,7 @@ ${JSON.stringify(cur)}
 
 ${ref}`),
       });
-      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, sources: (card.sources || []).slice(0, 2) }, versions: res.versions, ...res.review, draft: res.draft };
+      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, signals: card.signals, sources: (card.sources || []).slice(0, 2) }, versions: res.versions, ...res.review, draft: res.draft };
     } catch (e) { console.error(`  ${k} 시안 실패:`, e.message); }
   }
   if (!Object.keys(out.items).length) throw new Error('시안을 하나도 못 만들었어요');
