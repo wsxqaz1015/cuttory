@@ -343,6 +343,18 @@ a { color: inherit; }
 .rv-dots i.ok { background: #3ccf91; } .rv-dots i.ceo { background: #4dabf7; } .rv-dots i.off { background: #e3e5ea; }
 .ch-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; } .ch-list .btn { flex: none; width: auto; } .ch-list .t b, .ch-list .t .sub { display: block; }
 .know { margin: 10px 0 0; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 8px 12px; font-size: 13px; } .know summary { cursor: pointer; font-weight: 700; } .know ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.55; } .know li { margin: 3px 0; } .know a { overflow-wrap: anywhere; }
+.aw-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.aw-who button { border: 1px solid var(--paper-line); background: #fff; cursor: pointer; font: inherit; color: inherit; }
+.aw-post { background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px 12px; }
+.aw-who { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.aw-who .aw-k { width: auto; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 4px; border-radius: 999px; font-size: 12px; opacity: .55; }
+.aw-who .aw-k img { width: 14px; height: 21px; }
+.aw-who .aw-k.on { opacity: 1; border-color: #f2c94c; background: #fff8dc; font-weight: 800; }
+.aw-who .aw-k.more { display: none; }
+.aw-who.all .aw-k.more { display: inline-flex; }
+.aw-who .aw-more { width: auto; padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+.aw-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.aw-form input { flex: 1 1 120px; min-width: 0; padding: 7px 10px; border: 1px solid var(--paper-line); border-radius: 10px; font: inherit; }
 .ib-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
 .ib-list button { width: 100%; text-align: left; display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit; }
 .ib-list button img { width: 28px; height: 42px; image-rendering: pixelated; flex: none; }
@@ -409,6 +421,7 @@ a { color: inherit; }
     </button>
     <span class="streak" id="hud-streak" title="데일리를 읽은 연속 일수"></span>
     <button class="chip-btn" id="btn-inbox">🗂<span class="lbl"> 결재함</span></button>
+    <button class="chip-btn" id="btn-award">🎁<span class="lbl"> 성과 보상</span></button>
     <button class="chip-btn" id="btn-archive">📥<span class="lbl"> 받은 리포트</span></button>
     <button class="chip-btn" id="btn-scrap">📌<span class="lbl"> 스크랩북</span></button>
     <button class="chip-btn" id="btn-wrong">📝<span class="lbl"> 오답노트</span></button>
@@ -948,6 +961,8 @@ function drawBigTable() {
   R(ctx, TABLE.x + TABLE.w - 16, TABLE.y - 2, 4, 4, "#7fb5d8"); R(ctx, TABLE.x + TABLE.w - 16, TABLE.y - 6, 2, 4, P.leaf); R(ctx, TABLE.x + TABLE.w - 14, TABLE.y - 7, 2, 4, P.leafL);
 }
 function drawCafe(t) {
+  // 바리스타 (바 뒤에 서 있어서 상반신만 보여요)
+  if (!lunchNow(NOW())) sprite(ctx, chars.barista.x, chars.barista.y, BARISTA.look, "down", 0, { happy: !!bubbles.barista, cup: !!bubbles.barista });
   // 테라코타 타일 카페 바 + 화강암 상판 + 스툴
   R(ctx, 330, 116, 64, 4, P.granite); R(ctx, 330, 120, 64, 22, P.terra);
   for (let y = 122; y < 142; y += 4) for (let x = 330; x < 394; x += 3) R(ctx, x, y, 1, 3, P.terraD);
@@ -1007,7 +1022,19 @@ function drawLights(now) {
 /* ═════════════ 팀원 움직임 ═════════════ */
 const chars = {};
 ALL.forEach(k => chars[k] = { k, x: DOOR.x, y: DOOR.y, dir: "up", path: [], mode: "away", visible: false, step: 0, then: null, delay: 0 });
-const WALKING = ["arriving", "toDeliver", "returning", "toSpot", "fromSpot", "toLead"];
+// 카페 바리스타 (팀원 목록에는 없고 카페 바 뒤에 늘 서 있어요)
+const BARISTA = { name: "보리", look: { hair: "#6b3f22", skin: "#f7d1ad", shirt: "#fbf7ee", shirt2: "#8a5a3a", pants: "#2f2a28" } };
+chars.barista = { k: "barista", x: 360, y: 101, dir: "down", path: [], mode: "working", visible: true, step: 0 };
+const BARISTA_SERVE = ["{n}님, 아아 한 잔 나왔어요 ☕", "{n}님은 늘 라떼죠? 🥛", "오늘 원두 산미 좋아요, {n}님!", "{n}님 디카페인으로 드릴게요 🌙", "샷 추가해 드렸어요, 힘내요 {n}님 💪"];
+const BARISTA_IDLE = ["커피 드실 분~? ☕", "원두 새로 갈았어요!", "오늘의 메뉴: 흑당 라떼 🧋", "바닐라 시럽 채워 뒀어요"];
+const WALKING = ["arriving", "toDeliver", "returning", "toSpot", "fromSpot", "toLead", "leaving"];
+// 수다: 방을 나눠서 기본은 켜 둬요 (2층 대표실은 조용)
+const chatty = () => save.chatty !== false;
+// 점심시간 12:30~13:30 (한국 시간) · 휴가 (성과 보상)
+const OUT = ["lunch", "leave"];
+const lunchNow = now => { const h = kstParts(now).h; return h >= 12.5 && h < 13.5; };
+const leaveUntil = k => Math.max(0, ...(save.awards || []).filter(a => a.k === k && a.type === "leave").map(a => a.until || 0));
+const onLeave = k => leaveUntil(k) > NOW().getTime();
 const BUSY = [...WALKING, "spot", "atLead"];
 // 지금 자리에서 목표까지 통로를 따라가는 길
 const zone = y => y <= 120 ? 1 : y <= 210 ? 2 : 3, lane = z => [0, C1, C2, C3][z];
@@ -1053,6 +1080,8 @@ const seenItems = () => pendingItems().filter(x => save.seen[x.key]);
 const unseenItems = () => pendingItems().filter(x => !save.seen[x.key]);
 // 지금 이 팀원이 있어야 할 상태 (24시간 근무, 퇴근 없음)
 function wantMode(k, now) {
+  if (onLeave(k)) return "leave";
+  if (lunchNow(now)) return "lunch";
   if (k === "lead") return "working";  // 결재 서류는 2층 대표실로 올려요
   if (isProd(k)) return "working";
   const due = dueId(k, now);
@@ -1060,12 +1089,21 @@ function wantMode(k, now) {
 }
 function sync(first) {
   const now = NOW();
-  let queue = 0;
+  let queue = 0, out = 0;
+  if (lunchNow(now) && !sync.lunch && !first && chars.lead.visible && FLOOR === "1F") say("lead", "점심시간이에요! 다들 맛있게 먹고 1시 반에 봬요 🍚", 4500, true);
+  sync.lunch = lunchNow(now);
   for (const k of ALL) {
     const c = chars[k], want = wantMode(k, now);
     if (BUSY.includes(c.mode)) continue;
     if (!c.visible) {
       const s = seatOf(k);
+      if (OUT.includes(want)) { c.mode = want; continue; }
+      if (OUT.includes(c.mode)) { // 점심·휴가 끝나고 문으로 들어와요
+        const was = c.mode;
+        Object.assign(c, { visible: true, x: DOOR.x, y: DOOR.y, dir: "up", delay: queue++ * 1.1 });
+        walk(k, "arriving", s, () => { c.dir = k === "lead" ? "down" : "up"; c.mode = "working"; if (chatty() && Math.random() < .5) say(k, was === "leave" ? "휴가 잘 다녀왔습니다! 🌴" : ["잘 먹었습니다! 🍚", "배부르다… 졸려요 😪", "오후도 달려 볼게요!"][Math.random() * 3 | 0], 3000); sync(); });
+        continue;
+      }
       if (first === "replay") {
         Object.assign(c, { visible: true, x: DOOR.x, y: DOOR.y, dir: "up", delay: queue++ * 1.2 });
         walk(k, "arriving", s, () => { c.dir = k === "lead" ? "down" : "up"; c.mode = "working"; sync(); });
@@ -1073,6 +1111,10 @@ function sync(first) {
       }
       const at = want === "deliver" ? CEO_SPOT : s;
       Object.assign(c, { visible: true, x: at.x, y: at.y, dir: k === "lead" ? "down" : "up", path: [], mode: want });
+      continue;
+    }
+    if (OUT.includes(want)) { // 점심 먹으러 · 휴가 가러 문 밖으로
+      if (c.mode !== "leaving") { c.delay = out++ * .8; if (chatty() && Math.random() < .5) say(k, want === "leave" ? "대표님 감사합니다! 휴가 다녀올게요 🌴" : ["점심 뭐 먹지? 🍜", "오늘은 김치찌개 콜?", "샐러드 먹을래요 🥗"][Math.random() * 3 | 0], 2800); walk(k, "leaving", DOOR, () => { c.visible = false; c.mode = wantMode(k, NOW()); c.cup = false; renderRoster(); }); }
       continue;
     }
     if (c.mode === want) continue;
@@ -1155,15 +1197,130 @@ function windowLine() {
   if (S.h > S.noon && S.alt < 8) return "노을 진짜 예쁘다 🌇";
   return "오늘 하늘 맑네요 ☀️";
 }
+// 커피 한 잔: 쉬는 팀원 한 명이 카페 바로 가요
+function coffeeRun(k) {
+  const c = chars[k], spot = SPOTS[0];
+  if (!c || !atSeat(k) || c.mode !== "working" || ALL.some(m => chars[m].spot === spot) || lunchNow(NOW())) return false;
+  c.spot = spot; c.spotLabel = spot.label;
+  walk(k, "toSpot", spot, () => {
+    c.mode = "spot"; c.dir = "up"; c.cup = true;
+    say("barista", BARISTA_SERVE[Math.random() * BARISTA_SERVE.length | 0].replace("{n}", who(k).split(" ")[0]), 3000);
+    setTimeout(() => say(k, ["감사합니다 ☕", "역시 보리 바리스타님!", "이거 마시고 힘낼게요 💪"][Math.random() * 3 | 0], 2500), 1800);
+    setTimeout(() => walk(k, "fromSpot", seatOf(k), () => { c.dir = "up"; c.mode = wantMode(k, NOW()); c.spot = null; setTimeout(() => c.cup = false, 15000); sync(); }), 5000 + Math.random() * 4000);
+  });
+  renderRoster(); return true;
+}
+function coffeeBreak() {
+  if (document.hidden || lunchNow(NOW()) || FLOOR !== "1F") return;
+  const idle = ALL.filter(k => k !== "lead" && atSeat(k) && chars[k].mode === "working" && !bubbles[k] && reviewing?.owner !== k);
+  if (!idle.length) return;
+  if (chatty()) say("barista", BARISTA_IDLE[Math.random() * BARISTA_IDLE.length | 0], 2500);
+  setTimeout(() => coffeeRun(idle[Math.random() * idle.length | 0]), 1500);
+}
+function openCafe() {
+  const n = save.coffee || 0;
+  openModal(`${head(avatar(BARISTA.look), `${BARISTA.name} · 바리스타`, lunchNow(NOW()) ? "점심시간엔 카페도 잠깐 쉬어요. 1시 반에 다시 열어요 ☕" : "어서 오세요! 원두 막 갈았어요 ☕")}
+    <div class="m-body">
+      <ul class="ib-list" style="margin:0"><li class="sub">☕ 아메리카노 · 🥛 라떼 · 🧋 흑당 라떼 · 🌙 디카페인</li></ul>
+      <p class="sub" style="margin:10px 0 0">팀원들이 중간중간 커피를 받아 가요. 대표님이 쏘시면 쉬고 있는 팀원 셋이 바로 와요.${n ? ` 지금까지 ${n}번 쏘셨어요.` : ""}</p>
+      <div class="bar"><button class="btn gold" id="cf-treat"${lunchNow(NOW()) ? " disabled" : ""}>☕ 팀원들에게 커피 쏘기</button><button class="btn ghost" data-close>닫기</button></div>
+    </div>`);
+  modal.querySelector("[data-close]").onclick = closeModal;
+  document.getElementById("cf-treat").onclick = () => {
+    closeModal(); save.coffee = n + 1; persist();
+    if (chars.lead.visible) say("lead", "대표님이 커피 쏘셨어요! 다들 한 잔씩 🙌", 3500, true);
+    const idle = ALL.filter(k => k !== "lead" && atSeat(k) && chars[k].mode === "working").sort(() => Math.random() - .5).slice(0, 3);
+    if (!idle.length) return toast("지금은 다들 자리를 비웠어요");
+    idle.forEach((k, i) => setTimeout(() => coffeeRun(k) || setTimeout(() => coffeeRun(k), 9000), 600 + i * 9500));
+  };
+}
+// ── 🎁 성과 보상: 인스타(콘텐츠 비서가 받아 온 최근 게시물)·블로그(대표님이 적은 조회수) 성과를 보고 기여한 팀원에게 상장·보너스·휴가를 줘요
+const AWARD = { prize: { ico: "🏅", ko: "상장" }, bonus: { ico: "💰", ko: "보너스" }, leave: { ico: "🌴", ko: "휴가" } };
+const AWARD_THANKS = { prize: ["상장이라니… 액자에 걸어 둘게요 🥹", "다음 편도 이만큼 해 볼게요!", "대표님 감사합니다! 🏅"], bonus: ["보너스로 팀 간식 쏠게요 🍩", "와… 열심히 한 보람 있네요 💰", "감사합니다! 다음 달도 달려 볼게요"], leave: ["푹 쉬고 더 좋은 아이디어 들고 올게요 🌴", "휴가라니! 바다 보고 올게요 🌊", "충전하고 올게요, 자리 잘 부탁해요!"] };
+const awardsOf = k => (save.awards || []).filter(a => a.k === k);
+const awardBadge = k => { const a = awardsOf(k), n = t => a.filter(x => x.type === t).length; return ["prize", "bonus"].filter(n).map(t => `<span class="kb" style="background:#fff3c4;color:#5a4300">${AWARD[t].ico}${n(t) > 1 ? "×" + n(t) : ""}</span>`).join(""); };
+const median = a => { const v = a.filter(x => x != null && !isNaN(x)).sort((x, y) => x - y); return v.length ? (v.length % 2 ? v[v.length >> 1] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : 0; };
+const bigrams = t => { const s = String(t || "").replace(/[^가-힣a-zA-Z0-9]/g, ""), o = new Set(); for (let i = 0; i < s.length - 1; i++) o.add(s.slice(i, i + 2)); return o; };
+const simOf = (a, b) => { const A = bigrams(a), B = bigrams(b); if (!A.size || !B.size) return 0; let n = 0; A.forEach(x => B.has(x) && n++); return n / Math.min(A.size, B.size); };
+function perfPosts() {
+  const acc = (KIT && KIT.account) || null, out = [];
+  const insta = ((acc && acc.recent) || []).map(r => ({ ...r, ch: "insta" }));
+  const blog = (save.perf || []).map((r, i) => ({ ...r, ch: "blog", type: "블로그", manual: i }));
+  for (const list of [insta, blog]) {
+    const metric = r => r.views != null ? r.views : null, mv = median(list.map(metric)), ml = median(list.map(r => r.likes));
+    for (const r of list) {
+      const x = metric(r) != null && mv ? metric(r) / mv : r.likes != null && ml ? r.likes / ml : null;
+      out.push({ ...r, key: r.url || `blog/${r.title}/${r.date}`, mult: x == null ? null : Math.round(x * 10) / 10, by: r.views != null ? "조회수" : "좋아요" });
+    }
+  }
+  return out.sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+}
+function contributors(p) {
+  // 1) 시안 제목·캡션이 게시물 캡션과 닮았으면 그 시안을 쓴 팀원  2) 아니면 형식으로 추정
+  const hits = new Set();
+  for (const d of draftDays()) for (const [k, it] of Object.entries(d.doc.items || {})) {
+    const dr = it.draft || {}, txt = [dr.title, dr.thumb, dr.hook, (dr.caption || "").slice(0, 80), it.from && it.from.title].filter(Boolean).join(" ");
+    if (simOf(p.caption || p.title, txt) >= .45) { hits.add(k); if (it.from && it.from.by) hits.add(it.from.by); }
+  }
+  if (hits.size) return { list: [...hits].filter(k => TEAM[k] || PROD[k]), how: "시안과 내용이 닮았어요" };
+  return { list: p.ch === "blog" ? ["blog"] : p.type === "캐러셀" ? ["card", "daily"] : ["reels", "content"], how: "형식으로 추정했어요" };
+}
+function giveAward(k, type, p) {
+  const at = NOW().getTime();
+  (save.awards = save.awards || []).push({ k, type, post: p.key, title: String(p.caption || p.title || "").slice(0, 40), at, until: type === "leave" ? at + 24 * 3600e3 : undefined });
+  addLog(`${AWARD[type].ico} ${who(k)}에게 ${AWARD[type].ko} · 「${String(p.caption || p.title || "").slice(0, 24)}」`);
+  persist(); renderRoster();
+  const line = AWARD_THANKS[type][Math.random() * 3 | 0];
+  if (chars[k] && chars[k].visible) say(k, line, 4000, true);
+  if (chars.lead.visible && FLOOR === "1F") setTimeout(() => say("lead", `${who(k).split(" ")[0]}님 ${AWARD[type].ko} 축하해요! 다들 박수 👏`, 3500), 1600);
+  toast(`${AWARD[type].ico} ${who(k)}: ${line}`);
+}
+function openAwards() {
+  const posts = perfPosts(), acc = KIT && KIT.account, given = save.awards || [];
+  const tag = m => m == null ? "" : m >= 3 ? `<span class="kb" style="background:#e03131">🔥 ${m}배 · 💰 보너스 추천</span>` : m >= 1.5 ? `<span class="kb" style="background:#f08c00">${m}배 · 🏅 상장 추천</span>` : `<span class="kb" style="background:#adb5bd">${m}배</span>`;
+  const card = (p, i) => { const c = contributors(p), got = given.filter(a => a.post === p.key);
+    return `<li class="aw-post"><div><b>${p.ch === "blog" ? "📝" : p.type === "캐러셀" ? "🖼" : "🎬"} ${esc(String(p.caption || p.title || "(제목 없음)").slice(0, 60))}</b> ${tag(p.mult)}</div>
+      <div class="sub">${esc(p.date || "")} · ${esc(p.type || "")}${p.views != null ? ` · 조회 ${Number(p.views).toLocaleString("ko-KR")}` : ""}${p.likes != null ? ` · ♥ ${p.likes}` : ""}${p.comments != null ? ` · 💬 ${p.comments}` : ""}${p.url ? ` · <a href="${esc(p.url)}" target="_blank" rel="noopener">보기</a>` : ""}${p.manual != null ? ` · <a href="#" data-del="${p.manual}">지우기</a>` : ""}</div>
+      <div class="sub" style="margin-top:4px">기여한 팀원 (${c.how}) · 눌러서 고르기</div>
+      <div class="aw-who">${[...new Set([...c.list, ...ALL.filter(k => !c.list.includes(k))])].map((k, j) => `<button class="aw-k${j < c.list.length ? " on" : ""}${j >= c.list.length ? " more" : ""}" data-p="${i}" data-k="${k}"><img src="${AV[k]}" alt="">${esc(who(k).split(" ")[0])}</button>`).join("")}<button class="aw-more" data-p="${i}">＋ 다른 팀원</button></div>
+      <div class="bar" style="margin-top:6px">${Object.entries(AWARD).map(([t, a]) => `<button class="btn${(t === "bonus" && p.mult >= 3) || (t === "prize" && p.mult >= 1.5 && p.mult < 3) ? " gold" : " ghost"}" data-give="${t}" data-p="${i}">${a.ico} ${a.ko}</button>`).join("")}</div>
+      ${got.length ? `<div class="sub" style="margin-top:4px">받은 보상: ${got.map(a => `${AWARD[a.type].ico} ${esc(who(a.k).split(" ")[0])}`).join(" · ")}</div>` : ""}</li>`; };
+  openModal(`${head(AV.lead, `${esc(who("lead"))} · 🎁 성과 보상`, posts.length ? "올린 콘텐츠 성과를 정리했어요. 잘 된 글에 기여한 팀원을 칭찬해 주세요!" : "아직 성과 기록이 없어요. 블로그 조회수를 적거나, 콘텐츠 비서에 인스타 성과가 쌓이면 여기 떠요.")}
+    <div class="m-body">
+      <p class="sub" style="margin:0">배수 = 그 채널 게시물 중앙값 대비 몇 배인지예요. 3배 이상이면 💰 보너스, 1.5배 이상이면 🏅 상장을 추천해요. 🌴 휴가를 주면 24시간 동안 자리를 비우고 쉬다 와요.${acc && acc.updatedAt ? ` 인스타 성과는 콘텐츠 비서 기준 ${esc(String(acc.updatedAt).slice(0, 10))}에 받아 왔어요.` : ""}</p>
+      <ul class="aw-list">${posts.map(card).join("") || `<li class="sub">비어 있어요</li>`}</ul>
+      <details class="rv" style="margin-top:12px"><summary>📝 블로그 성과 적기</summary>
+        <div class="aw-form"><input id="aw-t" placeholder="글 제목"><input id="aw-v" type="number" min="0" placeholder="조회수"><input id="aw-l" type="number" min="0" placeholder="공감 (선택)"><input id="aw-u" placeholder="글 주소 (선택)"><button class="btn" id="aw-add">추가</button></div></details>
+      ${given.length ? `<details class="rv"><summary>지금까지 준 보상 ${given.length}개</summary><ol class="rv-list">${given.slice().reverse().map(a => `<li>${AWARD[a.type].ico} <b>${esc(who(a.k))}</b> · ${AWARD[a.type].ko} <span class="sub">${esc(a.title || "")} · ${new Date(a.at + 9 * 3600e3).toISOString().slice(5, 16).replace("T", " ")}</span></li>`).join("")}</ol></details>` : ""}
+      <div class="bar"><button class="btn ghost" data-close>닫기</button></div>
+    </div>`);
+  modal.querySelector("[data-close]").onclick = closeModal;
+  modal.querySelectorAll(".aw-k").forEach(b => b.onclick = () => b.classList.toggle("on"));
+  modal.querySelectorAll(".aw-more").forEach(b => b.onclick = () => { b.parentNode.classList.add("all"); b.remove(); });
+  modal.querySelectorAll("[data-give]").forEach(b => b.onclick = () => {
+    const p = posts[+b.dataset.p], ks = [...modal.querySelectorAll(`.aw-k.on[data-p="${b.dataset.p}"]`)].map(x => x.dataset.k);
+    if (!ks.length) return toast("기여한 팀원을 먼저 골라 주세요");
+    ks.forEach((k, i) => setTimeout(() => giveAward(k, b.dataset.give, p), i * 700));
+    setTimeout(() => openAwards(), ks.length * 700 + 50);
+  });
+  modal.querySelectorAll("[data-del]").forEach(a => a.onclick = e => { e.preventDefault(); save.perf.splice(+a.dataset.del, 1); persist(); openAwards(); });
+  document.getElementById("aw-add").onclick = () => {
+    const t = document.getElementById("aw-t").value.trim(), v = document.getElementById("aw-v").value;
+    if (!t || v === "") return toast("제목과 조회수를 적어 주세요");
+    const l = document.getElementById("aw-l").value;
+    (save.perf = save.perf || []).push({ title: t, views: +v, likes: l === "" ? null : +l, url: document.getElementById("aw-u").value.trim(), date: ymd(NOW()) });
+    persist(); openAwards();
+  };
+}
 function wander() {
   if (document.hidden) return;
   const night = darkness() > .7, out = ALL.filter(k => ["toSpot", "spot", "fromSpot"].includes(chars[k].mode)).length;
-  if (out >= (save.chatty ? (night ? 2 : 3) : 1) || Math.random() < (save.chatty ? .25 : .75)) return;
+  if (out >= (chatty() ? (night ? 2 : 3) : 1) || Math.random() < (chatty() ? .25 : .75)) return;
   const idle = ALL.filter(k => k !== "lead" && chars[k].mode === "working" && atSeat(k) && !bubbles[k] && reviewing?.owner !== k);
   if (!idle.length) return;
   const k = idle[Math.random() * idle.length | 0], c = chars[k];
   let spot;
-  if (save.chatty && Math.random() < .3) { // 동료 자리에 놀러 가기
+  if (chatty() && Math.random() < .3) { // 동료 자리에 놀러 가기
     const mate = ALL.filter(m => m !== k && m !== "lead" && atSeat(m))[0 | Math.random() * 6];
     if (!mate) return;
     const s = seatOf(mate), dy = s.y < 100 ? 18 : s.y > 200 ? -14 : 22;
@@ -1177,8 +1334,9 @@ function wander() {
   walk(k, "toSpot", spot, () => {
     c.mode = "spot"; c.dir = spot.face || "up"; if (spot.cup) c.cup = true;
     const pool = night && Math.random() < .5 ? NIGHT_LINES : spot.lines || [windowLine()];
-    if (save.chatty) say(k, pool[Math.random() * pool.length | 0], 3000);
-    if (save.chatty && spot.mate && Math.random() < .7) setTimeout(() => say(spot.mate, ["좋죠!", "오 그거 괜찮은데요?", "잠깐만요, 이것만 끝내고요 😅", "같이 봐요!"][Math.random() * 4 | 0], 2500), 1600);
+    if (spot === SPOTS[0] && !lunchNow(NOW())) { say("barista", BARISTA_SERVE[Math.random() * BARISTA_SERVE.length | 0].replace("{n}", who(k).split(" ")[0]), 3000); setTimeout(() => chatty() && say(k, ["감사합니다 ☕", "역시 보리 바리스타님!", "이거 마시고 힘낼게요 💪"][Math.random() * 3 | 0], 2500), 1800); }
+    else if (chatty()) say(k, pool[Math.random() * pool.length | 0], 3000);
+    if (chatty() && spot.mate && Math.random() < .7) setTimeout(() => say(spot.mate, ["좋죠!", "오 그거 괜찮은데요?", "잠깐만요, 이것만 끝내고요 😅", "같이 봐요!"][Math.random() * 4 | 0], 2500), 1600);
     setTimeout(() => {
       walk(k, "fromSpot", seatOf(k), () => { c.dir = "up"; c.mode = wantMode(k, NOW()); c.spot = null; setTimeout(() => c.cup = false, 12000); sync(); });
     }, 7000 + Math.random() * 12000);
@@ -1211,7 +1369,7 @@ const CEO2 = { x: 194, y: 112 }, DESK2 = { x: 150, y: 128, w: 100, h: 18 };
 // 결재 대기 서류를 가진 팀원 (팀장이 먼저 본 것만), 한 사람당 한 자리
 function visitors() {
   const seen = new Set(), out = [];
-  for (const x of seenItems()) if (!seen.has(x.owner)) { seen.add(x.owner); out.push(x); }
+  for (const x of seenItems()) if (!seen.has(x.owner) && !OUT.includes((chars[x.owner] || {}).mode) && (chars[x.owner] || {}).mode !== "leaving") { seen.add(x.owner); out.push(x); }
   return out.slice(0, 6);
 }
 function visitorPos(k) {
@@ -1362,7 +1520,7 @@ cvs.addEventListener("mousemove", ev => { cvs.style.cursor = hitTest(canvasPoint
 cvs.addEventListener("click", ev => {
   const h = hitTest(canvasPoint(ev)); if (!h) return;
   ({ visit: () => h[1].type === "report" ? openReport(h[1].k, h[1].id) : openDraft(h[1].id, h[1].k), inbox: openInbox, down: () => setFloor("1F"), char: () => talkTo(h[1]), desk: openArchive, whiteboard: openKeywords, led: () => { const d = latestOf("daily"); d ? openReport("daily", d.id) : toast("아직 데일리가 없어요"); },
-     trophy: openBadges, shelf: openScrapbook, coffee: () => toast("☕ 카페 바는 늘 열려 있어요. 주임이 되면 팀원들이 커피 타러 와요"),
+     trophy: openBadges, shelf: openScrapbook, coffee: openCafe,
      booth: () => toast("📞 폰부스예요. 고객 통화나 녹음은 여기서!"), lounge: () => toast("🛋 라운지예요. 팀원들이 수시로 쉬러 와요"), cat: () => toast("🐈 냐옹… (스크랩북 위에서 자고 싶은 눈치예요)"),
      door: () => toast(`🌙 24시간 열려 있는 사무실이에요. 오늘 해는 ${fmtH(SUN.rise)}에 뜨고 ${fmtH(SUN.set)}에 져요`) })[h[0]]();
 });
@@ -1407,6 +1565,8 @@ function renderHud() {
 }
 function statusOf(k) {
   const c = chars[k], latest = KINDS.includes(k) ? latestOf(k) : null;
+  if (onLeave(k)) { const d = new Date(leaveUntil(k) + 9 * 3600e3); return ["#adb5bd", `🌴 휴가 중 · ${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} 복귀`]; }
+  if (c.mode === "lunch" || (c.mode === "leaving" && lunchNow(NOW()))) return ["#adb5bd", "🍚 점심 먹으러 나감 · 13:30 복귀"];
   if (k === "lead") {
     const n = seenItems().length, q = unseenItems().length;
     if (reviewing) return ["#4dabf7", `${who(reviewing.owner)}의 시안 검토 중`];
@@ -1427,18 +1587,18 @@ function renderRoster() {
   document.getElementById("roster-prod").innerHTML = `<p class="team-h">🛠 제작팀 · 오늘 할 일 ${done}/${PRODS.length}</p>` + PRODS.map(k => {
     const [col, txt] = statusOf(k);
     return `<button class="member mini${doneToday(k) ? "" : " todo"}" data-k="${k}"><img src="${AV[k]}" alt="">
-      <span><span class="nm">${esc(who(k))} <span class="kb" style="background:${PROD[k].color}">${PROD[k].label}</span></span>
+      <span><span class="nm">${esc(who(k))} <span class="kb" style="background:${PROD[k].color}">${PROD[k].label}</span>${awardBadge(k)}</span>
       <span class="st"><i style="background:${col}"></i>${esc(txt)}</span></span></button>`;
   }).join("");
   const [lc, lt] = statusOf("lead"), ln = pendingItems().length;
   document.getElementById("roster").innerHTML = `<p class="team-h">🧑‍💼 팀장 · 대표 대신 1차 검토</p><button class="member${ln ? " has-new" : ""}" data-k="lead"><img src="${AV.lead}" alt="">
-      <span><span class="nm">${esc(who("lead"))} <span class="kb" style="background:#1f2a44">팀장</span>${ln ? `<span class="kb" style="background:#ffc94d;color:#3b2a05">결재 ${ln}</span>` : ""}</span>
+      <span><span class="nm">${esc(who("lead"))} <span class="kb" style="background:#1f2a44">팀장</span>${awardBadge("lead")}${ln ? `<span class="kb" style="background:#ffc94d;color:#3b2a05">결재 ${ln}</span>` : ""}</span>
       <span class="jb">시안은 최대 ${5}번까지 검토하고, 통과한 것만 대표님께 올려요</span>
       <span class="st"><i style="background:${lc}"></i>${esc(lt)}</span></span></button>
     <p class="team-h">📰 트렌드팀</p>` + KINDS.map(k => {
     const [col, txt] = statusOf(k), unread = unreadOf(k).length;
     return `<button class="member${unread ? " has-new" : ""}" data-k="${k}"><img src="${AV[k]}" alt="">
-      <span><span class="nm">${esc(who(k))} <span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}</span>${unread ? `<span class="kb" style="background:#ffc94d;color:#3b2a05">새 ${unread}</span>` : ""}</span>
+      <span><span class="nm">${esc(who(k))} <span class="kb" style="background:${KIND_COLOR[k]}">${KIND_NAME[k]}</span>${awardBadge(k)}${unread ? `<span class="kb" style="background:#ffc94d;color:#3b2a05">새 ${unread}</span>` : ""}</span>
       <span class="jb">${TEAM[k].job} · ${TEAM[k].when}</span>
       <span class="st"><i style="background:${col}"></i>${txt}</span></span></button>`;
   }).join("");
@@ -2259,7 +2419,7 @@ function openSettings() {
       <label class="field">🎯 가고 싶은 브랜드 <span class="opt">(선택)</span><input id="st-target" maxlength="20" value="${esc(save.target)}" placeholder="예: 올리브영"></label></div>
     <p class="sub" style="margin:4px 0 0">브랜드를 적으면 메모의 세 번째 칸이 "○○라면 어떻게 할까?"로 바뀌어요.</p>
     <div class="bar" style="margin:4px 0 8px"><button class="btn ghost" id="st-ch">🔗 내 채널 · 프로젝트 관리</button></div>
-    <label class="check-row field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-chatty"${save.chatty ? " checked" : ""}> 💬 수다 허용 <span class="opt">(끄면 팀원들이 꼭 필요한 말만 하고 일해요)</span></label>
+    <label class="check-row field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-chatty"${chatty() ? " checked" : ""}> 💬 수다 허용 <span class="opt">(1층에서만 떠들고 2층 대표실은 조용해요. 끄면 꼭 필요한 말만 해요)</span></label>
     <div class="field">내 모습${looksHtml(look)}</div>
     <p class="field" style="margin-top:14px">팀원 이름 <span class="opt">(비워 두면 기본 이름)</span></p>
     <div class="row2">${ALL.map(k => `<label class="field" style="margin-top:4px"><span class="kb" style="background:${tagOf(k)[1]}">${tagOf(k)[0]}</span> ${TEAM[k].title}<input data-tn="${k}" maxlength="8" value="${esc(save.teamNames[k] || "")}" placeholder="${DEFAULT_NAME[k]}"></label>`).join("")}</div>
@@ -2271,7 +2431,7 @@ function openSettings() {
   bindLooks(modal, v => look = v);
   document.getElementById("st-ch").onclick = openChannels;
   document.getElementById("st-save").onclick = () => {
-    { const ch = document.getElementById("st-chatty").checked; if (ch !== !!save.chatty) { save.chatty = ch; if (!ch && chars.lead.visible) say("lead", "다들 대표님 말씀 들었죠? 수다는 그만, 일합시다 💼", 4000, true); } }
+    { const ch = document.getElementById("st-chatty").checked; if (ch !== chatty()) { save.chatty = ch; if (!ch && chars.lead.visible) say("lead", "다들 대표님 말씀 들었죠? 수다는 그만, 일합시다 💼", 4000, true); } }
     const me = document.getElementById("st-me").value.trim(); if (!me) return toast("이름을 적어 주세요");
     save.me = me; save.target = document.getElementById("st-target").value.trim(); save.company = document.getElementById("st-company").value.trim(); save.look = look; ME_AV = avatar(meLook());
     save.teamNames = {}; modal.querySelectorAll("[data-tn]").forEach(i => { const v = i.value.trim(); if (v) save.teamNames[i.dataset.tn] = v; });
@@ -2386,6 +2546,7 @@ modalBg.addEventListener("click", e => { if (e.target === modalBg && !save.me) s
 document.getElementById("btn-level").onclick = openLevels;
 document.getElementById("btn-archive").onclick = openArchive;
 document.getElementById("btn-inbox").onclick = openInbox;
+document.getElementById("btn-award").onclick = () => openAwards();
 document.getElementById("btn-scrap").onclick = openScrapbook;
 document.getElementById("btn-wrong").onclick = openWrongNote;
 document.getElementById("btn-badges").onclick = openBadges;
@@ -2402,9 +2563,10 @@ sync(true);
 if (save.floor === "2F") setFloor("2F");
 setInterval(() => { tickClock(); sync(); }, 15000);
 setInterval(wander, 9000);
+setInterval(coffeeBreak, 150000);
 setInterval(() => { // 가끔 혼잣말
   const on = ALL.filter(k => chars[k].visible && chars[k].mode === "working" && !chars[k].path.length && !bubbles[k]);
-  if (save.chatty && on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
+  if (chatty() && on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
 }, 28000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { tickClock(); sync(); } });
 // 새 리포트가 올라왔는지 30분마다 확인

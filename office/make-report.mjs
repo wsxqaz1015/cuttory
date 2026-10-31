@@ -616,7 +616,7 @@ function build() {
   const today = ymd(kstNow()), t = secretaryTopic(today);
   const kit = { lead: LEAD, pass: PASS_SCORE, max: MAX_DRAFTS, audience: AUDIENCE,
     kinds: Object.fromEntries(Object.entries(DRAFT_KINDS).map(([k, K]) => [k, { who: K.who, what: K.what, spec: K.spec, guide: K.guide, rubric: K.rubric }])),
-    reels: t ? { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type].filter(Boolean), handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' }, ref: reelsRef(t) } : null, reelsQueue: savedTopics() };
+    reels: t ? { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type].filter(Boolean), handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' }, ref: reelsRef(t) } : null, reelsQueue: savedTopics(), account: (() => { try { return JSON.parse(fs.readFileSync(path.join(DIR, 'content-secretary', 'account.json'), 'utf8')); } catch { return null; } })() };
   const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts, hot, kit })};\n`;
   fs.writeFileSync(path.join(DIR, 'reports-data.js'), out);
   console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '), `drafts ${drafts.length}`, `hot ${hot.length}`);
