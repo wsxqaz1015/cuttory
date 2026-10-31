@@ -341,6 +341,7 @@ a { color: inherit; }
 .rv-dots { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; }
 .rv-dots i { width: 9px; height: 9px; border-radius: 50%; background: #ffb35c; display: inline-block; }
 .rv-dots i.ok { background: #3ccf91; } .rv-dots i.ceo { background: #4dabf7; } .rv-dots i.off { background: #e3e5ea; }
+.ch-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; } .ch-list .btn { flex: none; width: auto; } .ch-list .t b, .ch-list .t .sub { display: block; }
 .ib-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
 .ib-list button { width: 100%; text-align: left; display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit; }
 .ib-list button img { width: 28px; height: 42px; image-rendering: pixelated; flex: none; }
@@ -1873,7 +1874,7 @@ function confirmMake(k, id, i) {
 }
 async function runMake(k, id, src, max, step) {
   const K = KIT.kinds[k], ref = src.ref, me = who(k), lead = who("lead");
-  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = tasteText(k);
+  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = myContext() + tasteText(k);
   let li = step(`${me}: 시안 1번 쓰는 중…`);
   let draft = await askAI(`${role}
 아래 자료 하나로 ${K.what}을 쓰세요. ${K.guide}
@@ -1970,7 +1971,7 @@ function openInbox() {
   openModal(`${head(AV.lead, `${esc(who("lead"))} · 🗂 대표 결재함`, ready.length ? `대표님, 제가 먼저 검토한 서류 ${ready.length}건이에요. 승인하거나 반려해 주세요.` : items.length ? "지금 팀원 시안을 검토하고 있어요. 끝나면 바로 올릴게요." : "결재할 서류가 없어요. 매일 아침 8시 20분쯤 새 리포트와 시안이 올라와요.")}
     <div class="m-body">
       <p class="sub" style="margin:0">시안은 대표님이 컨펌하실 때만 만들어요. 승인·반려·수정 지시는 팀장이 옆에서 📒 기준 노트로 적어 두고, 팀원은 다음 시안을 쓰기 전에 읽어요. 팀장 검토를 켜면 ● 초록 통과 · 주황 수정 · 파랑 대표 지시로 보여요.</p>
-      ${KIT ? `<h3 style="margin:14px 0 0;font-size:15px">✍️ 시안 만들기 (대표 컨펌)</h3><p class="sub" style="margin:2px 0 0">시안은 AI 크레딧을 많이 써서, 대표님이 고르고 컨펌하실 때만 만들어요.</p>
+      ${KIT ? `<h3 style="margin:14px 0 0;font-size:15px">✍️ 시안 만들기 (대표 컨펌) <button class="btn ghost" style="padding:3px 9px;font-size:12px;margin-left:6px" id="ib-ch">🔗 내 채널 · 프로젝트</button></h3><p class="sub" style="margin:2px 0 0">시안은 AI 크레딧을 많이 써서, 대표님이 고르고 컨펌하실 때만 만들어요.</p>
         <ul class="ib-list">${latestHotId() ? `<li><button data-mk="hot"><img src="${AV.daily}" alt=""><span class="t"><b>카드뉴스 · 모아의 오늘의 핫이슈에서 고르기</b><span class="sub">${esc(latestHotId())} · 후보 ${(hotOf(latestHotId()).items || []).length}개</span></span><span class="st-chip">고르기</span></button></li>` : ""}
         ${KIT.reels ? `<li><button data-mk="reels"><img src="${AV.content}" alt=""><span class="t"><b>릴스 · 리서가 고른 주제</b><span class="sub">${esc(KIT.reels.title)}</span></span><span class="st-chip">컨펌</span></button></li>` : ""}
         <li><button disabled><img src="${AV.blog}" alt=""><span class="t"><b>블로그 · 내 구글 드라이브 자료</b><span class="sub">드라이브 폴더를 연결하면 열려요</span></span><span class="st-chip">준비 중</span></button></li></ul>` : ""}
@@ -1980,6 +1981,7 @@ function openInbox() {
       ${recent.length ? `<h3 style="margin:16px 0 0;font-size:15px">최근 처리한 시안</h3><ul class="ib-list">${recent.slice(0, 8).map(row).join("")}</ul>` : ""}
     </div>`);
   modal.querySelectorAll("[data-open]").forEach(b => b.onclick = () => { const [t, k, id] = b.dataset.open.split("|"); t === "report" ? openReport(k, id) : openDraft(id, k); });
+  { const b = document.getElementById("ib-ch"); if (b) b.onclick = openChannels; }
   modal.querySelectorAll("[data-forget]").forEach(b => b.onclick = () => { save.taste.splice(+b.dataset.forget, 1); persist(); openInbox(); });
   modal.querySelectorAll("[data-mk]").forEach(b => b.onclick = () => b.dataset.mk === "hot" ? openHot(latestHotId()) : confirmMake("reels", ymd(NOW()), 0));
 }
@@ -2193,6 +2195,46 @@ document.getElementById("board-refresh").onclick = () => { lastPushed = ""; open
 /* ═════════════ 설정 ═════════════ */
 function looksHtml(cur) { return `<div class="looks">${ME_LOOKS.map((L, i) => `<button type="button" data-look="${i}" class="${i === cur ? "on" : ""}"><img src="${avatar(L)}" alt="모습 ${i + 1}"></button>`).join("")}</div>`; }
 function bindLooks(root, set) { root.querySelectorAll("[data-look]").forEach(b => b.onclick = () => { root.querySelectorAll("[data-look]").forEach(x => x.classList.toggle("on", x === b)); set(+b.dataset.look); }); }
+/* ── 내 채널 · 프로젝트: 블로그·인스타 주소와 진행 중인 프로젝트(해시태그)를 저장하고 지울 수 있어요 ── */
+const CH_TYPES = { blog: ["📝", "네이버 블로그"], insta: ["📸", "인스타그램"], youtube: ["▶️", "유튜브"], etc: ["🔗", "기타"] };
+function channels() {
+  if (!Array.isArray(save.channels)) save.channels = [{ id: "c1", type: "blog", value: "https://m.blog.naver.com/i__rizi", label: "" }, { id: "c2", type: "insta", value: "@lucky_marketer", label: "" }];
+  return save.channels;
+}
+const projects = () => (save.projects = Array.isArray(save.projects) ? save.projects : []);
+const chLink = c => /^https?:\/\//.test(c.value) ? c.value : c.type === "insta" ? `https://www.instagram.com/${c.value.replace(/^@/, "")}` : c.type === "youtube" && c.value.startsWith("@") ? `https://www.youtube.com/${c.value}` : "";
+// 시안을 쓸 때 팀원이 읽는 대표님 채널·프로젝트 정보
+function myContext() {
+  const ch = channels(), on = projects().filter(x => x.on), off = projects().filter(x => !x.on);
+  if (!ch.length && !projects().length) return "";
+  return `\n[대표님 채널·프로젝트]\n${ch.map(c => `- ${CH_TYPES[c.type][1]}: ${c.value}${c.label ? ` (${c.label})` : ""}`).join("\n")}${on.length ? `\n- 지금 진행 중인 프로젝트: ${on.map(x => `${x.name}${x.tags ? ` ${x.tags}` : ""}`).join(" / ")}` : ""}${off.length ? `\n- 쉬거나 끝난 프로젝트 (언급·해시태그 금지): ${off.map(x => x.name).join(", ")}` : ""}\n`;
+}
+function openChannels() {
+  const ch = channels(), pj = projects();
+  openModal(`${head(ME_AV, "대표 설정", "🔗 내 채널 · 프로젝트")}
+    <div class="m-body">
+      <p class="sub" style="margin:0">주소나 프로젝트가 바뀌면 여기서 바꿔 주세요. 팀원들이 시안을 쓸 때 진행 중인 프로젝트만 해시태그·문구에 넣고, 쉬는 프로젝트는 빼요.</p>
+      <h3 style="margin:14px 0 6px;font-size:15px">채널</h3>
+      <ul class="ch-list">${ch.map(c => `<li><div style="display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--paper-line);border-radius:14px;padding:8px 10px"><span>${CH_TYPES[c.type][0]}</span><span class="t" style="flex:1;min-width:0;overflow-wrap:anywhere"><b>${esc(CH_TYPES[c.type][1])}${c.label ? ` · ${esc(c.label)}` : ""}</b><span class="sub">${chLink(c) ? `<a href="${esc(chLink(c))}" target="_blank" rel="noopener">${esc(c.value)}</a>` : esc(c.value)}</span></span><button class="btn ghost" style="padding:4px 10px;font-size:12px" data-delch="${esc(c.id)}">지우기</button></div></li>`).join("") || `<li class="sub">저장한 채널이 없어요</li>`}</ul>
+      <form id="ch-add" class="row2" style="margin-top:8px;align-items:end">
+        <label class="field">종류<select id="ch-type">${Object.entries(CH_TYPES).map(([k, [ic, n]]) => `<option value="${k}">${ic} ${n}</option>`).join("")}</select></label>
+        <label class="field">주소 또는 아이디<input id="ch-val" maxlength="200" placeholder="https://… 또는 @아이디" required></label>
+        <label class="field">메모 <span class="opt">(선택)</span><input id="ch-label" maxlength="20" placeholder="예: 부계정"></label>
+        <button class="btn" type="submit">＋ 채널 저장</button></form>
+      <h3 style="margin:18px 0 6px;font-size:15px">프로젝트</h3>
+      <ul class="ch-list">${pj.map(x => `<li><div style="display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--paper-line);border-radius:14px;padding:8px 10px;${x.on ? "" : "opacity:.6"}"><label style="display:flex;gap:6px;align-items:center;flex:1;min-width:0"><input type="checkbox" data-pjon="${esc(x.id)}"${x.on ? " checked" : ""}><span style="min-width:0;overflow-wrap:anywhere"><b>${esc(x.name)}</b> <span class="sub">${x.on ? "진행 중" : "쉬는 중"}</span><br><span class="sub">${esc(x.tags || "")}</span></span></label><button class="btn ghost" style="padding:4px 10px;font-size:12px" data-delpj="${esc(x.id)}">지우기</button></div></li>`).join("") || `<li class="sub">예) 독서 굿즈 펀딩 · #독서굿즈 #펀딩준비</li>`}</ul>
+      <form id="pj-add" class="row2" style="margin-top:8px;align-items:end">
+        <label class="field">프로젝트 이름<input id="pj-name" maxlength="30" placeholder="예: 독서 굿즈 펀딩" required></label>
+        <label class="field">해시태그 <span class="opt">(띄어쓰기로)</span><input id="pj-tags" maxlength="200" placeholder="#독서굿즈 #펀딩준비"></label>
+        <button class="btn" type="submit">＋ 프로젝트 저장</button></form>
+    </div>`);
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  document.getElementById("ch-add").onsubmit = e => { e.preventDefault(); const v = document.getElementById("ch-val").value.trim(); if (!v) return; ch.push({ id: uid(), type: document.getElementById("ch-type").value, value: v, label: document.getElementById("ch-label").value.trim() }); persist(); toast("🔗 채널을 저장했어요"); openChannels(); };
+  document.getElementById("pj-add").onsubmit = e => { e.preventDefault(); const n = document.getElementById("pj-name").value.trim(); if (!n) return; const tags = document.getElementById("pj-tags").value.trim().split(/[\s,]+/).filter(Boolean).map(t => "#" + t.replace(/^#/, "")).join(" "); pj.push({ id: uid(), name: n, tags, on: true }); persist(); toast("📁 프로젝트를 저장했어요"); openChannels(); };
+  modal.querySelectorAll("[data-delch]").forEach(b => b.onclick = () => { if (!confirm("이 채널을 지울까요?")) return; save.channels = ch.filter(c => c.id !== b.dataset.delch); persist(); openChannels(); });
+  modal.querySelectorAll("[data-delpj]").forEach(b => b.onclick = () => { if (!confirm("이 프로젝트를 지울까요?")) return; save.projects = pj.filter(x => x.id !== b.dataset.delpj); persist(); openChannels(); });
+  modal.querySelectorAll("[data-pjon]").forEach(b => b.onchange = () => { const x = pj.find(y => y.id === b.dataset.pjon); x.on = b.checked; persist(); openChannels(); });
+}
 function openSettings() {
   let look = save.look;
   openModal(`${head(ME_AV, "설정", "⚙️ 내 오피스 설정")}<div class="m-body">
@@ -2200,6 +2242,7 @@ function openSettings() {
       <label class="field">🏢 회사 이름<input id="st-company" maxlength="20" value="${esc(save.company || "")}" placeholder="${esc(companyName())}"></label>
       <label class="field">🎯 가고 싶은 브랜드 <span class="opt">(선택)</span><input id="st-target" maxlength="20" value="${esc(save.target)}" placeholder="예: 올리브영"></label></div>
     <p class="sub" style="margin:4px 0 0">브랜드를 적으면 메모의 세 번째 칸이 "○○라면 어떻게 할까?"로 바뀌어요.</p>
+    <div class="bar" style="margin:4px 0 8px"><button class="btn ghost" id="st-ch">🔗 내 채널 · 프로젝트 관리</button></div>
     <label class="check-row field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-chatty"${save.chatty ? " checked" : ""}> 💬 수다 허용 <span class="opt">(끄면 팀원들이 꼭 필요한 말만 하고 일해요)</span></label>
     <div class="field">내 모습${looksHtml(look)}</div>
     <p class="field" style="margin-top:14px">팀원 이름 <span class="opt">(비워 두면 기본 이름)</span></p>
@@ -2210,6 +2253,7 @@ function openSettings() {
       <button class="btn ghost" id="st-replay">🚪 입장 장면 다시 보기</button><button class="btn ghost" id="st-tour">❓ 사용법 다시 보기</button><button class="btn ghost" id="st-reset">🗑 처음부터 다시</button></div>
   </div>`, true);
   bindLooks(modal, v => look = v);
+  document.getElementById("st-ch").onclick = openChannels;
   document.getElementById("st-save").onclick = () => {
     { const ch = document.getElementById("st-chatty").checked; if (ch !== !!save.chatty) { save.chatty = ch; if (!ch && chars.lead.visible) say("lead", "다들 대표님 말씀 들었죠? 수다는 그만, 일합시다 💼", 4000, true); } }
     const me = document.getElementById("st-me").value.trim(); if (!me) return toast("이름을 적어 주세요");
