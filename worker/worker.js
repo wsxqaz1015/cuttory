@@ -1,8 +1,10 @@
 // 컷토리 서버 (Cloudflare Workers)
-// 필요한 설정: 비밀 값 OPENAI_API_KEY, ADMIN_KEY / KV 바인딩 KV / (선택) ALLOWED_ORIGIN, TEXT_MODEL, IMAGE_MODEL
+// 필요한 설정: 비밀 값 OPENAI_API_KEY, ADMIN_KEY / KV 바인딩 KV / (선택) ALLOWED_ORIGIN, TEXT_MODEL, IMAGE_MODEL, GOOGLE_CLIENT_ID(구글 로그인)
 const COST = { gen: 10, video: 15, link: 3, person: 5, titles: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
 const START_CREDITS = 100;
 const NEW_USERS_PER_IP_PER_DAY = 3;
+const SYNC_APPS = ['office', 'portfolio', 'video', 'cardnews'];
+const SYNC_MAX = 3 * 1024 * 1024;
 const IMAGE_STYLES = {
   photo: 'photorealistic editorial photograph, natural light, shallow depth of field',
   film: '35mm film photograph, soft grain, warm faded colors',
@@ -34,7 +36,9 @@ export default {
       if (!env.KV) return fail('setup', '서버에 KV 저장소가 연결되지 않았어요.', 500, cors);
       if (path === '/api/samples') return await samples(env, cors);
       if (path === '/api/models') { const m = await models(env).catch(e => ({ error: e.message })); return json({ text: m.text, image: m.image, all: m.all, error: m.error }, 200, cors); }
+      if (path === '/api/config') return json({ google: env.GOOGLE_CLIENT_ID || '' }, 200, cors);
       if (path === '/api/session') return json(await newSession(req, env), 200, cors);
+      if (path === '/api/login/google') return json(await loginGoogle(req, await req.json(), env), 200, cors);
       if (path.startsWith('/api/admin/')) return await admin(path, req, env, cors);
       if (path === '/api/office/board') return json({ rows: await officeBoard(env) }, 200, cors);
       if (path === '/api/office/score') return json(await officeScore(req, await req.json(), env), 200, cors);
@@ -44,6 +48,7 @@ export default {
       if (path === '/api/me') return json(pub(user), 200, cors);
       if (path === '/api/redeem') return json(await redeem(user, await req.json(), env), 200, cors);
       if (path === '/api/feedback') return json(await feedback(user, await req.json(), env), 200, cors);
+      if (path === '/api/data') return json(await syncData(req, user, env), 200, cors);
 
       if (!env.OPENAI_API_KEY) return fail('setup', '서버에 OpenAI API 키가 없어요.', 500, cors);
       if (path === '/api/ai') {
@@ -75,7 +80,7 @@ export default {
 
 // ===== 사용자·크레딧 =====
 const err = (code, message, status) => Object.assign(new Error(message), { code, status: status || 400 });
-const pub = (u) => ({ id: u.id, credits: u.credits, hist: u.hist.slice(0, 40), redeemed: u.redeemed });
+const pub = (u) => ({ id: u.id, credits: u.credits, hist: u.hist.slice(0, 40), redeemed: u.redeemed, account: u.google ? { email: u.google.email, name: u.google.name, picture: u.google.picture } : null });
 const save = (env, u) => env.KV.put('user:' + u.token, JSON.stringify(u));
 async function newSession(req, env) {
   const ip = req.headers.get('cf-connecting-ip') || 'x', day = new Date().toISOString().slice(0, 10), key = `ipday:${day}:${ip}`;
@@ -99,6 +104,55 @@ async function charged(user, kind, env, fn) {
   user.credits -= n; user.hist.unshift({ t: Date.now(), k: kind, n: -n }); user.hist = user.hist.slice(0, 60);
   await save(env, user);
   return { ...out, credits: user.credits };
+}
+// ===== 구글 로그인 · 계정별 저장 =====
+// 구글이 준 ID 토큰을 구글 서버에 물어서 확인하고, 구글 계정(sub)마다 컷토리 사용자 한 명을 연결해요.
+async function verifyGoogle(cred, env) {
+  if (!env.GOOGLE_CLIENT_ID) throw err('setup', '서버에 GOOGLE_CLIENT_ID가 아직 없어요.', 500);
+  if (!cred || typeof cred !== 'string' || cred.length > 4096) throw err('bad_request', '로그인 정보가 비어 있어요.');
+  const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(cred));
+  const t = await r.json().catch(() => ({}));
+  const ids = env.GOOGLE_CLIENT_ID.split(',').map(s => s.trim());
+  if (!r.ok || !ids.includes(t.aud) || !['accounts.google.com', 'https://accounts.google.com'].includes(t.iss) || +t.exp * 1000 < Date.now() || !t.sub)
+    throw err('bad_login', '구글 로그인을 확인하지 못했어요. 다시 시도해 주세요.', 401);
+  return { sub: String(t.sub), email: String(t.email || ''), name: String(t.name || t.given_name || ''), picture: String(t.picture || '') };
+}
+async function loginGoogle(req, b, env) {
+  const g = await verifyGoogle(b.credential, env);
+  const linked = await env.KV.get('acct:g:' + g.sub);
+  let u = linked ? JSON.parse(await env.KV.get('user:' + linked) || 'null') : null;
+  if (!u) {
+    // 처음 로그인: 이 기기에서 쓰던 크레딧이 있으면 그 사용자를 계정에 붙이고, 없으면 새로 만들어요.
+    const cur = await auth(req, env);
+    if (cur && !cur.google) u = cur;
+    else {
+      u = { id: 'u_' + crypto.randomUUID().slice(0, 12), token: crypto.randomUUID() + crypto.randomUUID(), credits: START_CREDITS, hist: [{ t: Date.now(), k: 'start', n: START_CREDITS }], redeemed: [], createdAt: Date.now() };
+    }
+    await env.KV.put('acct:g:' + g.sub, u.token);
+  }
+  u.google = { ...g, at: Date.now() };
+  await save(env, u);
+  return { token: u.token, ...pub(u) };
+}
+async function syncData(req, user, env) {
+  if (!user.google) throw err('login_required', '구글로 로그인하면 저장돼요.', 403);
+  const app = new URL(req.url).searchParams.get('app');
+  if (req.method === 'GET' && !app) {
+    const out = {};
+    await Promise.all(SYNC_APPS.map(async a => { out[a] = JSON.parse(await env.KV.get(`data:${user.id}:${a}`) || 'null'); }));
+    return { apps: out };
+  }
+  if (!SYNC_APPS.includes(app)) throw err('bad_request', '저장할 수 없는 항목이에요.');
+  const key = `data:${user.id}:${app}`;
+  if (req.method === 'GET') return { app, ...(JSON.parse(await env.KV.get(key) || 'null') || { data: null, t: 0 }) };
+  const b = await req.json();
+  if (typeof b.data !== 'string') throw err('bad_request', '저장할 내용이 없어요.');
+  if (b.data.length > SYNC_MAX) throw err('too_big', '저장할 내용이 너무 커요. 사진을 조금 줄여 주세요.', 413);
+  const t = Math.min(+b.t || Date.now(), Date.now());
+  const prev = JSON.parse(await env.KV.get(key) || 'null');
+  if (prev && prev.t > t) return { app, stale: true, ...prev };
+  await env.KV.put(key, JSON.stringify({ data: b.data, t }));
+  return { app, t };
 }
 async function redeem(user, b, env) {
   const code = String(b.code || '').trim().toUpperCase().replace(/\s+/g, '');
