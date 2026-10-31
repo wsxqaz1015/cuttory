@@ -1152,12 +1152,12 @@ function windowLine() {
 function wander() {
   if (document.hidden) return;
   const night = darkness() > .7, out = ALL.filter(k => ["toSpot", "spot", "fromSpot"].includes(chars[k].mode)).length;
-  if (out >= (night ? 2 : 3) || Math.random() < .25) return;
+  if (out >= (save.chatty ? (night ? 2 : 3) : 1) || Math.random() < (save.chatty ? .25 : .75)) return;
   const idle = ALL.filter(k => k !== "lead" && chars[k].mode === "working" && atSeat(k) && !bubbles[k] && reviewing?.owner !== k);
   if (!idle.length) return;
   const k = idle[Math.random() * idle.length | 0], c = chars[k];
   let spot;
-  if (Math.random() < .3) { // 동료 자리에 놀러 가기
+  if (save.chatty && Math.random() < .3) { // 동료 자리에 놀러 가기
     const mate = ALL.filter(m => m !== k && m !== "lead" && atSeat(m))[0 | Math.random() * 6];
     if (!mate) return;
     const s = seatOf(mate), dy = s.y < 100 ? 18 : s.y > 200 ? -14 : 22;
@@ -1171,8 +1171,8 @@ function wander() {
   walk(k, "toSpot", spot, () => {
     c.mode = "spot"; c.dir = spot.face || "up"; if (spot.cup) c.cup = true;
     const pool = night && Math.random() < .5 ? NIGHT_LINES : spot.lines || [windowLine()];
-    say(k, pool[Math.random() * pool.length | 0], 3000);
-    if (spot.mate && Math.random() < .7) setTimeout(() => say(spot.mate, ["좋죠!", "오 그거 괜찮은데요?", "잠깐만요, 이것만 끝내고요 😅", "같이 봐요!"][Math.random() * 4 | 0], 2500), 1600);
+    if (save.chatty) say(k, pool[Math.random() * pool.length | 0], 3000);
+    if (save.chatty && spot.mate && Math.random() < .7) setTimeout(() => say(spot.mate, ["좋죠!", "오 그거 괜찮은데요?", "잠깐만요, 이것만 끝내고요 😅", "같이 봐요!"][Math.random() * 4 | 0], 2500), 1600);
     setTimeout(() => {
       walk(k, "fromSpot", seatOf(k), () => { c.dir = "up"; c.mode = wantMode(k, NOW()); c.spot = null; setTimeout(() => c.cup = false, 12000); sync(); });
     }, 7000 + Math.random() * 12000);
@@ -2125,6 +2125,7 @@ function openSettings() {
       <label class="field">🏢 회사 이름<input id="st-company" maxlength="20" value="${esc(save.company || "")}" placeholder="${esc(companyName())}"></label>
       <label class="field">🎯 가고 싶은 브랜드 <span class="opt">(선택)</span><input id="st-target" maxlength="20" value="${esc(save.target)}" placeholder="예: 올리브영"></label></div>
     <p class="sub" style="margin:4px 0 0">브랜드를 적으면 메모의 세 번째 칸이 "○○라면 어떻게 할까?"로 바뀌어요.</p>
+    <label class="check-row field" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-chatty"${save.chatty ? " checked" : ""}> 💬 수다 허용 <span class="opt">(끄면 팀원들이 꼭 필요한 말만 하고 일해요)</span></label>
     <div class="field">내 모습${looksHtml(look)}</div>
     <p class="field" style="margin-top:14px">팀원 이름 <span class="opt">(비워 두면 기본 이름)</span></p>
     <div class="row2">${ALL.map(k => `<label class="field" style="margin-top:4px"><span class="kb" style="background:${tagOf(k)[1]}">${tagOf(k)[0]}</span> ${TEAM[k].title}<input data-tn="${k}" maxlength="8" value="${esc(save.teamNames[k] || "")}" placeholder="${DEFAULT_NAME[k]}"></label>`).join("")}</div>
@@ -2135,6 +2136,7 @@ function openSettings() {
   </div>`, true);
   bindLooks(modal, v => look = v);
   document.getElementById("st-save").onclick = () => {
+    { const ch = document.getElementById("st-chatty").checked; if (ch !== !!save.chatty) { save.chatty = ch; if (!ch && chars.lead.visible) say("lead", "다들 대표님 말씀 들었죠? 수다는 그만, 일합시다 💼", 4000, true); } }
     const me = document.getElementById("st-me").value.trim(); if (!me) return toast("이름을 적어 주세요");
     save.me = me; save.target = document.getElementById("st-target").value.trim(); save.company = document.getElementById("st-company").value.trim(); save.look = look; ME_AV = avatar(meLook());
     save.teamNames = {}; modal.querySelectorAll("[data-tn]").forEach(i => { const v = i.value.trim(); if (v) save.teamNames[i.dataset.tn] = v; });
@@ -2266,7 +2268,7 @@ setInterval(() => { tickClock(); sync(); }, 15000);
 setInterval(wander, 9000);
 setInterval(() => { // 가끔 혼잣말
   const on = ALL.filter(k => chars[k].visible && chars[k].mode === "working" && !chars[k].path.length && !bubbles[k]);
-  if (on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
+  if (save.chatty && on.length && Math.random() < .5 && !document.hidden) { const k = on[Math.random() * on.length | 0]; say(k, TEAM[k].idle[Math.random() * TEAM[k].idle.length | 0], 3800); }
 }, 28000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { tickClock(); sync(); } });
 // 새 리포트가 올라왔는지 30분마다 확인
