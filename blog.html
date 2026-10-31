@@ -100,15 +100,16 @@
   .paper h3 { font-size: 18px; margin: 34px 0 12px; }
   .paper ul { margin: 0 0 22px; padding-left: 22px; } .paper li { margin: 4px 0; }
   .ph { position: relative; margin: 6px 0 22px; }
+  .ph + .ph { margin-top: -12px; }
   .ph canvas { width: 100%; height: auto; display: block; border-radius: 4px; }
-  .ph .tools { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; opacity: 0; transition: opacity .15s; }
-  .ph:hover .tools, .ph:focus-within .tools, .ph.editing .tools { opacity: 1; }
-  @media (hover: none) { .ph .tools { opacity: 1; } }
-  .ph .tools button { border: 0; border-radius: 8px; background: rgba(20,20,20,.72); color: #fff; padding: 6px 10px; font-size: 12.5px; font-weight: 600; backdrop-filter: blur(4px); }
-  .ph .tools button.on { background: var(--naver); }
+  /* 사진 아래 작은 도구 줄 (사진을 가리지 않게) */
+  .ph .tools { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .ph .tools button { border: 1px solid var(--paper-line); border-radius: 999px; background: #fff; color: #555; padding: 3px 10px; font-size: 12px; }
+  .ph .tools button:hover { border-color: #bbb; color: #222; }
+  .ph .tools button.on { background: var(--naver); border-color: var(--naver); color: #fff; font-weight: 700; }
   .ph .no { position: absolute; left: 10px; top: 10px; background: rgba(20,20,20,.72); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
-  .ph.editing canvas { cursor: crosshair; outline: 3px solid var(--naver); }
-  .ph .hint { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); background: rgba(20,20,20,.8); color: #fff; font-size: 12.5px; padding: 6px 12px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
+  .ph.editing canvas { cursor: crosshair; outline: 3px solid var(--naver); touch-action: none; -webkit-user-select: none; user-select: none; }
+  .ph .hint { position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%); background: rgba(20,20,20,.8); color: #fff; font-size: 12.5px; padding: 6px 12px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
   .place { border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 16px; margin: 0 0 22px; display: flex; gap: 12px; align-items: center; }
   .place .pin { width: 40px; height: 40px; border-radius: 10px; background: #e9f9f0; display: grid; place-items: center; font-size: 20px; flex: none; }
   .place b { display: block; } .place span { color: var(--paper-sub); font-size: 13.5px; }
@@ -314,7 +315,7 @@ async function addFiles(list) {
   renderThumbs(); renderBar();
   if (heic) toast(`HEIC 사진 ${heic}장은 이 브라우저에서 열 수 없어요.\n아이폰에서 '사진 > 공유 > 옵션'에서 JPG로 보내거나, 사파리에서 열어 주세요.`, 6000);
   else if (over) toast(`사진은 ${MAX}장까지 넣을 수 있어요.`);
-  if (S.post) { S.post.order = S.post.order.filter(id => S.photos.some(p => p.id === id)); S.photos.forEach(p => { if (!S.post.order.includes(p.id)) { S.post.order.push(p.id); S.post.text[p.id] = S.post.text[p.id] || ''; } }); renderPaper(); }
+  syncPhotos();
 }
 function thumbURL(img, w, h) {
   const c = document.createElement('canvas'), s = 200 / Math.min(w, h); c.width = Math.round(w * s); c.height = Math.round(h * s);
@@ -343,7 +344,7 @@ function renderThumbs() {
 }
 $('#thumbs').addEventListener('click', e => {
   const del = e.target.closest('[data-del]'), mv = e.target.closest('[data-mv]');
-  if (del) { S.photos = S.photos.filter(p => p.id !== del.dataset.del); if (S.post) S.post.order = S.post.order.filter(id => id !== del.dataset.del); renderThumbs(); renderBar(); if (S.post) renderPaper(); }
+  if (del) { S.photos = S.photos.filter(p => p.id !== del.dataset.del); renderThumbs(); renderBar(); syncPhotos(); }
   if (mv) { const id = mv.closest('.thumb').dataset.id, i = S.photos.findIndex(p => p.id === id), j = i + +mv.dataset.mv; if (j < 0 || j >= S.photos.length) return; [S.photos[i], S.photos[j]] = [S.photos[j], S.photos[i]]; renderThumbs(); }
 });
 $('#thumbs').addEventListener('dragstart', e => { const t = e.target.closest('.thumb'); if (!t) return; dragId = t.dataset.id; t.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
@@ -404,42 +405,53 @@ const TONE = {
   plain: '담백하고 차분한 기록 말투의 존댓말. 감탄사와 이모지는 거의 쓰지 않음.',
   info: '정보를 또렷하게 정리하는 존댓말. 핵심 정보 위주, 문장은 짧게. 이모지는 소제목 앞에만.',
 };
-const LEN = { short: '사진 하나당 1~2문장, 전체 600자 안팎', mid: '사진 하나당 2~3문장, 전체 1,200자 안팎', long: '사진 하나당 3~5문장, 전체 2,000자 안팎' };
+const LEN = { short: '본문 전체 600자 안팎', mid: '본문 전체 1,200자 안팎', long: '본문 전체 2,000자 안팎' };
 
 function buildPrompt() {
   const n = S.photos.length, memo = $('#memo').value.trim(), place = $('#place').value.trim(), area = $('#area').value.trim();
-  return `너는 네이버 블로그에 방문 후기를 쓰는 한국인 블로거야. 아래 메모와 사진으로 네이버 블로그 글을 써 줘.
+  const groups = Math.max(1, Math.min(6, Math.round(n / 3) || 1));
+  const sizes = Array.from({ length: groups }, (_, i) => Math.floor(n / groups) + (i < n % groups ? 1 : 0));
+  let k = 0; const plan = sizes.map((c, i) => { const a = k + 1; k += c; return `${i + 1}단락: 사진 ${a}${c > 1 ? `~${k}` : ''}번`; }).join(', ');
+  return `너는 네이버 블로그를 몇 년째 운영하는 한국인 블로거야. 아래 메모와 사진으로, 실제 사람이 쓴 것 같은 네이버 블로그 방문 후기를 써 줘.
 
-[메모 — 여기 적힌 것만 사실로 써]
-${memo || '(메모 없음. 사진에 보이는 것만 담담하게 묘사하고, 가격·영업시간·메뉴 이름 같은 사실은 쓰지 마)'}
+[메모 — 내가 직접 겪은 일. 여기 적힌 것만 경험으로 써]
+${memo || '(메모 없음)'}
 ${place ? `장소 이름: ${place}\n` : ''}${area ? `지역: ${area}\n` : ''}
 [사진]
 사진은 모두 ${n}장이고 1번부터 ${n}번까지 번호가 있어.${n > 6 ? ' 첨부 이미지마다 사진 4장이 묶여 있고, 각 칸 왼쪽 위에 번호가 적혀 있어.' : ' 첨부한 순서가 1번부터야.'}
-사진을 직접 보고, 각 사진에 실제로 보이는 것을 바탕으로 써. 보이지 않는 걸 지어내지 마.
+사진은 글의 재료로만 써. 사진에 보이는 메뉴, 가격표, 인테리어 같은 디테일을 글 속에 자연스럽게 녹여.
+
+[가장 중요한 규칙]
+- 글에서 사진을 절대 언급하지 마. "첫 번째 사진", "열한 번째 사진은", "사진에 보이는", "~가 보이네요", "사진 속" 같은 말은 금지야. 독자는 사진을 보면서 글을 읽으니까, 그냥 내가 그 자리에 있었던 것처럼 이야기해. (예: "쇼케이스 안에 레몬 파운드랑 스콘이 가지런히 놓여 있었어요")
+- 사진을 하나씩 설명하지 말고, 사진을 묶어 소제목이 있는 이야기 단락 ${groups}개로 써. 사진 묶음은 이렇게 나눠: ${plan}. 각 단락 소제목과 글은 그 묶음 사진들의 공통된 내용(외관, 내부 분위기, 메뉴, 디저트 등)에 맞춰.
+- 메모에 없는 경험(누구와 갔는지, 누가 무엇을 했는지, 맛·향·식감, 대기 시간 등)은 지어내지 마. 맛 표현은 메모에 있을 때만 써. 사진에서 확실히 읽히는 사실(가격표 글씨, 메뉴 이름, 공간 모습)은 써도 돼.
+- 메모에도 사진에도 없는 가격·영업시간·주차·전화번호는 쓰지 말고, 필요하면 "방문 전에 확인해 보세요"라고 써.
 
 [쓰는 법]
 - 말투: ${TONE[S.tone]}
 - 길이: ${LEN[S.len]}
-- 메모에 없는 가격, 영업시간, 주차, 메뉴 이름, 전화번호는 절대 쓰지 마. 필요하면 "방문 전에 확인해 보세요"라고 써.
-- 누구와 갔는지, 무엇을 했는지, 맛이 어땠는지 같은 경험도 메모나 사진에 없으면 지어내지 마. 사진에 보이는 건 "~가 보이네요"처럼 보이는 대로만 써.
-- 첫 문단(intro): 왜 갔는지와 한 줄 결론. 2~3문장.
-- 사진 순서는 사용자가 정한 1번부터 ${n}번 그대로 두고, 사진마다 그 사진 바로 아래에 들어갈 글을 써. 모든 사진을 한 번씩 써.
-- 제목: "${area || '지역'} + ${place || '장소'} + 핵심 한 가지" 꼴로 25자 안팎. 5개.
+- 첫 문단(intro): 어떻게 가게 됐는지와 한 줄 소감. 2~3문장.
+- 단락(sections): 소제목은 짧게(예: "아늑한 창가 자리", "쇼케이스 구경"). 각 단락에 그 단락과 어울리는 사진 번호를 넣어. 단락 글은 2~5문장, 문단을 나눌 땐 \\n 을 써.
+- 제목: "${area || '지역'} + ${place || '장소'} + 핵심 한 가지" 꼴로 25자 안팎. 5개. 뻔한 "힐링", "인생 ○○" 같은 말은 피해.
 - 마무리 정리: 좋았던 점, 아쉬웠던 점(메모에 있을 때만), 이런 분께 추천.
-- 맺음말(outro)은 정리 내용을 되풀이하지 말고, 다음에 또 오고 싶은 마음 같은 짧은 인사 한두 문장.
-- 검색에 잘 걸리도록 지역과 장소 이름을 제목·첫 문단·마무리에 자연스럽게 한 번씩. 억지 반복은 하지 마.
+- 맺음말(outro)은 정리를 되풀이하지 말고 짧은 인사 한두 문장.
+- 지역과 장소 이름은 제목·첫 문단·마무리에 자연스럽게 한 번씩. 억지 반복은 하지 마.
 - 태그 8~10개, # 없이: 지역, 장소, 업종, 메뉴, 상황(데이트·혼밥 등).
 
 [답 형식 — JSON 하나만]
-{"titles":["제목1","제목2","제목3","제목4","제목5"],"intro":"첫 문단","photos":[{"n":1,"text":"1번 사진 아래 글"}],"outro":"맺음말 한두 문장","good":["좋았던 점"],"bad":["아쉬웠던 점"],"recommend":"이런 분께 추천해요 한 문장","tags":["태그"]}`;
+{"titles":["제목1","제목2","제목3","제목4","제목5"],"intro":"첫 문단","sections":[{"heading":"소제목","photos":[1,2,3],"text":"단락 글"}],"outro":"맺음말","good":["좋았던 점"],"bad":["아쉬웠던 점"],"recommend":"이런 분께 추천해요 한 문장","tags":["태그"]}`;
 }
 
 function demoPost() {
   const n = S.photos.length, place = $('#place').value.trim() || '오늘 다녀온 곳', area = $('#area').value.trim() || '우리 동네';
+  const all = Array.from({ length: n }, (_, i) => i + 1), half = Math.ceil(n / 2);
   return {
     titles: [`${area} ${place}, 다시 가고 싶은 곳`, `${place} 솔직 후기`, `${area} 가볼 만한 ${place}`, `${place} 방문기`, `주말에 들른 ${place}`],
     intro: `(체험 모드 예시 글이에요.) 주말에 ${area}에 갔다가 ${place}에 들렀어요. 한 줄로 말하면 분위기가 편안해서 오래 머물고 싶은 곳이었어요.`,
-    photos: Array.from({ length: n }, (_, i) => ({ n: i + 1, text: `${i + 1}번 사진 아래에 들어갈 글이에요. 실제로는 사진을 보고 어떤 장면인지 자연스럽게 설명해 줘요.` })),
+    sections: [
+      { heading: '들어서자마자 편안했던 공간', photos: all.slice(0, half), text: '실제로는 메모와 사진을 바탕으로 공간 이야기를 자연스럽게 이어서 써 줘요.' },
+      { heading: '메뉴 구경', photos: all.slice(half), text: '사진을 하나씩 설명하지 않고, 비슷한 사진을 묶어 한 단락으로 써요.' },
+    ].filter(x => x.photos.length),
     outro: '다음에는 다른 메뉴도 먹어 보고 싶어요.', good: ['편안한 분위기', '친절한 응대'], bad: [], recommend: '조용히 이야기 나누고 싶은 분께 추천해요.',
     tags: [area.replace(/\s/g, ''), place.replace(/\s/g, ''), '주말나들이', '방문후기'],
   };
@@ -463,27 +475,48 @@ async function write() {
 }
 function shape(j) {
   const arr = (v) => (Array.isArray(v) ? v : []).map(x => String(x).trim()).filter(Boolean);
-  const text = {};
-  S.photos.forEach((p, i) => { const f = (j.photos || []).find(x => +x.n === i + 1); text[p.id] = f ? String(f.text || '').trim() : ''; });
+  const ids = S.photos.map(p => p.id), used = new Set();
+  // 단락마다 사진 번호를 붙이고, 빠진 사진은 순서에 맞는 단락에 넣어요
+  let sections = (Array.isArray(j.sections) ? j.sections : []).map(x => ({
+    heading: String(x.heading || '').trim(), text: String(x.text || '').trim(),
+    ids: (Array.isArray(x.photos) ? x.photos : []).map(Number).filter(k => k >= 1 && k <= ids.length && !used.has(k) && used.add(k)).sort((a, b) => a - b).map(k => ids[k - 1]),
+  })).filter(x => x.heading || x.text || x.ids.length);
+  if (!sections.length) sections = [{ heading: '', text: '', ids: [] }];
+  ids.forEach((id, i) => {
+    if (used.has(i + 1)) return;
+    const after = sections.findIndex(x => x.ids.some(o => ids.indexOf(o) > i));
+    (sections[after < 0 ? sections.length - 1 : after]).ids.push(id);
+  });
+  sections.forEach(x => x.ids.sort((a, b) => ids.indexOf(a) - ids.indexOf(b)));
   const titles = arr(j.titles);
   return {
-    title: titles[0] || '제목을 적어 주세요', titles, intro: String(j.intro || '').trim(), text, order: S.photos.map(p => p.id),
+    title: titles[0] || '제목을 적어 주세요', titles, intro: String(j.intro || '').trim(), sections,
     outro: String(j.outro || '').trim(), good: arr(j.good), bad: arr(j.bad), recommend: String(j.recommend || '').trim(),
     tags: arr(j.tags).map(t => t.replace(/^#/, '').replace(/\s+/g, '')).slice(0, 30),
     place: $('#place').value.trim(), area: $('#area').value.trim(),
   };
 }
+const postIds = () => S.post ? S.post.sections.flatMap(x => x.ids).filter(id => S.photos.some(p => p.id === id)) : [];
+// 사진을 더하거나 빼면 글에도 반영
+function syncPhotos() {
+  if (!S.post) return;
+  const have = new Set(S.photos.map(p => p.id));
+  S.post.sections.forEach(x => { x.ids = x.ids.filter(id => have.has(id)); });
+  const inPost = new Set(postIds());
+  S.photos.forEach(p => { if (!inPost.has(p.id)) S.post.sections[S.post.sections.length - 1].ids.push(p.id); });
+  renderPaper();
+}
 
 // ===== 미리보기 =====
 function renderPaper() {
   const P = S.post; if (!P) return;
-  const ph = (id) => S.photos.find(p => p.id === id);
-  const order = P.order.filter(ph);
+  let no = 0;
+  const photo = (id) => `<figure class="ph" data-id="${id}"><span class="no">사진 ${++no}</span><div class="tools"><button data-act="faces">🙂 얼굴 찾기</button><button data-act="draw">✏️ 직접 가리기</button><button data-act="undo">↩︎ 되돌리기</button><button data-act="copy">⧉ 복사</button></div></figure>`;
   $('#paper').innerHTML = `
     <div class="ttl" contenteditable data-k="title">${esc(P.title)}</div>
     ${P.titles.length > 1 ? `<div class="titles" aria-label="다른 제목 후보">${P.titles.map(t => `<button data-title="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
     ${P.intro ? `<p class="t" contenteditable data-k="intro">${esc(P.intro)}</p>` : ''}
-    ${order.map((id, i) => `<div class="ph" data-id="${id}"><span class="no">사진 ${i + 1}</span><div class="tools"><button data-act="faces">🙂 얼굴 가리기</button><button data-act="draw">✏️ 직접 가리기</button><button data-act="undo">되돌리기</button><button data-act="copy">복사</button></div></div>${P.text[id] ? `<p class="t" contenteditable data-k="text" data-id="${id}">${esc(P.text[id])}</p>` : `<p class="t" contenteditable data-k="text" data-id="${id}"></p>`}`).join('')}
+    ${P.sections.map((x, i) => `${x.heading ? `<h3 contenteditable data-k="heading" data-i="${i}">${esc(x.heading)}</h3>` : ''}${x.ids.filter(id => S.photos.some(p => p.id === id)).map(photo).join('')}<p class="t" contenteditable data-k="text" data-i="${i}">${esc(x.text)}</p>`).join('')}
     ${(P.good.length || P.bad.length || P.recommend) ? `<h3 contenteditable data-k="sumtitle">한눈에 정리</h3>` : ''}
     ${P.good.length ? `<p class="t" style="margin-bottom:6px"><b>👍 좋았던 점</b></p><ul data-k="good">${P.good.map(x => `<li contenteditable>${esc(x)}</li>`).join('')}</ul>` : ''}
     ${P.bad.length ? `<p class="t" style="margin-bottom:6px"><b>👀 아쉬웠던 점</b></p><ul data-k="bad">${P.bad.map(x => `<li contenteditable>${esc(x)}</li>`).join('')}</ul>` : ''}
@@ -491,7 +524,7 @@ function renderPaper() {
     ${P.place ? `<div class="place"><div class="pin">📍</div><div><b>${esc(P.place)}</b><span>${esc(P.area || '네이버 편집기의 ‘장소’ 버튼으로 지도를 넣어 주세요')}</span></div></div>` : ''}
     ${P.outro ? `<p class="t" contenteditable data-k="outro">${esc(P.outro)}</p>` : ''}
     <div class="tags" contenteditable data-k="tags">${esc(P.tags.map(t => '#' + t).join(' '))}</div>`;
-  order.forEach(id => drawPhoto(id));
+  postIds().forEach(id => drawPhoto(id));
   $('#pv-actions').hidden = false; $('#post-how').hidden = false;
 }
 function drawPhoto(id) {
@@ -503,11 +536,12 @@ $('#paper').addEventListener('input', e => {
   const el = e.target.closest('[contenteditable]'), P = S.post; if (!el || !P) return;
   const k = el.dataset.k, v = el.innerText.trim();
   if (k === 'title') P.title = v; else if (k === 'intro') P.intro = v; else if (k === 'outro') P.outro = v; else if (k === 'recommend') P.recommend = v;
-  else if (k === 'text') P.text[el.dataset.id] = v;
+  else if (k === 'text') P.sections[el.dataset.i].text = v;
+  else if (k === 'heading') P.sections[el.dataset.i].heading = v;
   else if (k === 'tags') P.tags = v.split(/[#\s,]+/).filter(Boolean);
   else { const ul = el.closest('ul[data-k]'); if (ul) P[ul.dataset.k] = [...ul.querySelectorAll('li')].map(li => li.innerText.trim()).filter(Boolean); }
 });
-$('#paper').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('[data-k="title"], [data-k="tags"]')) e.preventDefault(); });
+$('#paper').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('[data-k="title"], [data-k="tags"], [data-k="heading"]')) e.preventDefault(); });
 $('#paper').addEventListener('click', async e => {
   const t = e.target.closest('[data-title]');
   if (t) { S.post.title = t.dataset.title; $('[data-k="title"]').textContent = t.dataset.title; return; }
@@ -525,7 +559,7 @@ function toggleDraw(box, btn) {
   $$('.ph.editing').forEach(x => { x.classList.remove('editing'); x.querySelector('[data-act="draw"]').classList.remove('on'); x.querySelector('.hint')?.remove(); });
   if (!on) return;
   box.classList.add('editing'); btn.classList.add('on');
-  box.insertAdjacentHTML('beforeend', '<span class="hint">가릴 곳을 끌어서 네모로 그려요 · 다 했으면 ‘직접 가리기’를 다시 눌러요</span>');
+  box.insertAdjacentHTML('beforeend', '<span class="hint">가릴 얼굴을 톡 누르거나 끌어서 네모로 그려요</span>');
 }
 let drawing = null;
 $('#paper').addEventListener('pointerdown', e => {
@@ -533,21 +567,28 @@ $('#paper').addEventListener('pointerdown', e => {
   e.preventDefault(); const r = e.target.getBoundingClientRect();
   drawing = { box, r, x0: e.clientX - r.left, y0: e.clientY - r.top, el: document.createElement('div') };
   Object.assign(drawing.el.style, { position: 'absolute', border: '2px solid #03c75a', background: 'rgba(3,199,90,.15)', pointerEvents: 'none' });
-  box.append(drawing.el); e.target.setPointerCapture(e.pointerId);
+  box.append(drawing.el); try { e.target.setPointerCapture(e.pointerId); } catch {}
 });
 $('#paper').addEventListener('pointermove', e => {
-  if (!drawing) return; const { r, x0, y0, el } = drawing, x1 = Math.min(Math.max(0, e.clientX - r.left), r.width), y1 = Math.min(Math.max(0, e.clientY - r.top), r.height);
+  if (!drawing) return; e.preventDefault();
+  const { r, x0, y0, el } = drawing, x1 = Math.min(Math.max(0, e.clientX - r.left), r.width), y1 = Math.min(Math.max(0, e.clientY - r.top), r.height);
   const cv = drawing.box.querySelector('canvas'), ox = cv.offsetLeft, oy = cv.offsetTop;
   Object.assign(el.style, { left: ox + Math.min(x0, x1) + 'px', top: oy + Math.min(y0, y1) + 'px', width: Math.abs(x1 - x0) + 'px', height: Math.abs(y1 - y0) + 'px' });
   drawing.x1 = x1; drawing.y1 = y1;
 });
-$('#paper').addEventListener('pointerup', () => {
+function endDraw(cancel) {
   if (!drawing) return; const { box, r, x0, y0, x1 = x0, y1 = y0, el } = drawing; el.remove(); drawing = null;
-  if (Math.abs(x1 - x0) < 6 || Math.abs(y1 - y0) < 6) return;
+  if (cancel) return;
   const p = S.photos.find(x => x.id === box.dataset.id), s = p.w / r.width;
-  p.boxes.push({ x: Math.min(x0, x1) * s, y: Math.min(y0, y1) * s, w: Math.abs(x1 - x0) * s, h: Math.abs(y1 - y0) * s });
+  if (Math.abs(x1 - x0) < 12 && Math.abs(y1 - y0) < 12) {
+    // 톡 누르면 그 자리에 얼굴 크기만큼 가려요
+    const side = Math.min(p.w, p.h) * .16;
+    p.boxes.push({ x: x0 * s - side / 2, y: y0 * s - side * .6, w: side, h: side * 1.2 });
+  } else p.boxes.push({ x: Math.min(x0, x1) * s, y: Math.min(y0, y1) * s, w: Math.abs(x1 - x0) * s, h: Math.abs(y1 - y0) * s });
   drawPhoto(p.id);
-});
+}
+$('#paper').addEventListener('pointerup', () => endDraw(false));
+$('#paper').addEventListener('pointercancel', () => endDraw(true));
 
 // ===== 얼굴 자동으로 가리기 (구글 MediaPipe, 내 브라우저 안에서만 돌아요) =====
 let detector = null;
@@ -572,7 +613,7 @@ function detectAll(d, p) {
     for (const det of d.detect(c).detections) { const b = det.boundingBox; found.push({ x: sx + b.originX / s, y: sy + b.originY / s, w: b.width / s, h: b.height / s }); }
   };
   scan(0, 0, p.w, p.h);
-  for (const n of [2, 3]) {
+  for (const n of [2, 3, 4]) {
     const tw = p.w / n * 1.3, th = p.h / n * 1.3;
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) scan(Math.max(0, Math.min(p.w - tw, i * p.w / n - tw * .12)), Math.max(0, Math.min(p.h - th, j * p.h / n - th * .12)), Math.min(tw, p.w), Math.min(th, p.h));
   }
@@ -601,9 +642,14 @@ async function copyText(text, msg) {
   toast(msg || '복사했어요 ✓');
 }
 function bodyText() {
-  const P = S.post, order = P.order.filter(id => S.photos.some(p => p.id === id)), L = [];
+  const P = S.post, L = []; let no = 0;
   if (P.intro) L.push(P.intro, '');
-  order.forEach((id, i) => { L.push(`[사진 ${i + 1}]`); if (P.text[id]) L.push(P.text[id]); L.push(''); });
+  P.sections.forEach(x => {
+    const n = x.ids.filter(id => S.photos.some(p => p.id === id)).length;
+    if (x.heading) L.push(`■ ${x.heading}`, '');
+    if (n) { L.push(n === 1 ? `[사진 ${no + 1}]` : `[사진 ${no + 1}~${no + n}]`, ''); no += n; }
+    if (x.text) L.push(x.text, '');
+  });
   if (P.good.length || P.bad.length || P.recommend) {
     L.push($('[data-k="sumtitle"]')?.innerText.trim() || '한눈에 정리', '');
     if (P.good.length) L.push('👍 좋았던 점', ...P.good.map(x => '· ' + x), '');
@@ -634,7 +680,7 @@ async function copyImage(p) {
 function save(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
 $('#save-photos').onclick = async () => {
   if (!need()) return;
-  const order = S.post.order.map(id => S.photos.find(p => p.id === id)).filter(Boolean);
+  const order = postIds().map(id => S.photos.find(p => p.id === id));
   if (!order.length) return toast('사진이 없어요.');
   toast('사진을 준비하고 있어요…', 20000);
   const files = [];
