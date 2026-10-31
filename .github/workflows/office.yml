@@ -13,6 +13,9 @@ on:
       force:
         description: '이미 있는 리포트도 다시 쓰기 (yes)'
         default: ''
+      only:
+        description: 'drafts에서 한 종류만 다시 만들기 (card / blog / reels)'
+        default: ''
 permissions:
   contents: write
 concurrency: office-reports
@@ -30,7 +33,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OFFICE_MODEL: ${{ vars.OFFICE_MODEL }}
         run: |
-          node office/make-report.mjs ${{ inputs.kind }} ${{ inputs.id }} ${{ inputs.force == 'yes' && '--force' || '' }}
+          node office/make-report.mjs ${{ inputs.kind }} ${{ inputs.id }} ${{ inputs.force == 'yes' && '--force' || '' }} ${{ inputs.only && format('--only={0}', inputs.only) || '' }}
       - name: 저장소에 넣기
         run: |
           git config user.name "github-actions[bot]"

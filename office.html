@@ -1713,14 +1713,14 @@ function draftBody(k, d) {
   const cap = d.caption ? `<h4>캡션</h4><p style="white-space:pre-line">${esc(d.caption)}</p>` : "";
   if (k === "card") return `${d.title ? `<h3>${esc(d.title)}</h3>` : ""}<div class="slides">${(d.slides || []).map((x, i) => `<div class="slide"><span class="n">${i + 1} / ${(d.slides || []).length}</span><b>${esc(x.head)}</b><p>${esc(x.body)}</p></div>`).join("")}</div>${cap}${tags(d.hashtags)}`;
   if (k === "blog") return `<h3>${esc(d.title)}</h3>${(d.keywords || []).length ? `<p class="sub">검색어: ${d.keywords.map(esc).join(", ")}</p>` : ""}<p>${esc(d.intro)}</p>${(d.sections || []).map(x => `<h4>${esc(x.h)}</h4><p>${esc(x.p)}</p>`).join("")}<p>${esc(d.outro)}</p>${tags(d.tags)}`;
-  if (k === "reels") return `${d.title ? `<h3>${esc(d.title)}</h3>` : ""}<p>🎬 첫 1.5초 화면: <b>${esc(d.hook)}</b></p><table class="scn"><tr><th>초</th><th>화면</th><th>자막 · 내레이션</th></tr>${(d.scenes || []).map(x => `<tr><td>${esc(x.sec)}</td><td>${esc(x.shot)}</td><td><b>${esc(x.text)}</b><br>${esc(x.voice)}</td></tr>`).join("")}</table>${cap}${tags(d.hashtags)}`;
+  if (k === "reels") return `${d.title ? `<h3>${esc(d.title)}</h3>` : ""}${d.label || d.thumb ? `<p>🖼 썸네일: ${d.label ? `<span class="sub">${esc(d.label)}</span> ` : ""}<b>${esc(d.thumb || "")}</b></p>` : ""}<p>🎬 첫 화면: <b>${esc(d.hook)}</b></p><table class="scn"><tr><th>초</th><th>화면</th><th>자막</th></tr>${(d.scenes || []).map(x => `<tr><td>${esc(x.sec)}</td><td>${esc(x.shot)}</td><td><b>${esc(x.text)}</b>${x.voice ? `<br>${esc(x.voice)}` : ""}</td></tr>`).join("")}</table>${d.ending ? `<p>🔚 엔딩: <b>${esc(d.ending)}</b></p>` : ""}${cap}${tags(d.hashtags)}${(d.fill || []).length ? `<h4>✍️ 직접 채울 것</h4><ul>${d.fill.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}`;
   return `<pre style="white-space:pre-wrap">${esc(JSON.stringify(d, null, 1))}</pre>`;
 }
 function draftText(k, d) {
   const h = a => (a || []).map(x => "#" + String(x).replace(/^#/, "")).join(" ");
   if (k === "card") return `${(d.slides || []).map((x, i) => `[${i + 1}장] ${x.head}\n${x.body}`).join("\n\n")}\n\n${d.caption || ""}\n${h(d.hashtags)}`;
   if (k === "blog") return `${d.title}\n\n${d.intro}\n\n${(d.sections || []).map(x => `■ ${x.h}\n${x.p}`).join("\n\n")}\n\n${d.outro}\n\n${h(d.tags)}`;
-  if (k === "reels") return `훅: ${d.hook}\n\n${(d.scenes || []).map(x => `${x.sec}초 | ${x.shot}\n자막: ${x.text}\n내레이션: ${x.voice}`).join("\n\n")}\n\n${d.caption || ""}\n${h(d.hashtags)}`;
+  if (k === "reels") return `${d.label ? `[${d.label}] ` : ""}${d.thumb || ""}\n첫 화면: ${d.hook}\n\n${(d.scenes || []).map(x => `${x.sec}초 | ${x.shot}\n자막: ${x.text}${x.voice ? `\n내레이션: ${x.voice}` : ""}`).join("\n\n")}\n\n엔딩: ${d.ending || ""}\n\n${d.caption || ""}\n${h(d.hashtags)}`;
   return JSON.stringify(d, null, 1);
 }
 const TOOL_OF = { card: "cardnews.html", blog: "blog.html", reels: "reels.html" };
