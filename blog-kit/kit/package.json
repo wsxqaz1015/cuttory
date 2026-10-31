@@ -1,0 +1,14 @@
+{
+  "name": "cuttory-blog-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "사진과 메모로 네이버 블로그 글을 쓰고 임시저장·예약까지 해 주는 컷토리 키트",
+  "scripts": {
+    "login": "node scripts/naver.mjs login",
+    "check": "node scripts/naver.mjs check"
+  },
+  "dependencies": {
+    "playwright-core": "1.48.2"
+  }
+}
