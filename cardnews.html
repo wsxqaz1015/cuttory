@@ -3532,6 +3532,8 @@ if (IMP) {
     return c;
   });
   styleTrend(p); p.series = IMP.series || ''; P = p; cur = 0; refPhotos = []; savedSig = null;
+  // 원문 칸에는 시안의 근거가 된 기사 원문과 링크를 넣어요 (원문 보기·팩트체크용)
+  $('#source').value = String(IMP.text || [IMP.title, ...IMP.slides.map(x => `${x.head} ${x.body}`)].join('\n')).slice(0, 20000); if (IMP.url) { $('#link').value = IMP.url; p.link = IMP.url; }
   renderThumbs(); renderCands(); renderDrafts(); syncPanel(); renderAll(); closeLanding(); go('studio');
 } else openLanding();
 renderAcctChip();

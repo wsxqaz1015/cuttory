@@ -635,7 +635,7 @@ const store = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} },
 };
-const blankSave = () => ({ ceo: {}, seen: {}, v: 1, me: "", look: 0, target: "", joinedAt: "", xp: 0, read: {}, readDays: {}, quiz: {}, perfect: 0, wrong: {}, wrongCleared: 0, weekRev: {}, work: {}, scraps: {}, badges: {}, arrived: {}, teamNames: {}, tour: 0, promos: {}, log: {}, board: null });
+const blankSave = () => ({ ceo: {}, seen: {}, live: {}, taste: [], v: 1, me: "", look: 0, target: "", joinedAt: "", xp: 0, read: {}, readDays: {}, quiz: {}, perfect: 0, wrong: {}, wrongCleared: 0, weekRev: {}, work: {}, scraps: {}, badges: {}, arrived: {}, teamNames: {}, tour: 0, promos: {}, log: {}, board: null });
 function parseSave(raw) { try { const s = JSON.parse(raw); return s && s.v ? Object.assign(blankSave(), s) : null; } catch { return null; } }
 let save = parseSave(store.get(STORE_KEY)) || blankSave();
 let boardTimer = null;
@@ -646,6 +646,7 @@ function persist() {
 }
 const who = k => `${(save.teamNames || {})[k] || TEAM[k].name} ${TEAM[k].title}`;
 const meName = () => save.me || "대표";
+const iga = w => { const c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c < 11172 && c % 28 ? "이" : "가"); };
 
 /* ═════════════ 리포트 데이터 ═════════════ */
 const reportsOf = k => (DATA.reports[k] || []);
@@ -1023,7 +1024,18 @@ const atSeat = k => { const c = chars[k], s = seatOf(k); return c.visible && !c.
 /* ── 결재 흐름: 팀원 시안 → 팀장 검토(최대 5번) → 대표 결재 ── */
 const draftKey = (id, k) => `d/${id}/${k}`;
 const ceoOf = key => save.ceo[key] || null;
-const draftDays = () => (DATA.drafts || []);
+// 서버가 만든 시안 + 대표 컨펌으로 오피스에서 만든 시안(save.live)
+let _days = null;
+function draftDays() {
+  if (_days) return _days;
+  const map = new Map((DATA.drafts || []).map(d => [d.id, { id: d.id, doc: { ...d.doc, items: { ...(d.doc.items || {}) } } }]));
+  for (const [key, it] of Object.entries(save.live || {})) {
+    const [, id, k] = key.split("/");
+    if (!map.has(id)) map.set(id, { id, doc: { date: id, items: {} } });
+    map.get(id).doc.items[k] = it;
+  }
+  return (_days = [...map.values()].sort((a, b) => a.id.localeCompare(b.id)));
+}
 // 대표 결재를 기다리는 것들 (최근 리포트 + 최근 이틀 시안)
 function pendingItems() {
   const out = [];
@@ -1079,9 +1091,9 @@ function reviewScript(it) {
   const ho = it.type === "draft" && it.review && it.review.from && it.review.from.handoff;
   if (ho && TEAM[ho.by] && chars[ho.by] && chars[ho.by].visible) {
     lines.push([ho.by, ho.by === "daily" && ho.rank ? `${who(o).split(" ")[0]}님, 오늘 핫이슈 ${ho.rank}위 넘겨요 🔥 「${String(it.review.from.title).slice(0, 22)}…」` : `${who(o).split(" ")[0]}님, 이 주제로 가 봐요! 「${String(it.review.from.title).slice(0, 22)}…」`]);
-    lines.push([o, it.k === "card" ? "받았어요! 6장으로 뽑아서 팀장님께 갈게요 🎨" : it.k === "reels" ? "좋아요, 1분 안쪽 대본으로 짜 볼게요 🎬" : "받았어요, 바로 써 볼게요 ✍️"]);
+    lines.push([o, !rounds.length ? "받았어요! 써서 대표님께 바로 올릴게요 ✍️" : it.k === "card" ? "받았어요! 6장으로 뽑아서 팀장님께 갈게요 🎨" : it.k === "reels" ? "좋아요, 1분 안쪽 대본으로 짜 볼게요 🎬" : "받았어요, 바로 써 볼게요 ✍️"]);
   }
-  if (!rounds.length) { lines.push([o, `${it.title} 검토 부탁드려요 📄`], [L, "좋아요, 대표님께 올릴게요 👍"]); return lines; }
+  if (!rounds.length) { lines.push([o, `${it.title} 나왔어요 📄`], [L, "대표님께 바로 올릴게요. 결재하시는 거 옆에서 배워 둘게요 ✍️"]); return lines; }
   rounds.forEach((r, i) => {
     lines.push([o, i ? `시안 ${r.v}번, 고쳐 왔어요!` : `시안 1번 봐 주세요 📄`]);
     if (r.pass) lines.push([L, `${r.score}점, 통과! 대표님께 올릴게요 ✅`]);
@@ -1473,8 +1485,8 @@ function openReport(k, id) {
       : quizN ? `<p class="sub">${qq ? `확인 퀴즈 ${qq.score}/${qq.total}점` : `확인 퀴즈 ${quizN}문제로 한 번 더 정리해요. 정답마다 +2 XP`}</p><div class="bar c"><button class="btn${qq ? " ghost" : " gold"}" id="r-quiz">🧠 ${qq ? "퀴즈 다시 풀기" : "확인 퀴즈 풀기"}</button><button class="btn ghost" data-close>닫기</button></div>`
       : `<button class="btn" data-close>닫기</button>`;
     el.querySelectorAll("[data-close]").forEach(b => b.onclick = closeModal);
-    const d = document.getElementById("r-done"); if (d) d.onclick = () => { save.ceo[rkey(k, id)] = { status: "approved", at: stamp() }; markRead(k, id); foot(); };
-    const no = document.getElementById("r-no"); if (no) no.onclick = () => { const n = prompt("반려 이유를 한 줄 남겨 주세요", ""); if (n === null) return; save.ceo[rkey(k, id)] = { status: "rejected", note: n.trim(), at: stamp() }; addLog(`대표 결재: ${KIND_NAME[k]} 리포트 반려`); markRead(k, id); foot(); };
+    const d = document.getElementById("r-done"); if (d) d.onclick = () => { save.ceo[rkey(k, id)] = { status: "approved", at: stamp() }; learn("report", "approved", doc.headline, "", (doc.sections || []).map(x => x.title).join(" / ")); markRead(k, id); foot(); };
+    const no = document.getElementById("r-no"); if (no) no.onclick = () => { const n = prompt("반려 이유를 한 줄 남겨 주세요", ""); if (n === null) return; save.ceo[rkey(k, id)] = { status: "rejected", note: n.trim(), at: stamp() }; learn("report", "rejected", doc.headline, n.trim()); addLog(`대표 결재: ${KIND_NAME[k]} 리포트 반려`); markRead(k, id); foot(); };
     const qb = document.getElementById("r-quiz"); if (qb) qb.onclick = () => openQuiz(k, id);
   };
   foot(); bindHot(modal);
@@ -1702,12 +1714,143 @@ function hotHtml(id, open) {
     <ol class="hot-list">${h.items.map((x, i) => `<li class="${i === h.pick ? "pick" : ""}"><b>${x.rank}. <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></b>${i === h.pick ? `<span class="pk">→ ${esc(who("card"))} 카드뉴스</span>` : ""}
       <span class="sub">${[x.category, x.press, `카드뉴스 적합도 ${x.card_fit}점`].filter(Boolean).map(esc).join(" · ")}</span>
       <span class="sub">📍 ${(x.signals || []).slice(0, 5).map(esc).join(" · ")}</span>
-      ${x.why ? `<div>🔥 ${esc(x.why)}</div>` : ""}${x.angle ? `<div class="sub">🎯 각도: ${esc(x.angle)}</div>` : ""}</li>`).join("")}</ol>
+      ${x.why ? `<div>🔥 ${esc(x.why)}</div>` : ""}${x.angle ? `<div class="sub">🎯 각도: ${esc(x.angle)}</div>` : ""}
+      ${KIT && x.ref ? (cardDraft && cardDraft.from && cardDraft.from.title === x.title ? `<span class="sub">✅ 이 이슈로 만든 시안이 있어요</span>` : `<button class="btn ghost" style="margin-top:6px" data-make="card|${esc(id)}|${i}">🎨 이걸로 카드뉴스 만들기</button>`) : ""}</li>`).join("")}</ol>
     ${h.note ? `<p class="sub">💬 ${esc(who("daily"))} → ${esc(who("card"))}: “${esc(h.note)}”</p>` : ""}
     ${cardDraft ? `<button class="btn ghost" data-hotdraft="${esc(id)}">🎨 카드뉴스 시안 보기 (${esc(who("card"))})</button>` : ""}
   </details>`;
 }
-function bindHot(root) { root.querySelectorAll("[data-hotdraft]").forEach(b => b.onclick = () => openDraft(b.dataset.hotdraft, "card")); }
+function bindHot(root) {
+  root.querySelectorAll("[data-hotdraft]").forEach(b => b.onclick = () => openDraft(b.dataset.hotdraft, "card"));
+  root.querySelectorAll("[data-make]").forEach(b => b.onclick = () => { const [k, id, i] = b.dataset.make.split("|"); confirmMake(k, id, +i); });
+}
+const latestHotId = () => ((DATA.hot || []).slice(-1)[0] || {}).id;
+function openHot(id) {
+  openModal(`${head(AV.daily, `${esc(who("daily"))} · 오늘의 핫이슈`, "대표님, 카드뉴스로 쓸만한 이슈 뽑아 왔어요 🔥 고르시면 다온님께 넘길게요.")}<div class="m-body">${hotHtml(id, true) || `<p class="sub">아직 오늘 핫이슈가 없어요. 매일 아침 8시 20분쯤 올라와요.</p>`}</div>`);
+  bindHot(modal);
+}
+
+/* ── 대표 컨펌 후 시안 만들기: 팀원이 쓰고 → 팀장 검토(통과하면 멈춤, 최대 N번) ── */
+const KIT = DATA.kit || null;
+// 대표님 기준 노트: 대표님이 승인·반려·수정 지시한 기록을 쌓아 두고, 팀원은 쓰기 전에, 팀장은 채점할 때 읽어요
+const KIND_KO2 = { card: "카드뉴스", blog: "블로그", reels: "릴스", report: "리포트" };
+function learn(kind, act, title, note, sample) {
+  save.taste = [...(save.taste || []), { at: stamp(), kind, act, title: String(title || "").slice(0, 80), note: String(note || "").slice(0, 300), sample: String(sample || "").slice(0, 160) }].slice(-60);
+  const msg = act === "approved" ? `메모했어요. 대표님은 이런 걸 승인하시는군요 ✍️` : act === "rejected" ? `반려 이유 적어 둘게요${note ? `: “${note.slice(0, 24)}”` : ""} ✍️` : `수정 지시 기억해 둘게요 ✍️`;
+  if (chars.lead && chars.lead.visible) say("lead", msg, 3500);
+  addLog(`${who("lead")}: 대표님 기준 노트에 ${KIND_KO2[kind] || kind} ${act === "approved" ? "승인" : act === "rejected" ? "반려" : "수정 지시"} 기록`);
+}
+const tasteOf = k => (save.taste || []).filter(x => x.kind === k);
+function tasteText(k) {
+  const list = tasteOf(k).slice(-14);
+  if (!list.length) return "";
+  return `\n[대표님 기준 노트 · 이 대표님이 최근 ${KIND_KO2[k] || k}에 내린 결정. 승인한 방향은 살리고, 반려·수정 지시 이유는 반복하지 마세요]\n` + list.map(x => x.act === "approved" ? `- 승인: 「${x.title}」${x.sample ? ` (예: ${x.sample})` : ""}${x.note ? ` — ${x.note}` : ""}` : x.act === "rejected" ? `- 반려: 「${x.title}」 이유: ${x.note || "(이유 없음)"}` : `- 수정 지시: 「${x.title}」 → ${x.note}`).join("\n") + "\n";
+}
+function sampleOf(k, d) { d = d || {}; return k === "card" ? (d.slides || []).slice(0, 2).map(x => x.head).join(" / ") : k === "reels" ? [d.thumb, d.hook].filter(Boolean).join(" / ") : k === "blog" ? d.title || "" : ""; }
+const VALID = { card: d => d && Array.isArray(d.slides) && d.slides.length >= 5 && d.slides.every(x => x.head), blog: d => d && d.title && Array.isArray(d.sections) && d.sections.length >= 2, reels: d => d && d.hook && Array.isArray(d.scenes) && d.scenes.length >= 5 };
+async function askAI(prompt) {
+  if (!API) throw new Error("서버 주소가 없어요");
+  const send = async () => fetch(API + "/api/ai", { method: "POST", headers: { authorization: "Bearer " + await apiToken(), "content-type": "application/json" }, body: JSON.stringify({ prompt, json: true, kind: "gen" }) });
+  let r = await send(); if (r.status === 401) { store.set("cuttory_token", null); r = await send(); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.json) throw new Error(j.message || "AI가 답하지 못했어요");
+  return j.json;
+}
+function makeSource(k, id, i) {
+  if (k === "card") {
+    const h = hotOf(id), x = h && h.items[i]; if (!x || !x.ref) return null;
+    return { title: x.title, text: x.text || "", section: `모아의 오늘의 핫이슈 ${x.rank}위`, signals: x.signals, sources: [{ name: `${x.press || "뉴스"} · ${x.title}`.slice(0, 90), url: x.url }],
+      handoff: { by: "daily", note: i === h.pick ? h.note : "대표님이 고르신 후보예요", rank: x.rank, of: h.items.length, total: (h.stats || {}).total, why: x.why, angle: x.angle }, ref: x.ref };
+  }
+  if (k === "reels" && KIT && KIT.reels) return { ...KIT.reels, sources: [] };
+  return null;
+}
+function confirmMake(k, id, i) {
+  const src = makeSource(k, id, i), K = KIT && KIT.kinds[k];
+  if (!src || !K) return toast("시안 재료가 아직 없어요");
+  const cost = n => 20 * n;
+  openModal(`${head(AV[k], `${esc(who(k))} · ${esc(K.what)}`, `대표님, 이걸로 ${esc(K.what)} 써도 될까요? 컨펌해 주시면 바로 시작할게요.`)}
+    <div class="m-body">
+      <p style="margin:0"><b>「${esc(src.title)}」</b><br><span class="sub">${esc(src.section)}${src.handoff && src.handoff.by && TEAM[src.handoff.by] ? ` · ${esc(iga(who(src.handoff.by)))} 넘긴 재료` : ""}</span></p>
+      <div class="rv" style="margin-top:10px">${esc(iga(who(k)))} 📒 대표님 기준 노트(${KIND_KO2[k]} ${tasteOf(k).length}개)를 읽고 시안을 써서 바로 대표님께 올려요.<br>
+        <span class="sub">${tasteOf(k).length < 5 ? `노트가 5개쯤 쌓이면 ${esc(who("lead"))} 검토도 켜 보세요. 승인·반려·수정 지시가 곧 노트가 돼요.` : `${esc(who("lead"))} 검토를 켜면 노트를 기준으로 채점하고, 못 넘으면 고쳐서 다시 받아요.`}</span>
+        <label class="field" style="margin-top:8px">${esc(who("lead"))} 검토
+          <select id="mk-max"><option value="0" selected>끄기 · 시안만 (10 크레딧)</option>${[1, 2, 3, 4, 5].filter(n => n <= KIT.max).map(n => `<option value="${n}">시안 최대 ${n}번까지 검토 (최대 ${cost(n)} 크레딧)</option>`).join("")}</select></label></div>
+      <ol class="rv-list" id="mk-log" hidden></ol>
+      <div class="bar" id="mk-bar"><button class="btn gold" id="mk-go">✅ 컨펌, 진행해 주세요</button><button class="btn ghost" data-close>다음에</button></div>
+    </div>`);
+  modal.querySelectorAll("[data-close]").forEach(b => b.onclick = closeModal);
+  document.getElementById("mk-go").onclick = async () => {
+    const max = +document.getElementById("mk-max").value, log = document.getElementById("mk-log"), bar = document.getElementById("mk-bar");
+    bar.hidden = true; log.hidden = false; document.getElementById("mk-max").disabled = true;
+    const step = (t, ok) => { const li = document.createElement("li"); if (ok) li.className = "ok"; li.textContent = t; log.appendChild(li); return li; };
+    try {
+      const it = await runMake(k, id, src, max, step);
+      step(it.direct ? `${who(k)}: 대표님 결재함으로 바로 올려요` : `${who("lead")}: ${it.passed ? `${it.final_v}번째 만에 통과` : `${it.final_v}번까지 보고 보류`} → 대표 결재함으로 올려요`, true);
+      bar.hidden = false; bar.innerHTML = `<button class="btn gold" id="mk-see">📄 시안 보기</button><button class="btn ghost" data-close>사무실에서 검토 장면 보기</button>`;
+      bar.querySelector("[data-close]").onclick = closeModal;
+      document.getElementById("mk-see").onclick = () => { save.seen[draftKey(id, k)] = stamp(); persist(); openDraft(id, k); };
+    } catch (e) {
+      step(`멈췄어요: ${e.message}`);
+      bar.hidden = false; bar.innerHTML = `<button class="btn ghost" data-close>닫기</button>`; bar.querySelector("[data-close]").onclick = closeModal;
+    }
+  };
+}
+async function runMake(k, id, src, max, step) {
+  const K = KIT.kinds[k], ref = src.ref, me = who(k), lead = who("lead");
+  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = tasteText(k);
+  let li = step(`${me}: 시안 1번 쓰는 중…`);
+  let draft = await askAI(`${role}
+아래 자료 하나로 ${K.what}을 쓰세요. ${K.guide}
+자료에 없는 숫자·결과를 지어내지 마세요. 이모지는 꼭 필요한 곳에만 쓰세요.${taste}
+JSON으로만 답하세요: ${K.spec}
+
+${ref}`);
+  if (!VALID[k](draft)) throw new Error("시안 모양이 이상해요. 다시 시도해 주세요");
+  li.textContent = `${me}: 시안 1번 완성`;
+  const rounds = [], versions = [{ v: 1, draft }];
+  if (max) versions.length = 0;
+  for (let v = 1; v <= max; v++) {
+    li = step(`${lead}: 시안 ${v}번 검토 중…`);
+    const r = await askAI(`${KIT.lead}
+지금 검토할 것: ${K.what} (원본: ${src.title}) (시안 ${v}번${v > 1 ? ", 지난 지적을 반영해 고친 버전" : ""})
+채점 기준 (100점):
+${K.rubric}
+${KIT.pass}점 이상이면 통과입니다. 고칠 점은 "어디를 어떻게"가 드러나게 최대 5개, 통과라도 다듬을 점이 있으면 1~2개 적으세요.${taste ? `\n당신은 대표님의 결정을 옆에서 배워 왔습니다. 아래 노트에서 대표님이 반려·수정 지시한 이유가 시안에 또 보이면 크게 감점하고, 승인한 방향에 가까우면 가산하세요.${taste}` : ""}
+JSON으로만 답하세요: {"score":0~100 정수,"pass":true|false,"good":"잘한 점 1문장","feedback":["수정 지시"],"memo":"대표님께 올리는 한 줄 보고 (통과 이유 또는 남은 걱정)"}
+
+시안:
+${JSON.stringify(draft).slice(0, 24000)}
+
+근거 자료:
+${ref.slice(0, 24000)}`);
+    const score = Math.max(0, Math.min(100, Math.round(+r.score || 0)));
+    const round = { v, score, pass: score >= KIT.pass, good: String(r.good || ""), feedback: [].concat(r.feedback || []).map(String).slice(0, 5), memo: String(r.memo || "") };
+    rounds.push(round); versions.push({ v, draft });
+    li.textContent = `${lead}: 시안 ${v}번 ${score}점 ${round.pass ? "통과 ✅" : "수정 요청"}`; if (round.pass) li.className = "ok";
+    if (round.pass || v === max) break;
+    li = step(`${me}: 지적 ${round.feedback.length}개 반영해서 시안 ${v + 1}번 쓰는 중…`);
+    try {
+      const next = await askAI(`${role}
+팀장이 시안을 돌려보냈습니다. 지적을 모두 반영해 같은 JSON 모양으로 전체를 다시 쓰세요. ${K.guide}${taste}
+팀장 지적:
+${round.feedback.map((f, n) => `${n + 1}. ${f}`).join("\n")}
+JSON 모양: ${K.spec}
+
+지금 시안:
+${JSON.stringify(draft)}
+
+${ref}`);
+      if (VALID[k](next)) { draft = next; li.textContent = `${me}: 시안 ${v + 1}번 완성`; } else li.textContent = `${me}: 고친 시안 모양이 이상해서 이전 시안으로 다시 받아요`;
+    } catch (e) { li.textContent = `${me}: 고치지 못했어요 (${e.message})`; throw e; }
+  }
+  const last = rounds[rounds.length - 1] || { v: 1, pass: true, memo: "" }, key = draftKey(id, k);
+  const item = { by: k, what: K.what, live: true, direct: !max, taste: tasteOf(k).length, from: { title: src.title, section: src.section, signals: src.signals, sources: src.sources || [], handoff: src.handoff, ...(src.text ? { text: src.text } : {}) }, versions, rounds, passed: last.pass, final_v: last.v, max, memo: last.memo, draft };
+  save.live = save.live || {}; save.live[key] = item; delete save.seen[key]; delete save.ceo[key]; _days = null;
+  addLog(`대표 컨펌: ${iga(who(k))} 「${src.title.slice(0, 24)}」로 ${tagOf(k)[0]} 시안 ${last.v}번까지 작성`);
+  persist(); setTimeout(sync, 300);
+  return item;
+}
 // 시안 한 건이 어떻게 흘러왔는지: 넘겨준 사람 → 만든 사람 → 팀장 → 대표
 function trailHtml(id, k, it) {
   const ho = (it.from || {}).handoff, rounds = it.rounds || [], last = rounds[rounds.length - 1], st = ceoOf(draftKey(id, k)) || {};
@@ -1739,6 +1882,11 @@ function stChip(x) {
   const last = ((x.review && x.review.rounds) || []).slice(-1)[0];
   return last && !last.pass ? `<span class="st-chip">팀장 보류 · 판단 필요</span>` : `<span class="st-chip">결재 대기</span>`;
 }
+function tasteBox() {
+  const t = save.taste || []; if (!t.length) return `<p class="sub" style="margin:10px 0 0">📒 대표님 기준 노트: 아직 비어 있어요. 승인·반려·수정 지시를 하시면 ${esc(who("lead"))}이 옆에서 적어 둬요.</p>`.replace(`${esc(who("lead"))}이`, esc(iga(who("lead"))));
+  return `<details class="rv"><summary>📒 대표님 기준 노트 ${t.length}개 <span class="sub">· ${esc(iga(who("lead")))} 옆에서 배운 것 (팀원은 쓰기 전에 읽어요)</span></summary>
+    <ol class="rv-list">${t.slice().reverse().map((x, i) => `<li class="${x.act === "approved" ? "ok" : ""}"><b>${KIND_KO2[x.kind] || x.kind} · ${x.act === "approved" ? "승인" : x.act === "rejected" ? "반려" : "수정 지시"}</b> <span class="sub">${esc(x.at)}</span><div>「${esc(x.title)}」</div>${x.note ? `<div>📝 ${esc(x.note)}</div>` : ""}${x.sample ? `<div class="sub">${esc(x.sample)}</div>` : ""}<button class="btn ghost" style="margin-top:4px;padding:3px 9px;font-size:12px" data-forget="${t.length - 1 - i}">이건 잊기</button></li>`).join("")}</ol></details>`;
+}
 function openInbox() {
   const items = pendingItems(), ready = items.filter(x => save.seen[x.key]);
   const recent = [];
@@ -1746,12 +1894,19 @@ function openInbox() {
   const row = x => `<li><button data-open="${esc(x.type)}|${esc(x.k)}|${esc(x.id)}"><img src="${AV[x.owner]}" alt=""><span class="t"><b>${esc(x.title)}${reviewDots((x.review || {}).rounds, x.type === "draft" ? ((ceoOf(x.key) || {}).extra || []).length : 0)}</b><span class="sub">${esc(who(x.owner))} · ${esc(x.sub || "")}</span></span>${stChip(x)}</button></li>`;
   openModal(`${head(AV.lead, `${esc(who("lead"))} · 🗂 대표 결재함`, ready.length ? `대표님, 제가 먼저 검토한 서류 ${ready.length}건이에요. 승인하거나 반려해 주세요.` : items.length ? "지금 팀원 시안을 검토하고 있어요. 끝나면 바로 올릴게요." : "결재할 서류가 없어요. 매일 아침 8시 20분쯤 새 리포트와 시안이 올라와요.")}
     <div class="m-body">
-      <p class="sub" style="margin:0">팀원이 시안을 쓰면 팀장이 점수를 매기고 고칠 점을 돌려줘요. 80점을 넘거나 시안이 5번이 될 때까지 고친 뒤 여기로 올라와요. ● 초록 통과 · 주황 수정 · 파랑 대표 지시</p>
+      <p class="sub" style="margin:0">시안은 대표님이 컨펌하실 때만 만들어요. 승인·반려·수정 지시는 팀장이 옆에서 📒 기준 노트로 적어 두고, 팀원은 다음 시안을 쓰기 전에 읽어요. 팀장 검토를 켜면 ● 초록 통과 · 주황 수정 · 파랑 대표 지시로 보여요.</p>
+      ${KIT ? `<h3 style="margin:14px 0 0;font-size:15px">✍️ 시안 만들기 (대표 컨펌)</h3><p class="sub" style="margin:2px 0 0">시안은 AI 크레딧을 많이 써서, 대표님이 고르고 컨펌하실 때만 만들어요.</p>
+        <ul class="ib-list">${latestHotId() ? `<li><button data-mk="hot"><img src="${AV.daily}" alt=""><span class="t"><b>카드뉴스 · 모아의 오늘의 핫이슈에서 고르기</b><span class="sub">${esc(latestHotId())} · 후보 ${(hotOf(latestHotId()).items || []).length}개</span></span><span class="st-chip">고르기</span></button></li>` : ""}
+        ${KIT.reels ? `<li><button data-mk="reels"><img src="${AV.content}" alt=""><span class="t"><b>릴스 · 리서가 고른 주제</b><span class="sub">${esc(KIT.reels.title)}</span></span><span class="st-chip">컨펌</span></button></li>` : ""}
+        <li><button disabled><img src="${AV.blog}" alt=""><span class="t"><b>블로그 · 내 구글 드라이브 자료</b><span class="sub">드라이브 폴더를 연결하면 열려요</span></span><span class="st-chip">준비 중</span></button></li></ul>` : ""}
+      ${tasteBox()}
       <h3 style="margin:14px 0 0;font-size:15px">결재할 것 ${items.length}건</h3>
       <ul class="ib-list">${items.map(row).join("") || `<li class="sub">비어 있어요 ✨</li>`}</ul>
       ${recent.length ? `<h3 style="margin:16px 0 0;font-size:15px">최근 처리한 시안</h3><ul class="ib-list">${recent.slice(0, 8).map(row).join("")}</ul>` : ""}
     </div>`);
   modal.querySelectorAll("[data-open]").forEach(b => b.onclick = () => { const [t, k, id] = b.dataset.open.split("|"); t === "report" ? openReport(k, id) : openDraft(id, k); });
+  modal.querySelectorAll("[data-forget]").forEach(b => b.onclick = () => { save.taste.splice(+b.dataset.forget, 1); persist(); openInbox(); });
+  modal.querySelectorAll("[data-mk]").forEach(b => b.onclick = () => b.dataset.mk === "hot" ? openHot(latestHotId()) : confirmMake("reels", ymd(NOW()), 0));
 }
 const draftItem = (id, k) => { const d = draftDays().find(x => x.id === id); return d && d.doc.items ? d.doc.items[k] : null; };
 function draftVersions(id, k) {
@@ -1803,7 +1958,8 @@ function openDraft(id, k, showV) {
   const mk = document.getElementById("dr-make");
   if (mk) mk.onclick = () => {
     const d = cur.draft || {};
-    store.set("cuttory_office_import", JSON.stringify({ title: d.title || "", slides: (d.slides || []).map(x => ({ head: x.head, body: x.body })), caption: [d.caption, (d.hashtags || []).map(x => "#" + String(x).replace(/^#/, "")).join(" ")].filter(Boolean).join("\n\n"), source: it.from && (it.from.sources || [])[0] ? it.from.sources[0].name : "", sub: it.from ? it.from.section || "" : "" }));
+    const s0 = (it.from && (it.from.sources || [])[0]) || {}, hx = ((hotOf(id) || {}).items || []).find(x => it.from && x.title === it.from.title) || {};
+    store.set("cuttory_office_import", JSON.stringify({ text: (it.from && it.from.text) || hx.text || "", url: s0.url || "", title: d.title || "", slides: (d.slides || []).map(x => ({ head: x.head, body: x.body })), caption: [d.caption, (d.hashtags || []).map(x => "#" + String(x).replace(/^#/, "")).join(" ")].filter(Boolean).join("\n\n"), source: it.from && (it.from.sources || [])[0] ? it.from.sources[0].name : "", sub: it.from ? it.from.section || "" : "" }));
     window.open("cardnews.html?import=office", "_blank", "noopener");
   };
   document.getElementById("dr-copy").onclick = async () => { try { await navigator.clipboard.writeText(draftText(k, cur.draft)); toast("📋 복사했어요"); } catch { toast("복사하지 못했어요"); } };
@@ -1811,6 +1967,7 @@ function openDraft(id, k, showV) {
   const decide = (status, note) => {
     save.ceo[key] = { ...st, status, note: note || "", at: stamp(), v: cur.v };
     addLog(`대표 결재: ${who(k)}의 ${tagOf(k)[0]} 시안 ${status === "approved" ? "승인" : "반려"}`);
+    learn(k, status, it.from ? it.from.title : "", note, sampleOf(k, cur.draft));
     if (status === "approved") { gainXp(5, `${tagOf(k)[0]} 시안 결재`); confetti(); }
     persist(); setTimeout(sync, 300); openDraft(id, k, cur.v);
   };
@@ -1823,7 +1980,7 @@ function openDraft(id, k, showV) {
     e.target.disabled = true; e.target.textContent = "고치는 중… (30초쯤)";
     try {
       const prompt = `당신은 마케팅 콘텐츠 에이전시의 ${PROD[k] ? PROD[k].job : "팀원"}입니다. 대표가 시안을 보고 직접 수정 지시를 내렸습니다. 지시를 그대로 반영해 같은 JSON 모양으로 전체를 다시 쓰세요. 원본 사례에 없는 숫자나 결과는 지어내지 마세요.
-대표 지시: ${note}
+대표 지시: ${note}${tasteText(k)}
 원본 사례: ${it.from ? it.from.title : ""}
 지금 시안 (JSON):
 ${JSON.stringify(cur.draft)}`;
@@ -1833,6 +1990,7 @@ ${JSON.stringify(cur.draft)}`;
       if (!r.ok || !j.json) throw new Error(j.message || "AI가 답하지 못했어요");
       const v = vers.length + 1;
       save.ceo[key] = { ...st, status: "pending", extra: [...(st.extra || []), { v, draft: j.json, note, at: stamp() }] };
+      learn(k, "fix", it.from ? it.from.title : "", note);
       addLog(`대표 지시로 ${who(k)}의 ${tagOf(k)[0]} 시안 ${v}번 나옴`); persist();
       toast(`✏️ 시안 ${v}번이 올라왔어요`); openDraft(id, k, v);
     } catch (err) { toast(err.message); e.target.disabled = false; e.target.textContent = "수정 지시 보내기 (AI 10 크레딧)"; }
