@@ -342,6 +342,7 @@ a { color: inherit; }
 .rv-dots i { width: 9px; height: 9px; border-radius: 50%; background: #ffb35c; display: inline-block; }
 .rv-dots i.ok { background: #3ccf91; } .rv-dots i.ceo { background: #4dabf7; } .rv-dots i.off { background: #e3e5ea; }
 .ch-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; } .ch-list .btn { flex: none; width: auto; } .ch-list .t b, .ch-list .t .sub { display: block; }
+.know { margin: 10px 0 0; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 8px 12px; font-size: 13px; } .know summary { cursor: pointer; font-weight: 700; } .know ul { margin: 6px 0 0; padding-left: 18px; line-height: 1.55; } .know li { margin: 3px 0; } .know a { overflow-wrap: anywhere; }
 .ib-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
 .ib-list button { width: 100%; text-align: left; display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 10px 12px; cursor: pointer; font: inherit; color: inherit; }
 .ib-list button img { width: 28px; height: 42px; image-rendering: pixelated; flex: none; }
@@ -439,6 +440,7 @@ a { color: inherit; }
 <div class="coach" id="coach" hidden><div class="coach-spot" id="coach-spot"></div><div class="coach-card" id="coach-card" role="dialog" aria-live="polite"></div></div>
 
 <script src="office/reports-data.js"></script>
+<script src="office/knowledge.js"></script>
 <script>
 "use strict";
 /* ═════════════ 기본 설정 ═════════════ */
@@ -547,7 +549,7 @@ const PROD = {
     name: "프리", title: "과장", job: "프리랜서 비서", label: "프리랜서", color: "#5c7cfa", at: [9, 5], when: "매일 09:05",
     look: { hair: "#5a3b22", skin: "#f7d1ad", shirt: "#5c7cfa", shirt2: "#3b5bdb", pants: "#2f3554", tie: "#ffc94d" },
     tool: null, task: "오늘 일정·마감 확인하기",
-    desc: "의뢰, 일정, 마감, 정산을 챙기는 프리랜서 비서 자리예요. 도구를 연결하면 여기서 바로 열려요.",
+    desc: "의뢰, 일정, 마감, 정산을 챙기는 프리랜서 비서예요. 드라이브·노션 프리랜서 자료를 학습해서 범위·견적·제안 기준으로 써요.",
     idle: ["오늘 마감 있는 일부터 챙겨요.", "정산 안 된 건 없는지 확인해 볼까요?", "견적서는 템플릿으로 빠르게!"],
   },
   video: {
@@ -1748,6 +1750,7 @@ function openWork(k) {
     <div class="m-body">
       <span class="kb" style="background:${m.color}">${esc(m.label)}</span>
       <p style="margin:8px 0 0">${esc(m.desc)}</p>
+      ${knowHtml(k)}
       <div class="work-tool"><span style="font-size:26px">🧰</span><span><b>${m.tool ? esc(m.tool.name) : "아직 연결된 도구가 없어요"}</b><br><span class="sub">${m.tool ? (/^https?:/.test(m.tool.url) ? "새 창에서 열려요" : "컷토리 사이트에서 열려요") : "도구가 생기면 이 자리에서 바로 열려요"}</span></span>
         ${m.tool ? `<a class="btn gold" href="${esc(m.tool.url)}" target="_blank" rel="noopener" id="wk-open">🚀 열기</a>` : ""}</div>
       <div class="task${done ? " done" : ""}"><span style="font-size:22px">${done ? "✅" : "📋"}</span><span>오늘 할 일: ${esc(m.task)}<br><span class="sub">지금까지 ${days}일 완료 · 하루 한 번 +5 XP</span></span>
@@ -1838,6 +1841,7 @@ function makeSource(k, id, i) {
     return { title: x.title, text: x.text || "", section: `모아의 오늘의 핫이슈 ${x.rank}위`, signals: x.signals, sources: [{ name: `${x.press || "뉴스"} · ${x.title}`.slice(0, 90), url: x.url }],
       handoff: { by: "daily", note: i === h.pick ? h.note : "대표님이 고르신 후보예요", rank: x.rank, of: h.items.length, total: (h.stats || {}).total, why: x.why, angle: x.angle }, ref: x.ref };
   }
+  if (k === "reels" && KIT && (KIT.reelsQueue || [])[i]) { const q = KIT.reelsQueue[i]; return { ...q, sources: [] }; }
   if (k === "reels" && KIT && KIT.reels) return { ...KIT.reels, sources: [] };
   return null;
 }
@@ -1848,6 +1852,7 @@ function confirmMake(k, id, i) {
   openModal(`${head(AV[k], `${esc(who(k))} · ${esc(K.what)}`, `대표님, 이걸로 ${esc(K.what)} 써도 될까요? 컨펌해 주시면 바로 시작할게요.`)}
     <div class="m-body">
       <p style="margin:0"><b>「${esc(src.title)}」</b><br><span class="sub">${esc(src.section)}${src.handoff && src.handoff.by && TEAM[src.handoff.by] ? ` · ${esc(iga(who(src.handoff.by)))} 넘긴 재료` : ""}</span></p>
+      ${src.hooks ? `<div class="rv" style="margin-top:10px"><b>🎣 ${esc(iga(who("content")))} 넘긴 훅 포인트</b><ul style="margin:4px 0 0;padding-left:18px">${src.hooks.map(h => `<li>${esc(h)}</li>`).join("")}</ul>${src.notes && src.notes.length ? `<b style="display:block;margin-top:6px">💬 대표님 피드백</b><ul style="margin:4px 0 0;padding-left:18px">${src.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</div>` : ""}
       <div class="rv" style="margin-top:10px">${esc(iga(who(k)))} 📒 대표님 기준 노트(${KIND_KO2[k]} ${tasteOf(k).length}개)를 읽고 시안을 써서 바로 대표님께 올려요.<br>
         <span class="sub">${tasteOf(k).length < 5 ? `노트가 5개쯤 쌓이면 ${esc(who("lead"))} 검토도 켜 보세요. 승인·반려·수정 지시가 곧 노트가 돼요.` : `${esc(who("lead"))} 검토를 켜면 노트를 기준으로 채점하고, 못 넘으면 고쳐서 다시 받아요.`}</span>
         <label class="field" style="margin-top:8px">${esc(who("lead"))} 검토
@@ -1874,7 +1879,7 @@ function confirmMake(k, id, i) {
 }
 async function runMake(k, id, src, max, step) {
   const K = KIT.kinds[k], ref = src.ref, me = who(k), lead = who("lead");
-  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = myContext() + tasteText(k);
+  const role = `당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${KIT.audience}`, taste = myContext() + tasteText(k) + knowText(k);
   let li = step(`${me}: 시안 1번 쓰는 중…`);
   let draft = await askAI(`${role}
 아래 자료 하나로 ${K.what}을 쓰세요. ${K.guide}
@@ -1973,7 +1978,8 @@ function openInbox() {
       <p class="sub" style="margin:0">시안은 대표님이 컨펌하실 때만 만들어요. 승인·반려·수정 지시는 팀장이 옆에서 📒 기준 노트로 적어 두고, 팀원은 다음 시안을 쓰기 전에 읽어요. 팀장 검토를 켜면 ● 초록 통과 · 주황 수정 · 파랑 대표 지시로 보여요.</p>
       ${KIT ? `<h3 style="margin:14px 0 0;font-size:15px">✍️ 시안 만들기 (대표 컨펌) <button class="btn ghost" style="padding:3px 9px;font-size:12px;margin-left:6px" id="ib-ch">🔗 내 채널 · 프로젝트</button></h3><p class="sub" style="margin:2px 0 0">시안은 AI 크레딧을 많이 써서, 대표님이 고르고 컨펌하실 때만 만들어요.</p>
         <ul class="ib-list">${latestHotId() ? `<li><button data-mk="hot"><img src="${AV.daily}" alt=""><span class="t"><b>카드뉴스 · 모아의 오늘의 핫이슈에서 고르기</b><span class="sub">${esc(latestHotId())} · 후보 ${(hotOf(latestHotId()).items || []).length}개</span></span><span class="st-chip">고르기</span></button></li>` : ""}
-        ${KIT.reels ? `<li><button data-mk="reels"><img src="${AV.content}" alt=""><span class="t"><b>릴스 · 리서가 고른 주제</b><span class="sub">${esc(KIT.reels.title)}</span></span><span class="st-chip">컨펌</span></button></li>` : ""}
+        ${(KIT.reelsQueue || []).map((q, i) => `<li><button data-mk="reels|${i}"><img src="${AV.content}" alt=""><span class="t"><b>릴스 · 저장한 주제${q.sec ? ` · ${q.sec}초` : ""}</b><span class="sub">${esc(q.title)}${q.notes && q.notes.length ? ` · 💬 피드백 ${q.notes.length}` : ""}</span></span><span class="st-chip">컨펌</span></button></li>`).join("")}
+        ${KIT.reels && !(KIT.reelsQueue || []).length ? `<li><button data-mk="reels"><img src="${AV.content}" alt=""><span class="t"><b>릴스 · 리서가 고른 주제</b><span class="sub">${esc(KIT.reels.title)}</span></span><span class="st-chip">컨펌</span></button></li>` : ""}
         <li><button disabled><img src="${AV.blog}" alt=""><span class="t"><b>블로그 · 내 구글 드라이브 자료</b><span class="sub">드라이브 폴더를 연결하면 열려요</span></span><span class="st-chip">준비 중</span></button></li></ul>` : ""}
       ${tasteBox()}
       <h3 style="margin:14px 0 0;font-size:15px">결재할 것 ${items.length}건</h3>
@@ -1983,7 +1989,7 @@ function openInbox() {
   modal.querySelectorAll("[data-open]").forEach(b => b.onclick = () => { const [t, k, id] = b.dataset.open.split("|"); t === "report" ? openReport(k, id) : openDraft(id, k); });
   { const b = document.getElementById("ib-ch"); if (b) b.onclick = openChannels; }
   modal.querySelectorAll("[data-forget]").forEach(b => b.onclick = () => { save.taste.splice(+b.dataset.forget, 1); persist(); openInbox(); });
-  modal.querySelectorAll("[data-mk]").forEach(b => b.onclick = () => b.dataset.mk === "hot" ? openHot(latestHotId()) : confirmMake("reels", ymd(NOW()), 0));
+  modal.querySelectorAll("[data-mk]").forEach(b => b.onclick = () => b.dataset.mk === "hot" ? openHot(latestHotId()) : confirmMake("reels", ymd(NOW()), b.dataset.mk.includes("|") ? +b.dataset.mk.split("|")[1] : -1));
 }
 const draftItem = (id, k) => { const d = draftDays().find(x => x.id === id); return d && d.doc.items ? d.doc.items[k] : null; };
 function draftVersions(id, k) {
@@ -2204,6 +2210,16 @@ function channels() {
 const projects = () => (save.projects = Array.isArray(save.projects) ? save.projects : []);
 const chLink = c => /^https?:\/\//.test(c.value) ? c.value : c.type === "insta" ? `https://www.instagram.com/${c.value.replace(/^@/, "")}` : c.type === "youtube" && c.value.startsWith("@") ? `https://www.youtube.com/${c.value}` : "";
 // 시안을 쓸 때 팀원이 읽는 대표님 채널·프로젝트 정보
+// 드라이브·노션·혜님TV에서 학습한 노트 (office/knowledge.js)
+const KNOW = window.CUTTORY_KNOW || null;
+const KNOW_OF = { card: "content", blog: "content", reels: "reels", content: "reels", free: "freelance", video: "freelance", pff: "freelance" };
+const knowText = k => KNOW && KNOW_OF[k] ? KNOW.text(KNOW_OF[k]) : "";
+function knowHtml(k) {
+  const n = KNOW && KNOW_OF[k] && KNOW[KNOW_OF[k] === "reels" ? "content" : KNOW_OF[k]];
+  if (!n) return "";
+  return `<details class="know"><summary>📚 학습한 자료 · ${esc(n.title)} ${n.rules.length}가지</summary><ul>${n.rules.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    <p class="sub" style="margin:6px 0 0">출처: ${n.from.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name)}</a>`).join(" · ")} · ${esc(KNOW.updated)} 정리</p></details>`;
+}
 function myContext() {
   const ch = channels(), on = projects().filter(x => x.on), off = projects().filter(x => !x.on);
   if (!ch.length && !projects().length) return "";

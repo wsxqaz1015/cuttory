@@ -7,6 +7,7 @@
 <meta name="description" content="외주 의뢰를 받으면 훅 3개, 장면별 AI 프롬프트, 편집 순서, 견적서까지 한 번에 정리해 드려요.">
 <meta name="theme-color" content="#ffffff">
 <script src="config.js"></script>
+<script src="office/knowledge.js"></script>
 <script src="account.js" data-app="video" defer></script>
 <style>
   * { box-sizing: border-box; }
@@ -319,6 +320,7 @@ ${p.imgs.length ? `- 첨부 사진 ${p.imgs.length}장: 제품의 색, 재질, �
 - tool은 그 장면에 맞는 도구 하나 (Kling, Runway, Midjourney, 캡컷, 고객 영상 중).
 - 화면 자막은 한 줄 14자 이내 한국어.
 - 꼭 들어갈 정보는 반드시 장면 어딘가에 넣어.
+- 견적·범위·고객 질문(ask_client)은 아래 프리랜서 노트 기준으로: 포함/제외/옵션/고객 준비물, 수정 1회 = 취합된 피드백 한 묶음, 과장·성과 보장 금지.${window.CUTTORY_KNOW ? window.CUTTORY_KNOW.text('freelance') : ''}
 JSON:
 {"concept_title": "콘셉트 한 줄, 핵심 단어 하나를 [대괄호]로", "concept": "2문장 설명", "hooks": [{"type": "", "text": "화면 첫 자막/첫 대사", "why": ""}], "best_hook": 0, "best_reason": "",
 "scenes": [{"sec": "0-1.5", "shot": "무엇을 보여주는지 한국어 한 줄", "onscreen": "화면 자막", "voice": "나레이션 (없으면 빈칸)", "tool": "", "image_prompt": "", "video_prompt": "", "camera": "카메라 움직임 한국어"}],

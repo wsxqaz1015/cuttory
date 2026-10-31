@@ -379,7 +379,7 @@ const DRAFT_KINDS = {
 - 과장 광고 문구, 긴 설명형 자막, 누구나 쓸 법한 밋밋한 감성 문장은 피합니다.`,
     rubric: `- 훅 (30): 썸네일과 첫 3초에 모르는 사람이 멈추고 끝까지 볼 이유가 생기는가
 - 리지다움 (25): 해요체·자조·괄호 드립 말투, 직장인 설정·경험 미화가 없는가, 모르는 건 [직접 채우기]로 비웠는가
-- 길이·리듬 (20): 60초 안쪽, 컷 2~5초, 자막이 짧은 한 줄인가
+- 길이·리듬 (20): 레퍼런스 길이가 주어지면 그 길이 ±5초, 없으면 60초 안쪽인가. 컷 2~5초, 자막이 짧은 한 줄인가
 - 찍을 수 있음 (15): 사진·화면 녹화·셀프 촬영으로 혼자 만들 수 있는가
 - 캡션 (10): (저장) 첫 줄, 공유 유도, 해시태그 8~10개`,
     ok: d => d.hook && Array.isArray(d.scenes) && d.scenes.length >= 5,
@@ -501,9 +501,26 @@ ${list.map((it, i) => `[${i + 1}] ${it.title}${it.press ? ` (${it.press})` : ''}
 // office/content-secretary/<날짜>.json: 콘텐츠 전략 비서가 고른 그날 주제 10개 (승인한 주제 approvedIdx, TOP 1~3)
 // 아직 릴스로 안 만든 주제 중 승인한 것 → TOP 순위 → 점수 순으로, 릴스 포맷을 먼저 골라요.
 const reelsRef = t => { const g = t.growth || {}; return `[콘텐츠 비서 주제] ${t.title}\n포맷: ${t.format || '-'} · 종류: ${t.type || '-'} · 축: ${t.axis || '-'}\n왜 터질까: ${t.whyViral || '-'}\n왜 지금: ${t.whyNow || '-'}\n노리는 것: ${t.goal || '-'}\n가져갈 것: ${t.takeaway || '-'}\n근거: ${t.evidence || '-'}${t.sourceTitle ? `\n참고한 원본: ${t.sourceTitle}${t.sourceViews ? ` (조회수 ${t.sourceViews})` : ''}` : ''}${g.thumbHook ? `\n[터지게 만드는 것] 썸네일 훅: ${g.thumbHook} / 연재 라벨: ${g.label || '-'} / 팔로우 CTA: ${g.cta || '-'} / 해시태그: ${g.tags || '-'} / 댓글 키워드: ${g.commentKeyword || '-'} / 끝 질문: ${g.closingQ || '-'}` : ''}\n제목의 훅 문장 구조는 살리고, [N]·[직접 채우기]는 그대로 비워 두세요.`; };
+// 대표님이 콘텐츠 비서에서 '괜찮아요'로 저장한 주제 → 릴스 PD에게 넘길 훅 포인트 (매일 아침 예약 작업이 saved.json으로 내보내요)
+const hookPoints = (t, sec) => { const g = t.growth || {}; return [
+  g.thumbHook && `썸네일 훅: ${g.thumbHook}`, t.whyViral && `원본이 터진 이유: ${t.whyViral}`,
+  t.sourceTitle && `레퍼런스: ${t.sourceTitle}${t.sourceViews ? ` (조회수 ${Number(t.sourceViews).toLocaleString('ko-KR')})` : ''}${t.sourcePattern ? ` · 문장 틀 ${t.sourcePattern}` : ''}`,
+  g.label && `연재 라벨: ${g.label}`, g.closingQ && `끝 질문: ${g.closingQ}`, g.commentKeyword && `댓글 키워드: ${g.commentKeyword}`,
+  `길이: ${sec ? `레퍼런스와 비슷하게 ${sec}초 안팎 (마지막 컷 끝 초가 ${Math.max(10, sec - 5)}~${sec + 5}초)` : '레퍼런스 길이를 몰라요. 30~45초'}`].filter(Boolean); };
+function savedTopics() {
+  let doc; try { doc = JSON.parse(fs.readFileSync(path.join(DIR, 'content-secretary', 'saved.json'), 'utf8')); } catch { return []; }
+  const used = new Set();
+  try { for (const f of fs.readdirSync(path.join(DIR, 'drafts'))) { const r = JSON.parse(fs.readFileSync(path.join(DIR, 'drafts', f), 'utf8')).items?.reels; if (r?.from?.title) used.add(r.from.title); } } catch {}
+  return (doc.saved || []).filter(x => x.topic && x.topic.title && !used.has(x.topic.title)).sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || ''))).slice(0, 12).map(x => {
+    const t = x.topic, sec = Number(x.refSec) || 0, hooks = hookPoints(t, sec), notes = (x.notes || []).map(n => n.note).filter(Boolean);
+    return { key: x.key, title: t.title, section: `콘텐츠 비서 · ${x.date} 저장한 주제`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type, sec ? `레퍼런스 ${sec}초` : ''].filter(Boolean), sec, hooks, notes,
+      handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: '대표님이 괜찮다고 저장한 주제예요' },
+      ref: `${reelsRef(t)}\n\n[리서가 넘기는 훅 포인트]\n${hooks.map(h => `- ${h}`).join('\n')}${notes.length ? `\n\n[대표님 피드백 · 꼭 반영]\n${notes.map(n => `- ${n}`).join('\n')}` : ''}` };
+  });
+}
 function secretaryTopic(id) {
   const dir = path.join(DIR, 'content-secretary');
-  let files = []; try { files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.slice(0, -5) <= id).sort().reverse(); } catch {}
+  let files = []; try { files = fs.readdirSync(dir).filter(f => /^\d{4}-\d\d-\d\d\.json$/.test(f) && f.slice(0, -5) <= id).sort().reverse(); } catch {}
   const used = new Set();
   try { for (const f of fs.readdirSync(path.join(DIR, 'drafts'))) { if (f === id + '.json') continue; const r = JSON.parse(fs.readFileSync(path.join(DIR, 'drafts', f), 'utf8')).items?.reels; if (r?.from?.title) used.add(r.from.title); } } catch {}
   for (const f of files.slice(0, 7)) {
@@ -599,7 +616,7 @@ function build() {
   const today = ymd(kstNow()), t = secretaryTopic(today);
   const kit = { lead: LEAD, pass: PASS_SCORE, max: MAX_DRAFTS, audience: AUDIENCE,
     kinds: Object.fromEntries(Object.entries(DRAFT_KINDS).map(([k, K]) => [k, { who: K.who, what: K.what, spec: K.spec, guide: K.guide, rubric: K.rubric }])),
-    reels: t ? { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type].filter(Boolean), handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' }, ref: reelsRef(t) } : null };
+    reels: t ? { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type].filter(Boolean), handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' }, ref: reelsRef(t) } : null, reelsQueue: savedTopics() };
   const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts, hot, kit })};\n`;
   fs.writeFileSync(path.join(DIR, 'reports-data.js'), out);
   console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '), `drafts ${drafts.length}`, `hot ${hot.length}`);
