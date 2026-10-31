@@ -25,6 +25,20 @@
 7. Worker 주소(예: `https://cuttory-api.아이디.workers.dev`)를 열어 `{"ok":true,"ai":true,"kv":true}`가 보이면 끝이에요.
 8. `config.js`의 `window.CUTTORY_API`에 그 주소를 넣어요.
 
+## 구글 로그인 · 계정별 저장 (`account.js`)
+
+모든 페이지 머리글 오른쪽에 **로그인** 버튼이 생겨요. 구글로 로그인하면 오피스 기록, 카드뉴스, 포트폴리오, AI 영상 기획, 크레딧이 그 계정에 저장되고 어느 기기에서든 이어져요. 서버에 `GOOGLE_CLIENT_ID`가 없으면 버튼이 숨겨지고 지금처럼 이 브라우저에만 저장돼요.
+
+1. [console.cloud.google.com](https://console.cloud.google.com)에서 프로젝트를 만들어요(무료, 카드 등록 없음).
+2. **API 및 서비스 → OAuth 동의 화면**: 외부(External), 앱 이름 `컷토리`, 지원 이메일을 넣고 저장해요. 게시 상태는 **프로덕션으로 게시**를 눌러요(이메일·이름만 쓰므로 심사가 필요 없어요).
+3. **사용자 인증 정보 → 사용자 인증 정보 만들기 → OAuth 클라이언트 ID**: 유형 **웹 애플리케이션**, **승인된 JavaScript 원본**에 `https://wsxqaz1015.github.io`를 넣고 만들어요. 리디렉션 URI는 비워 둬요.
+4. 나온 **클라이언트 ID**(`….apps.googleusercontent.com`)를 Worker **Settings → Variables and Secrets**에 `GOOGLE_CLIENT_ID` (종류: Text)로 넣어요.
+5. `worker/worker.js` 최신 내용을 Worker **Edit code**에 다시 붙여 넣고 **Deploy**해요.
+
+- 저장은 KV에 `data:<사용자>:<office|portfolio|video|cardnews>`로 들어가요. 무료 KV는 하루 쓰기 1,000번이라, 내용이 바뀐 경우에만 1분에 한 번 넘지 않게 모아서 보내고 창을 닫을 때 한 번 더 보내요.
+- 처음 로그인할 때 계정에 이미 저장된 내용이 있으면 그걸 가져오고, 이 기기의 원래 내용은 `<키>.before-login`으로 남겨 둬요. 계정이 비어 있으면 이 기기의 내용을 올려요.
+- 로그인 전에 쓰던 크레딧은 처음 로그인할 때 그 계정으로 옮겨져요.
+
 ## 관리자
 
 사이트 주소 뒤에 `?admin`을 붙여 열고 `ADMIN_KEY`를 넣으면, 내 계정 페이지에서 혜택 코드를 만들고 받은 피드백을 볼 수 있어요.
