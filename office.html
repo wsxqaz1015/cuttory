@@ -357,6 +357,18 @@ a { color: inherit; }
 .slide .n { font-size: 11px; color: #8a8f99; font-weight: 800; } .slide b { font-size: 15px; line-height: 1.3; } .slide p { margin: 0; font-size: 12.5px; color: #4a4f59; }
 .dr-body { background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 12px 14px; overflow-wrap: anywhere; }
 .dr-body h3 { margin: 0 0 6px; } .dr-body h4 { margin: 12px 0 4px; } .dr-body p { margin: 6px 0; line-height: 1.6; }
+.hot { margin: 12px 0; background: #fff8ef; border: 1px solid #ffd8a8; border-radius: 14px; padding: 10px 12px; font-size: 13.5px; }
+.hot summary { cursor: pointer; font-weight: 800; line-height: 1.45; }
+.src-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; } .src-chips span { background: #fff; border: 1px solid #f1d3ad; border-radius: 999px; padding: 3px 9px; font-size: 12px; } .src-chips span.zero { opacity: .5; }
+.hot-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 7px; }
+.hot-list li { background: #fff; border-radius: 10px; padding: 8px 10px; border-left: 4px solid #ffd8a8; overflow-wrap: anywhere; } .hot-list li.pick { border-left-color: #ff922b; box-shadow: 0 0 0 1px #ff922b inset; }
+.hot-list .sub { display: block; }
+.hot-list .pk { display: inline-block; background: #ff922b; color: #fff; border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 800; margin-left: 4px; }
+.trail { list-style: none; margin: 12px 0; padding: 0 0 0 4px; display: grid; gap: 0; font-size: 13px; }
+.trail li { display: flex; gap: 9px; align-items: flex-start; position: relative; padding-bottom: 10px; }
+.trail li:not(:last-child)::before { content: ""; position: absolute; left: 13px; top: 30px; bottom: 0; width: 2px; background: #e3e5ea; }
+.trail img { width: 28px; height: 42px; image-rendering: pixelated; flex: none; margin-top: -6px; } .trail .ic { width: 28px; text-align: center; font-size: 20px; flex: none; }
+.trail b { display: block; } .trail .sub { display: block; }
 .scn { width: 100%; border-collapse: collapse; font-size: 12.5px; } .scn td, .scn th { border-top: 1px solid var(--paper-line); padding: 6px 4px; vertical-align: top; text-align: left; }
 .scn th { font-size: 11.5px; color: #8a8f99; }
 .tagline { color: #4a6fd6; font-size: 12.5px; }
@@ -1064,6 +1076,11 @@ function sync(first) {
 let reviewing = null;
 function reviewScript(it) {
   const o = it.owner, L = "lead", rounds = (it.review && it.review.rounds) || [], lines = [];
+  const ho = it.type === "draft" && it.review && it.review.from && it.review.from.handoff;
+  if (ho && TEAM[ho.by] && chars[ho.by] && chars[ho.by].visible) {
+    lines.push([ho.by, ho.by === "daily" && ho.rank ? `${who(o).split(" ")[0]}님, 오늘 핫이슈 ${ho.rank}위 넘겨요 🔥 「${String(it.review.from.title).slice(0, 22)}…」` : `${who(o).split(" ")[0]}님, 이 주제로 가 봐요! 「${String(it.review.from.title).slice(0, 22)}…」`]);
+    lines.push([o, it.k === "card" ? "받았어요! 6장으로 뽑아서 팀장님께 갈게요 🎨" : it.k === "reels" ? "좋아요, 1분 안쪽 대본으로 짜 볼게요 🎬" : "받았어요, 바로 써 볼게요 ✍️"]);
+  }
   if (!rounds.length) { lines.push([o, `${it.title} 검토 부탁드려요 📄`], [L, "좋아요, 대표님께 올릴게요 👍"]); return lines; }
   rounds.forEach((r, i) => {
     lines.push([o, i ? `시안 ${r.v}번, 고쳐 왔어요!` : `시안 1번 봐 주세요 📄`]);
@@ -1440,6 +1457,7 @@ function openReport(k, id) {
       <p class="r-period">${esc(doc.period_label)}</p>
       <h2 class="r-title">${esc(doc.headline)}</h2>
       ${reviewHtml(doc.review, false)}
+      ${k === "daily" ? hotHtml(id, true) : ""}
       ${(doc.summary || []).length ? `<ol class="r-sum">${doc.summary.map(s => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
       <div class="kw">${(doc.keywords || []).map(w => `<span>#${esc(w)}</span>`).join("")}</div>
       ${secs}
@@ -1459,7 +1477,7 @@ function openReport(k, id) {
     const no = document.getElementById("r-no"); if (no) no.onclick = () => { const n = prompt("반려 이유를 한 줄 남겨 주세요", ""); if (n === null) return; save.ceo[rkey(k, id)] = { status: "rejected", note: n.trim(), at: stamp() }; addLog(`대표 결재: ${KIND_NAME[k]} 리포트 반려`); markRead(k, id); foot(); };
     const qb = document.getElementById("r-quiz"); if (qb) qb.onclick = () => openQuiz(k, id);
   };
-  foot();
+  foot(); bindHot(modal);
   const rerender = key => {
     const card = modal.querySelector(`.card[data-key="${CSS.escape(key)}"]`), [kk, rid, si, ii] = key.split("/");
     const tmp = document.createElement("div"); tmp.innerHTML = cardHtml(kk, rid, doc.period_label, +si, +ii, doc.sections[si].items[ii]);
@@ -1673,6 +1691,38 @@ function reviewDots(rounds, extra = 0) {
   const n = (rounds || []).length;
   return `<span class="rv-dots" aria-label="시안 ${n + extra}번 / 최대 5번">${Array.from({ length: 5 }, (_, i) => `<i class="${i < n ? (rounds[i].pass ? "ok" : "") : i < n + extra ? "ceo" : "off"}"></i>`).join("")}</span>`;
 }
+// 모아가 네이버·구글·마케팅 매체에서 모은 오늘의 핫이슈 (카드뉴스 후보)
+const hotOf = id => ((DATA.hot || []).find(x => x.id === id) || {}).doc || null;
+function hotHtml(id, open) {
+  const h = hotOf(id); if (!h || !(h.items || []).length) return "";
+  const st = h.stats || {}, src = st.sources || [], cardDraft = draftItem(id, "card");
+  return `<details class="hot"${open ? " open" : ""}><summary>🔥 ${esc(who("daily"))}의 오늘의 핫이슈 · 카드뉴스 후보 ${h.items.length}개<br><span class="sub">네이버·구글 뉴스·마케팅 매체에서 기사 ${st.total || 0}건을 모아 ${h.pick >= 0 ? `${h.pick + 1}위를 ${esc(who("card"))}에게 넘겼어요` : "골랐어요"}</span></summary>
+    <p class="sub" style="margin:8px 0 0">📊 출처 현황${h.at ? ` (${esc(new Date(Date.parse(h.at + "Z") + 9 * 3600e3).toISOString().slice(5, 16).replace("T", " "))} 한국 시간 기준)` : ""}</p>
+    <div class="src-chips">${src.map(x => `<span class="${x.n ? "" : "zero"}">${esc(x.name)} <b>${x.n}</b></span>`).join("")}<span>두 곳 이상 겹친 기사 <b>${st.cross || 0}</b></span></div>
+    <ol class="hot-list">${h.items.map((x, i) => `<li class="${i === h.pick ? "pick" : ""}"><b>${x.rank}. <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></b>${i === h.pick ? `<span class="pk">→ ${esc(who("card"))} 카드뉴스</span>` : ""}
+      <span class="sub">${[x.category, x.press, `카드뉴스 적합도 ${x.card_fit}점`].filter(Boolean).map(esc).join(" · ")}</span>
+      <span class="sub">📍 ${(x.signals || []).slice(0, 5).map(esc).join(" · ")}</span>
+      ${x.why ? `<div>🔥 ${esc(x.why)}</div>` : ""}${x.angle ? `<div class="sub">🎯 각도: ${esc(x.angle)}</div>` : ""}</li>`).join("")}</ol>
+    ${h.note ? `<p class="sub">💬 ${esc(who("daily"))} → ${esc(who("card"))}: “${esc(h.note)}”</p>` : ""}
+    ${cardDraft ? `<button class="btn ghost" data-hotdraft="${esc(id)}">🎨 카드뉴스 시안 보기 (${esc(who("card"))})</button>` : ""}
+  </details>`;
+}
+function bindHot(root) { root.querySelectorAll("[data-hotdraft]").forEach(b => b.onclick = () => openDraft(b.dataset.hotdraft, "card")); }
+// 시안 한 건이 어떻게 흘러왔는지: 넘겨준 사람 → 만든 사람 → 팀장 → 대표
+function trailHtml(id, k, it) {
+  const ho = (it.from || {}).handoff, rounds = it.rounds || [], last = rounds[rounds.length - 1], st = ceoOf(draftKey(id, k)) || {};
+  const step = (av, title, sub) => `<li>${av ? `<img src="${av}" alt="">` : `<span class="ic">👑</span>`}<span><b>${title}</b>${sub ? `<span class="sub">${sub}</span>` : ""}</span></li>`;
+  const out = [];
+  if (ho && TEAM[ho.by]) {
+    const h = ho.by === "daily" && ho.of ? `네이버·구글·마케팅 매체 기사 ${ho.total || ""}건 중 핫이슈 ${ho.of}개를 뽑고, ${ho.rank}위 「${esc(it.from.title)}」를 넘겼어요` : ho.by === "content" ? `오늘의 주제 중 「${esc(it.from.title)}」를 골라 넘겼어요${ho.note ? ` (${esc(ho.note)})` : ""}` : `「${esc(it.from.title)}」를 재료로 넘겼어요`;
+    out.push(step(AV[ho.by], `${esc(who(ho.by))} · ${esc(TEAM[ho.by].job)}`, `${h}${ho.why ? `<br>🔥 ${esc(ho.why)}` : ""}${ho.note && ho.by === "daily" ? `<br>💬 “${esc(ho.note)}”` : ""}`));
+  }
+  const n = it.draft ? (k === "card" ? `${(it.draft.slides || []).length}장 카드뉴스 문구` : k === "reels" ? `${(it.draft.scenes || []).length}컷 릴스 대본` : k === "blog" ? `소제목 ${(it.draft.sections || []).length}개 블로그 원고` : "시안") : "시안";
+  out.push(step(AV[k], `${esc(who(k))} · ${esc(TEAM[k].job)}`, `${n}을 쓰고 지적을 받아 ${rounds.length}번까지 고쳤어요${ho && ho.angle ? `<br>🎯 각도: ${esc(ho.angle)}` : ""}`));
+  if (last) out.push(step(AV.lead, `${esc(who("lead"))} · 1차 검토`, `${rounds.map(r => `${r.v}번 ${r.score}점`).join(" → ")} · ${last.pass ? "통과" : "보류"}${it.memo ? `<br>“${esc(it.memo)}”` : ""}`));
+  out.push(step(null, `${esc(meName())} 대표 · 최종 결재`, st.status === "approved" ? `✅ 승인 ${esc(st.at || "")}` : st.status === "rejected" ? `✖ 반려 ${esc(st.note || "")}` : (st.extra || []).length ? `✏️ 수정 지시 ${st.extra.length}번 · 결재 대기` : "결재 대기 중"));
+  return `<details class="rv" open><summary>🤝 협업 기록</summary><ol class="trail">${out.join("")}</ol></details>`;
+}
 function reviewHtml(rv, open) {
   const rounds = (rv && rv.rounds) || [];
   if (!rounds.length) return "";
@@ -1736,6 +1786,7 @@ function openDraft(id, k, showV) {
     <div class="m-body">
       <span class="kb" style="background:${tagOf(k)[1]}">${esc(tagOf(k)[0])} 시안</span> <span class="sub">${esc(id)} ${esc(it.from && it.from.section || "데일리")} 「${esc(it.from ? it.from.title : "")}」에서</span>
       ${it.from && (it.from.signals || []).length ? `<p class="sub" style="margin:4px 0 0">🔥 화제 신호: ${it.from.signals.map(esc).join(" · ")}${(it.from.sources || [])[0] ? ` · <a href="${esc(it.from.sources[0].url)}" target="_blank" rel="noopener">원문 보기</a>` : ""}</p>` : ""}
+      ${trailHtml(id, k, it)}
       ${reviewHtml(it, false)}
       ${vers.length > 1 ? `<div class="ver-tabs">${vers.map(x => `<button data-v="${x.v}" class="${x === cur ? "on" : ""}">시안 ${x.v}${x.ceo ? " · 대표 지시" : x.round ? ` · ${x.round.score}점` : ""}</button>`).join("")}</div>` : ""}
       ${cur.ceo ? `<p class="sub">📝 대표 지시: ${esc(cur.note)}</p>` : cur.round && !cur.round.pass ? `<p class="sub">이 시안에 대한 팀장 지적: ${esc((cur.round.feedback || []).join(" / "))}</p>` : ""}
