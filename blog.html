@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>컷토리 블로그 글쓰기</title>
+<meta name="description" content="사진과 메모 한 줄을 넣으면 네이버 블로그 후기 글을 바로 써 주는 컷토리 블로그 글쓰기">
+<meta property="og:title" content="컷토리 블로그 글쓰기">
+<meta property="og:description" content="사진과 메모 한 줄로 네이버 블로그 글을 바로 써요.">
+<script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+  @font-face { font-family: 'Pretendard'; src: url('fonts/PretendardVariable.woff2') format('woff2-variations'), url('fonts/PretendardVariable.woff2') format('woff2'); font-weight: 45 920; font-style: normal; font-display: swap; }
+  :root {
+    --bg: #f7f1e6; --surface: #fffdf8; --sunk: #efe6d6; --ink: #2d241b; --muted: #85725e; --line: #e6dac6;
+    --brand: #f2c94c; --brand-ink: #3a2a10; --brand-edge: #8a6a2a; --danger: #c0473b; --ok: #4f7a3a; --naver: #03c75a;
+    --paper: #ffffff; --paper-ink: #222222; --paper-sub: #777777; --paper-line: #ebebeb;
+    --f-ui: "Pretendard", system-ui, sans-serif; --f-display: "Black Han Sans", "Pretendard", sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1b1712; --surface: #241f18; --sunk: #2e271e; --ink: #f1e8da; --muted: #b4a28b; --line: #3a3227;
+      --brand: #e9bd3f; --brand-ink: #2a1e08; --brand-edge: #c99a2e; --danger: #e46a5d; --ok: #8fc072;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-ui); padding-bottom: 110px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  header.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px; padding: 10px max(16px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .logo { display: flex; align-items: center; gap: 6px; font: 22px var(--f-display); color: inherit; text-decoration: none; margin-right: auto; }
+  .logo svg { width: 32px; height: 32px; }
+  .tab { padding: 7px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; }
+  .tab.on { background: var(--sunk); color: var(--ink); font-weight: 700; }
+  .credits { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 700; white-space: nowrap; }
+  @media (max-width: 520px) { .tab.hide-s { display: none; } }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .hero h1 { font: 34px/1.15 var(--f-display); margin: 0 0 6px; letter-spacing: -.01em; }
+  .hero p { margin: 0; color: var(--muted); font-size: 15px; }
+  .banner { background: var(--sunk); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; }
+  .banner a { color: inherit; font-weight: 700; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .inputs { display: grid; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+  .card h2 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .step { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: var(--brand-ink); font-size: 13px; font-weight: 800; flex: none; }
+  .sub { color: var(--muted); font-size: 13px; margin: -6px 0 12px; }
+  .lbl { display: block; font-weight: 700; font-size: 13.5px; margin: 14px 0 6px; }
+  .lbl small { font-weight: 400; color: var(--muted); }
+  textarea, input[type=text], input[type=url] { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+  textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .drop { display: grid; place-items: center; text-align: center; min-height: 140px; border: 2px dashed var(--line); border-radius: 14px; background: var(--bg); cursor: pointer; padding: 16px; transition: border-color .15s; }
+  .drop.over { border-color: var(--brand-edge); }
+  .drop b { display: block; font-size: 15px; margin: 4px 0 2px; }
+  .drop span { color: var(--muted); font-size: 12.5px; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; margin-top: 10px; }
+  .thumb { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--sunk); border: 2px solid transparent; cursor: grab; }
+  .thumb.dragging { opacity: .4; }
+  .thumb.target { border-color: var(--brand-edge); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+  .thumb .n { position: absolute; left: 5px; top: 5px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; font-weight: 700; border-radius: 6px; padding: 0 6px; }
+  .thumb .x { position: absolute; right: 4px; top: 4px; width: 22px; height: 22px; border: 0; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-size: 12px; line-height: 1; }
+  .thumb .mv { position: absolute; bottom: 4px; display: flex; gap: 3px; right: 4px; }
+  .thumb .mv button { width: 22px; height: 22px; border: 0; border-radius: 6px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 0; }
+
+  .seg { display: inline-flex; background: var(--sunk); border-radius: 10px; padding: 3px; flex-wrap: wrap; }
+  .seg button { border: 0; background: none; border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--muted); }
+  .seg button.on { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+  .btn.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand-edge); box-shadow: 0 3px 0 var(--brand-edge); }
+  .btn.naver { background: var(--naver); color: #fff; border-color: var(--naver); }
+  .btn.small { padding: 5px 10px; font-size: 12.5px; border-radius: 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* 미리보기: 네이버 블로그처럼 흰 종이 */
+  .preview { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .pv-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .pv-head h2 { margin: 0; font-size: 17px; display: flex; gap: 8px; align-items: center; }
+  .paper { background: var(--paper); color: var(--paper-ink); padding: 34px 20px 40px; color-scheme: light; }
+  .paper-in { max-width: 680px; margin: 0 auto; font-size: 16px; line-height: 1.85; }
+  .paper .ttl { font-size: 26px; line-height: 1.4; font-weight: 700; letter-spacing: -.02em; padding-bottom: 18px; margin-bottom: 26px; border-bottom: 1px solid var(--paper-line); }
+  .paper [contenteditable] { outline: none; border-radius: 6px; transition: background .15s; }
+  .paper [contenteditable]:hover { background: #fafafa; }
+  .paper [contenteditable]:focus { background: #fffbea; }
+  .paper p.t { margin: 0 0 22px; white-space: pre-wrap; }
+  .paper h3 { font-size: 18px; margin: 34px 0 12px; }
+  .paper ul { margin: 0 0 22px; padding-left: 22px; } .paper li { margin: 4px 0; }
+  .ph { position: relative; margin: 6px 0 22px; }
+  .ph canvas { width: 100%; height: auto; display: block; border-radius: 4px; }
+  .ph .tools { position: absolute; right: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; opacity: 0; transition: opacity .15s; }
+  .ph:hover .tools, .ph:focus-within .tools, .ph.editing .tools { opacity: 1; }
+  @media (hover: none) { .ph .tools { opacity: 1; } }
+  .ph .tools button { border: 0; border-radius: 8px; background: rgba(20,20,20,.72); color: #fff; padding: 6px 10px; font-size: 12.5px; font-weight: 600; backdrop-filter: blur(4px); }
+  .ph .tools button.on { background: var(--naver); }
+  .ph .no { position: absolute; left: 10px; top: 10px; background: rgba(20,20,20,.72); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+  .ph.editing canvas { cursor: crosshair; outline: 3px solid var(--naver); }
+  .ph .hint { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); background: rgba(20,20,20,.8); color: #fff; font-size: 12.5px; padding: 6px 12px; border-radius: 999px; white-space: nowrap; pointer-events: none; }
+  .place { border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 16px; margin: 0 0 22px; display: flex; gap: 12px; align-items: center; }
+  .place .pin { width: 40px; height: 40px; border-radius: 10px; background: #e9f9f0; display: grid; place-items: center; font-size: 20px; flex: none; }
+  .place b { display: block; } .place span { color: var(--paper-sub); font-size: 13.5px; }
+  .tags { color: #2f7d4f; font-size: 15px; margin-top: 30px; word-break: keep-all; }
+  .src { color: var(--paper-sub); font-size: 13px; }
+
+  .empty { padding: 60px 20px; text-align: center; color: var(--paper-sub); }
+  .empty .big { font-size: 40px; }
+  .empty b { display: block; color: var(--paper-ink); font-size: 17px; margin: 6px 0 4px; }
+  .skel { display: grid; gap: 14px; }
+  .skel i { display: block; height: 14px; border-radius: 6px; background: linear-gradient(90deg, #f1f1f1, #e6e6e6, #f1f1f1); background-size: 200% 100%; animation: sk 1.2s linear infinite; }
+  .skel i.img { height: 220px; }
+  @keyframes sk { to { background-position: -200% 0; } }
+
+  .titles { display: grid; gap: 6px; margin: -10px 0 24px; }
+  .titles button { text-align: left; border: 1px solid var(--paper-line); background: #fafafa; color: var(--paper-ink); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+  .titles button:hover { border-color: #bbb; }
+
+  .how { display: grid; gap: 8px; counter-reset: h; padding: 0; margin: 0; list-style: none; }
+  .how li { counter-increment: h; background: var(--bg); border-radius: 12px; padding: 10px 12px 10px 44px; position: relative; font-size: 13.5px; }
+  .how li::before { content: counter(h); position: absolute; left: 12px; top: 10px; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+  .how li b { display: block; }
+  .how .row { margin-top: 6px; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px max(16px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); }
+  .bar-in { max-width: 1180px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
+  .bar-info { flex: 1; min-width: 0; font-size: 13.5px; color: var(--muted); }
+  .bar-info b { color: var(--ink); font-size: 15px; display: block; }
+  .bar .btn.primary { padding: 12px 22px; font-size: 15px; }
+
+  .kit { font-size: 13.5px; color: var(--muted); }
+  .kit a { color: var(--ink); font-weight: 700; }
+
+  dialog { border: 0; border-radius: 18px; padding: 20px; width: min(420px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); box-shadow: 0 20px 50px -20px rgba(0,0,0,.4); }
+  dialog::backdrop { background: rgba(30, 22, 12, .4); }
+  dialog h3 { margin: 0 0 6px; font-size: 17px; }
+  dialog p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
+  .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); z-index: 50; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 13.5px; max-width: calc(100vw - 32px); box-shadow: 0 8px 20px rgba(0,0,0,.2); white-space: pre-line; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="potato" viewBox="0 -2 100 102">
+    <path d="M18 46 Q50 34 82 46 Q86 70 70 86 Q60 96 50 98 Q40 96 30 86 Q14 70 18 46Z" fill="#d9a066" stroke="#7a4a22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M12 46 Q14 22 50 20 Q86 22 88 46 Q70 54 50 54 Q30 54 12 46Z" fill="#8a5a2b" stroke="#5a3515" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M24 34 L36 46 M36 28 L50 44 M50 26 L64 44 M64 28 L76 42 M30 44 L44 30 M46 46 L60 28 M62 46 L74 32" stroke="#6b4220" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    <g stroke="#3a2a1a" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M50 20 L42 6"/><path d="M50 20 L58 6"/></g>
+    <circle cx="40" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="60" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="50" cy="15" r="1.8" fill="#3a2a1a"/>
+    <circle cx="39" cy="68" r="4.5" fill="#2d241b"/><circle cx="61" cy="68" r="4.5" fill="#2d241b"/>
+    <circle cx="40.5" cy="66.5" r="1.5" fill="#fff"/><circle cx="62.5" cy="66.5" r="1.5" fill="#fff"/>
+    <path d="M44 77 Q50 82 56 77" stroke="#2d241b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="31" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/><ellipse cx="69" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/>
+  </symbol>
+</svg>
+
+<header class="top">
+  <a class="logo" href="index.html" aria-label="컷토리 홈"><svg><use href="#potato"/></svg>컷토리.</a>
+  <a class="tab hide-s" href="index.html">카드뉴스</a>
+  <a class="tab hide-s" href="poses.html">캐릭터 포즈</a>
+  <a class="tab on" href="blog.html" aria-current="page">블로그 글</a>
+  <button class="credits" id="credits" title="남은 크레딧">✨ –</button>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>블로그 글쓰기</h1>
+    <p>사진과 메모 한 줄만 넣으면, 네이버 블로그에 바로 올릴 후기 글을 써 드려요.</p>
+  </section>
+  <div class="banner" id="inapp" hidden></div>
+  <div class="banner" id="demo-note" hidden></div>
+
+  <div class="layout">
+    <div class="inputs">
+      <section class="card">
+        <h2><span class="step">1</span>사진 넣기</h2>
+        <p class="sub">글에 넣을 순서대로 놓아 주세요. 끌어서 순서를 바꿀 수 있어요. (최대 20장)</p>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="image/*" multiple hidden>
+          <div><div style="font-size:26px">📷</div><b>사진 고르기</b><span>또는 여기로 끌어다 놓기 · 원래 화질 그대로 써요</span></div>
+        </label>
+        <div class="thumbs" id="thumbs"></div>
+      </section>
+
+      <section class="card">
+        <h2><span class="step">2</span>메모 쓰기</h2>
+        <p class="sub">실제로 겪은 일만 적어 주세요. 여기 없는 가격·메뉴는 지어내지 않아요.</p>
+        <textarea id="memo" placeholder="예) 성수동 골목 카페 브런치. 창가 자리 햇빛이 좋았고 라떼 6,000원. 주말 오전이라 한산했음. 화장실은 좀 좁았음"></textarea>
+        <div class="two">
+          <div><label class="lbl" for="place">장소 이름 <small>(선택)</small></label><input type="text" id="place" placeholder="예) 카페 오늘"></div>
+          <div><label class="lbl" for="area">지역 <small>(선택)</small></label><input type="text" id="area" placeholder="예) 서울 성수동"></div>
+        </div>
+        <label class="lbl">말투</label>
+        <div class="seg" id="tone">
+          <button data-v="warm" class="on">다정한 후기</button><button data-v="plain">담백한 기록</button><button data-v="info">정보 위주</button>
+        </div>
+        <label class="lbl">길이</label>
+        <div class="seg" id="len">
+          <button data-v="short">짧게</button><button data-v="mid" class="on">보통</button><button data-v="long">길게</button>
+        </div>
+      </section>
+      <p class="kit">PC에서 네이버 입력까지 자동으로 하고 싶다면 <a href="blog-kit/guide.html">자동 업로드 키트(베타)</a>도 있어요.</p>
+    </div>
+
+    <section class="preview">
+      <div class="pv-head">
+        <h2><span class="step">3</span>미리보기 · 고치기</h2>
+        <div class="row" id="pv-actions" hidden>
+          <button class="btn small" id="faces-all">🙂 얼굴 모두 가리기</button>
+          <button class="btn small" id="rewrite">↻ 다시 쓰기</button>
+        </div>
+      </div>
+      <div class="paper"><div class="paper-in" id="paper">
+        <div class="empty"><div class="big">📝</div><b>여기에 글이 나와요</b>사진과 메모를 넣고 아래 ‘글 쓰기’를 눌러 주세요.<br>글자는 눌러서 바로 고칠 수 있어요.</div>
+      </div></div>
+      <div class="card" id="post-how" hidden style="border:0;border-top:1px solid var(--line);border-radius:0">
+        <h2><span class="step">4</span>네이버에 올리기</h2>
+        <ol class="how">
+          <li><b>네이버 글쓰기 열기</b><div class="row"><input type="url" id="blog" placeholder="내 블로그 주소 (예: blog.naver.com/아이디)" style="flex:1;min-width:200px"><button class="btn naver small" id="open-naver">글쓰기 열기 ↗</button></div></li>
+          <li><b>제목과 본문 붙여넣기</b>본문에는 사진 자리가 <code>[사진 1]</code>처럼 표시돼요.<div class="row"><button class="btn small" id="copy-title">제목 복사</button><button class="btn small" id="copy-body">본문 복사</button></div></li>
+          <li><b>사진 넣기</b>사진을 저장한 뒤 네이버 편집기의 ‘사진’ 버튼으로 [사진 N] 자리에 넣어 주세요. 사진 위 ‘복사’를 누르고 붙여넣어도 돼요.<div class="row"><button class="btn small" id="save-photos">사진 모두 저장</button></div></li>
+          <li><b>태그 넣고 발행·예약</b>‘발행’을 누른 창에서 태그를 붙여넣고, 바로 발행하거나 ‘예약’에서 날짜와 시간을 골라요.<div class="row"><button class="btn small" id="copy-tags">태그 복사</button></div></li>
+        </ol>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="bar"><div class="bar-in">
+  <div class="bar-info" id="bar-info"><b>사진과 메모를 넣어 주세요</b>글 하나에 10크레딧이에요.</div>
+  <button class="btn primary" id="go">✍️ 글 쓰기</button>
+</div></div>
+
+<dialog id="dlg-credit">
+  <h3>크레딧</h3>
+  <p id="credit-text"></p>
+  <input type="text" id="code" placeholder="혜택 코드가 있으면 넣어 주세요" style="width:100%;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px">
+  <div class="dlg-actions"><button class="btn" onclick="this.closest('dialog').close()">닫기</button><button class="btn primary" id="redeem">코드 쓰기</button></div>
+</dialog>
+
+<script type="module">
+const API = String(window.CUTTORY_API || '').replace(/\/$/, '');
+const DEMO = /[?&]demo\b/.test(location.search) || !API;
+const COST = 10, MAX = 20;
+const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+let toastTimer;
+function toast(msg, ms) {
+  let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms || 2800);
+}
+
+// ===== 상태 =====
+// photos: { id, file, name, img(ImageBitmap|HTMLImageElement), w, h, boxes:[{x,y,w,h}] (원본 픽셀 기준) }
+const S = { photos: [], post: null, busy: false, tone: 'warm', len: 'mid' };
+
+// ===== 서버 (카드뉴스 화면과 같은 계정·크레딧을 써요) =====
+const H = {
+  token: store.get('cuttory_token') || '',
+  credits: null,
+  async session() {
+    if (this.token) return this.token;
+    const r = await fetch(API + '/api/session', { method: 'POST' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw { code: j.code || 'error', message: j.message || '접속하지 못했어요.' };
+    this.token = j.token; store.set('cuttory_token', j.token);
+    this.setCredits(j.credits); return j.token;
+  },
+  async call(path, body) {
+    const tok = await this.session();
+    const r = await fetch(API + path, { method: 'POST', headers: { authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { this.token = ''; try { localStorage.removeItem('cuttory_token'); } catch {} }
+    if (j.credits != null) this.setCredits(j.credits);
+    if (!r.ok) throw { code: j.code || 'error', message: j.message || '서버가 제대로 답하지 못했어요.' };
+    return j;
+  },
+  setCredits(n) { if (n == null) return; this.credits = n; $('#credits').textContent = '✨ ' + n.toLocaleString(); },
+};
+
+// ===== 사진 =====
+async function decode(file) {
+  try { const bm = await createImageBitmap(file, { imageOrientation: 'from-image' }); return bm; }
+  catch {
+    return await new Promise((res, rej) => { const u = URL.createObjectURL(file); const im = new Image(); im.onload = () => res(im); im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('decode')); }; im.src = u; });
+  }
+}
+async function addFiles(list) {
+  const files = [...list].filter(f => /^image\//.test(f.type) || /\.(heic|heif)$/i.test(f.name));
+  let heic = 0, over = 0;
+  for (const f of files) {
+    if (S.photos.length >= MAX) { over++; continue; }
+    try {
+      const img = await decode(f);
+      const w = img.width || img.naturalWidth, h = img.height || img.naturalHeight;
+      S.photos.push({ id: uid(), file: f, name: f.name, img, w, h, boxes: [], thumb: thumbURL(img, w, h) });
+    } catch { if (/heic|heif/i.test(f.type + f.name)) heic++; }
+  }
+  renderThumbs(); renderBar();
+  if (heic) toast(`HEIC 사진 ${heic}장은 이 브라우저에서 열 수 없어요.\n아이폰에서 '사진 > 공유 > 옵션'에서 JPG로 보내거나, 사파리에서 열어 주세요.`, 6000);
+  else if (over) toast(`사진은 ${MAX}장까지 넣을 수 있어요.`);
+  if (S.post) { S.post.order = S.post.order.filter(id => S.photos.some(p => p.id === id)); S.photos.forEach(p => { if (!S.post.order.includes(p.id)) { S.post.order.push(p.id); S.post.text[p.id] = S.post.text[p.id] || ''; } }); renderPaper(); }
+}
+function thumbURL(img, w, h) {
+  const c = document.createElement('canvas'), s = 200 / Math.min(w, h); c.width = Math.round(w * s); c.height = Math.round(h * s);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', .8);
+}
+// 원본 크기로 그리고 가린 부분은 모자이크
+function render(p, maxSide) {
+  const s = maxSide ? Math.min(1, maxSide / Math.max(p.w, p.h)) : 1;
+  const c = document.createElement('canvas'); c.width = Math.round(p.w * s); c.height = Math.round(p.h * s);
+  const g = c.getContext('2d'); g.drawImage(p.img, 0, 0, c.width, c.height);
+  for (const b of p.boxes) pixelate(g, b.x * s, b.y * s, b.w * s, b.h * s);
+  return c;
+}
+function pixelate(g, x, y, w, h) {
+  x = Math.max(0, Math.floor(x)); y = Math.max(0, Math.floor(y)); w = Math.min(g.canvas.width - x, Math.ceil(w)); h = Math.min(g.canvas.height - y, Math.ceil(h));
+  if (w < 2 || h < 2) return;
+  const block = Math.max(6, Math.round(Math.max(w, h) / 9));
+  const t = document.createElement('canvas'); t.width = Math.max(1, Math.round(w / block)); t.height = Math.max(1, Math.round(h / block));
+  const tg = t.getContext('2d'); tg.drawImage(g.canvas, x, y, w, h, 0, 0, t.width, t.height);
+  g.save(); g.imageSmoothingEnabled = false; g.drawImage(t, 0, 0, t.width, t.height, x, y, w, h); g.restore();
+}
+
+let dragId = null;
+function renderThumbs() {
+  $('#thumbs').innerHTML = S.photos.map((p, i) => `<div class="thumb" draggable="true" data-id="${p.id}"><img src="${p.thumb}" alt=""><span class="n">${i + 1}</span><button class="x" data-del="${p.id}" aria-label="${i + 1}번 사진 빼기">✕</button><span class="mv"><button data-mv="-1" aria-label="앞으로">◀</button><button data-mv="1" aria-label="뒤로">▶</button></span></div>`).join('');
+}
+$('#thumbs').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]'), mv = e.target.closest('[data-mv]');
+  if (del) { S.photos = S.photos.filter(p => p.id !== del.dataset.del); if (S.post) S.post.order = S.post.order.filter(id => id !== del.dataset.del); renderThumbs(); renderBar(); if (S.post) renderPaper(); }
+  if (mv) { const id = mv.closest('.thumb').dataset.id, i = S.photos.findIndex(p => p.id === id), j = i + +mv.dataset.mv; if (j < 0 || j >= S.photos.length) return; [S.photos[i], S.photos[j]] = [S.photos[j], S.photos[i]]; renderThumbs(); }
+});
+$('#thumbs').addEventListener('dragstart', e => { const t = e.target.closest('.thumb'); if (!t) return; dragId = t.dataset.id; t.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+$('#thumbs').addEventListener('dragend', () => { dragId = null; $$('.thumb').forEach(t => t.classList.remove('dragging', 'target')); });
+$('#thumbs').addEventListener('dragover', e => { if (!dragId) return; e.preventDefault(); $$('.thumb').forEach(t => t.classList.toggle('target', t === e.target.closest('.thumb') && t.dataset.id !== dragId)); });
+$('#thumbs').addEventListener('drop', e => {
+  if (!dragId) return; e.preventDefault(); e.stopPropagation();
+  const to = e.target.closest('.thumb'); if (!to || to.dataset.id === dragId) return;
+  const from = S.photos.findIndex(p => p.id === dragId), item = S.photos.splice(from, 1)[0];
+  S.photos.splice(S.photos.findIndex(p => p.id === to.dataset.id), 0, item); renderThumbs();
+});
+$('#file').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { if (dragId) return; e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('over')));
+drop.addEventListener('drop', e => { if (dragId) return; e.preventDefault(); addFiles(e.dataTransfer.files); });
+document.addEventListener('paste', e => { if (e.target.closest && e.target.closest('[contenteditable], textarea, input')) return; const f = [...(e.clipboardData?.files || [])]; if (f.length) addFiles(f); });
+
+// ===== 선택 버튼 =====
+for (const [id, key] of [['#tone', 'tone'], ['#len', 'len']]) {
+  $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; S[key] = b.dataset.v; $$(id + ' button').forEach(x => x.classList.toggle('on', x === b)); });
+}
+$('#memo').value = store.get('cuttory_blog_memo') || '';
+$('#memo').addEventListener('input', () => { store.set('cuttory_blog_memo', $('#memo').value); renderBar(); });
+
+function renderBar() {
+  const n = S.photos.length, memo = $('#memo').value.trim();
+  const info = $('#bar-info');
+  if (S.busy) info.innerHTML = `<b>글을 쓰는 중이에요…</b>사진 ${n}장을 보고 있어요. 30초쯤 걸려요.`;
+  else if (!n && !memo) info.innerHTML = `<b>사진과 메모를 넣어 주세요</b>글 하나에 ${COST}크레딧이에요.`;
+  else if (!memo) info.innerHTML = `<b>사진 ${n}장 준비됐어요</b>메모를 한 줄이라도 적어 주면 훨씬 정확해요.`;
+  else info.innerHTML = `<b>사진 ${n}장 · 메모 준비 완료</b>${S.post ? '다시 쓰면' : '글 하나에'} ${COST}크레딧이에요.`;
+  $('#go').disabled = S.busy || (!n && !memo);
+  $('#go').textContent = S.post ? '↻ 다시 쓰기' : '✍️ 글 쓰기';
+}
+
+// ===== AI에 보낼 사진: 6장까지는 한 장씩, 넘으면 4장씩 묶어서 번호를 붙여요 =====
+function aiImages() {
+  const ps = S.photos;
+  const one = (p, side) => render(p, side);
+  if (ps.length <= 6) return ps.map(p => one(p, 768).toDataURL('image/jpeg', .82));
+  const out = [];
+  for (let i = 0; i < ps.length && out.length < 6; i += 4) {
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 1024; const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, 1024, 1024);
+    ps.slice(i, i + 4).forEach((p, k) => {
+      const x = (k % 2) * 512, y = Math.floor(k / 2) * 512, s = Math.min(504 / p.w, 504 / p.h), w = p.w * s, h = p.h * s;
+      g.drawImage(one(p, 600), x + (512 - w) / 2, y + (512 - h) / 2, w, h);
+      g.fillStyle = '#000'; g.fillRect(x + 6, y + 6, 64, 44); g.fillStyle = '#fff'; g.font = 'bold 34px sans-serif'; g.fillText(String(i + k + 1), x + 14, y + 41);
+    });
+    out.push(c.toDataURL('image/jpeg', .82));
+  }
+  return out;
+}
+
+const TONE = {
+  warm: '친구에게 추천하듯 다정한 존댓말("~했어요", "~더라고요"). 이모지는 글 전체에 3~5개만 문단 앞에.',
+  plain: '담백하고 차분한 기록 말투의 존댓말. 감탄사와 이모지는 거의 쓰지 않음.',
+  info: '정보를 또렷하게 정리하는 존댓말. 핵심 정보 위주, 문장은 짧게. 이모지는 소제목 앞에만.',
+};
+const LEN = { short: '사진 하나당 1~2문장, 전체 600자 안팎', mid: '사진 하나당 2~3문장, 전체 1,200자 안팎', long: '사진 하나당 3~5문장, 전체 2,000자 안팎' };
+
+function buildPrompt() {
+  const n = S.photos.length, memo = $('#memo').value.trim(), place = $('#place').value.trim(), area = $('#area').value.trim();
+  return `너는 네이버 블로그에 방문 후기를 쓰는 한국인 블로거야. 아래 메모와 사진으로 네이버 블로그 글을 써 줘.
+
+[메모 — 여기 적힌 것만 사실로 써]
+${memo || '(메모 없음. 사진에 보이는 것만 담담하게 묘사하고, 가격·영업시간·메뉴 이름 같은 사실은 쓰지 마)'}
+${place ? `장소 이름: ${place}\n` : ''}${area ? `지역: ${area}\n` : ''}
+[사진]
+사진은 모두 ${n}장이고 1번부터 ${n}번까지 번호가 있어.${n > 6 ? ' 첨부 이미지마다 사진 4장이 묶여 있고, 각 칸 왼쪽 위에 번호가 적혀 있어.' : ' 첨부한 순서가 1번부터야.'}
+사진을 직접 보고, 각 사진에 실제로 보이는 것을 바탕으로 써. 보이지 않는 걸 지어내지 마.
+
+[쓰는 법]
+- 말투: ${TONE[S.tone]}
+- 길이: ${LEN[S.len]}
+- 메모에 없는 가격, 영업시간, 주차, 메뉴 이름, 전화번호는 절대 쓰지 마. 필요하면 "방문 전에 확인해 보세요"라고 써.
+- 누구와 갔는지, 무엇을 했는지, 맛이 어땠는지 같은 경험도 메모나 사진에 없으면 지어내지 마. 사진에 보이는 건 "~가 보이네요"처럼 보이는 대로만 써.
+- 첫 문단(intro): 왜 갔는지와 한 줄 결론. 2~3문장.
+- 사진 순서는 사용자가 정한 1번부터 ${n}번 그대로 두고, 사진마다 그 사진 바로 아래에 들어갈 글을 써. 모든 사진을 한 번씩 써.
+- 제목: "${area || '지역'} + ${place || '장소'} + 핵심 한 가지" 꼴로 25자 안팎. 5개.
+- 마무리 정리: 좋았던 점, 아쉬웠던 점(메모에 있을 때만), 이런 분께 추천.
+- 맺음말(outro)은 정리 내용을 되풀이하지 말고, 다음에 또 오고 싶은 마음 같은 짧은 인사 한두 문장.
+- 검색에 잘 걸리도록 지역과 장소 이름을 제목·첫 문단·마무리에 자연스럽게 한 번씩. 억지 반복은 하지 마.
+- 태그 8~10개, # 없이: 지역, 장소, 업종, 메뉴, 상황(데이트·혼밥 등).
+
+[답 형식 — JSON 하나만]
+{"titles":["제목1","제목2","제목3","제목4","제목5"],"intro":"첫 문단","photos":[{"n":1,"text":"1번 사진 아래 글"}],"outro":"맺음말 한두 문장","good":["좋았던 점"],"bad":["아쉬웠던 점"],"recommend":"이런 분께 추천해요 한 문장","tags":["태그"]}`;
+}
+
+function demoPost() {
+  const n = S.photos.length, place = $('#place').value.trim() || '오늘 다녀온 곳', area = $('#area').value.trim() || '우리 동네';
+  return {
+    titles: [`${area} ${place}, 다시 가고 싶은 곳`, `${place} 솔직 후기`, `${area} 가볼 만한 ${place}`, `${place} 방문기`, `주말에 들른 ${place}`],
+    intro: `(체험 모드 예시 글이에요.) 주말에 ${area}에 갔다가 ${place}에 들렀어요. 한 줄로 말하면 분위기가 편안해서 오래 머물고 싶은 곳이었어요.`,
+    photos: Array.from({ length: n }, (_, i) => ({ n: i + 1, text: `${i + 1}번 사진 아래에 들어갈 글이에요. 실제로는 사진을 보고 어떤 장면인지 자연스럽게 설명해 줘요.` })),
+    outro: '다음에는 다른 메뉴도 먹어 보고 싶어요.', good: ['편안한 분위기', '친절한 응대'], bad: [], recommend: '조용히 이야기 나누고 싶은 분께 추천해요.',
+    tags: [area.replace(/\s/g, ''), place.replace(/\s/g, ''), '주말나들이', '방문후기'],
+  };
+}
+
+async function write() {
+  if (S.busy) return;
+  if (!S.photos.length && !$('#memo').value.trim()) return toast('사진이나 메모를 먼저 넣어 주세요.');
+  S.busy = true; renderBar();
+  $('#paper').innerHTML = `<div class="skel"><i style="width:70%;height:24px"></i><i></i><i style="width:85%"></i><i class="img"></i><i></i><i style="width:60%"></i></div>`;
+  try {
+    let j;
+    if (DEMO) { await new Promise(r => setTimeout(r, 1200)); j = demoPost(); }
+    else j = (await H.call('/api/ai', { prompt: buildPrompt(), json: true, kind: 'gen', images: aiImages() })).json;
+    S.post = shape(j); renderPaper();
+    toast('글을 다 썼어요. 글자를 눌러 바로 고칠 수 있어요.');
+  } catch (e) {
+    $('#paper').innerHTML = `<div class="empty"><div class="big">😢</div><b>글을 쓰지 못했어요</b>${esc(e.message || '잠시 뒤 다시 해 주세요.')}</div>`;
+    if (e.code === 'no_credits') $('#credits').click();
+  } finally { S.busy = false; renderBar(); }
+}
+function shape(j) {
+  const arr = (v) => (Array.isArray(v) ? v : []).map(x => String(x).trim()).filter(Boolean);
+  const text = {};
+  S.photos.forEach((p, i) => { const f = (j.photos || []).find(x => +x.n === i + 1); text[p.id] = f ? String(f.text || '').trim() : ''; });
+  const titles = arr(j.titles);
+  return {
+    title: titles[0] || '제목을 적어 주세요', titles, intro: String(j.intro || '').trim(), text, order: S.photos.map(p => p.id),
+    outro: String(j.outro || '').trim(), good: arr(j.good), bad: arr(j.bad), recommend: String(j.recommend || '').trim(),
+    tags: arr(j.tags).map(t => t.replace(/^#/, '').replace(/\s+/g, '')).slice(0, 30),
+    place: $('#place').value.trim(), area: $('#area').value.trim(),
+  };
+}
+
+// ===== 미리보기 =====
+function renderPaper() {
+  const P = S.post; if (!P) return;
+  const ph = (id) => S.photos.find(p => p.id === id);
+  const order = P.order.filter(ph);
+  $('#paper').innerHTML = `
+    <div class="ttl" contenteditable data-k="title">${esc(P.title)}</div>
+    ${P.titles.length > 1 ? `<div class="titles" aria-label="다른 제목 후보">${P.titles.map(t => `<button data-title="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
+    ${P.intro ? `<p class="t" contenteditable data-k="intro">${esc(P.intro)}</p>` : ''}
+    ${order.map((id, i) => `<div class="ph" data-id="${id}"><span class="no">사진 ${i + 1}</span><div class="tools"><button data-act="faces">🙂 얼굴 가리기</button><button data-act="draw">✏️ 직접 가리기</button><button data-act="undo">되돌리기</button><button data-act="copy">복사</button></div></div>${P.text[id] ? `<p class="t" contenteditable data-k="text" data-id="${id}">${esc(P.text[id])}</p>` : `<p class="t" contenteditable data-k="text" data-id="${id}"></p>`}`).join('')}
+    ${(P.good.length || P.bad.length || P.recommend) ? `<h3 contenteditable data-k="sumtitle">한눈에 정리</h3>` : ''}
+    ${P.good.length ? `<p class="t" style="margin-bottom:6px"><b>👍 좋았던 점</b></p><ul data-k="good">${P.good.map(x => `<li contenteditable>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${P.bad.length ? `<p class="t" style="margin-bottom:6px"><b>👀 아쉬웠던 점</b></p><ul data-k="bad">${P.bad.map(x => `<li contenteditable>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${P.recommend ? `<p class="t" contenteditable data-k="recommend">${esc(P.recommend)}</p>` : ''}
+    ${P.place ? `<div class="place"><div class="pin">📍</div><div><b>${esc(P.place)}</b><span>${esc(P.area || '네이버 편집기의 ‘장소’ 버튼으로 지도를 넣어 주세요')}</span></div></div>` : ''}
+    ${P.outro ? `<p class="t" contenteditable data-k="outro">${esc(P.outro)}</p>` : ''}
+    <div class="tags" contenteditable data-k="tags">${esc(P.tags.map(t => '#' + t).join(' '))}</div>`;
+  order.forEach(id => drawPhoto(id));
+  $('#pv-actions').hidden = false; $('#post-how').hidden = false;
+}
+function drawPhoto(id) {
+  const box = $(`.ph[data-id="${id}"]`), p = S.photos.find(x => x.id === id); if (!box || !p) return;
+  const old = box.querySelector('canvas'); const c = render(p, 1600); c.setAttribute('aria-label', '사진'); old ? old.replaceWith(c) : box.prepend(c);
+}
+// 고친 글자를 상태에 반영
+$('#paper').addEventListener('input', e => {
+  const el = e.target.closest('[contenteditable]'), P = S.post; if (!el || !P) return;
+  const k = el.dataset.k, v = el.innerText.trim();
+  if (k === 'title') P.title = v; else if (k === 'intro') P.intro = v; else if (k === 'outro') P.outro = v; else if (k === 'recommend') P.recommend = v;
+  else if (k === 'text') P.text[el.dataset.id] = v;
+  else if (k === 'tags') P.tags = v.split(/[#\s,]+/).filter(Boolean);
+  else { const ul = el.closest('ul[data-k]'); if (ul) P[ul.dataset.k] = [...ul.querySelectorAll('li')].map(li => li.innerText.trim()).filter(Boolean); }
+});
+$('#paper').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('[data-k="title"], [data-k="tags"]')) e.preventDefault(); });
+$('#paper').addEventListener('click', async e => {
+  const t = e.target.closest('[data-title]');
+  if (t) { S.post.title = t.dataset.title; $('[data-k="title"]').textContent = t.dataset.title; return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const box = b.closest('.ph'), id = box.dataset.id, p = S.photos.find(x => x.id === id);
+  if (b.dataset.act === 'faces') await autoFaces([p]);
+  if (b.dataset.act === 'undo') { if (!p.boxes.length) return toast('되돌릴 게 없어요.'); p.boxes.pop(); drawPhoto(id); }
+  if (b.dataset.act === 'draw') toggleDraw(box, b);
+  if (b.dataset.act === 'copy') copyImage(p);
+});
+
+// 직접 가리기: 사진 위를 끌어서 네모를 그려요
+function toggleDraw(box, btn) {
+  const on = !box.classList.contains('editing');
+  $$('.ph.editing').forEach(x => { x.classList.remove('editing'); x.querySelector('[data-act="draw"]').classList.remove('on'); x.querySelector('.hint')?.remove(); });
+  if (!on) return;
+  box.classList.add('editing'); btn.classList.add('on');
+  box.insertAdjacentHTML('beforeend', '<span class="hint">가릴 곳을 끌어서 네모로 그려요 · 다 했으면 ‘직접 가리기’를 다시 눌러요</span>');
+}
+let drawing = null;
+$('#paper').addEventListener('pointerdown', e => {
+  const box = e.target.closest('.ph.editing'); if (!box || e.target.tagName !== 'CANVAS') return;
+  e.preventDefault(); const r = e.target.getBoundingClientRect();
+  drawing = { box, r, x0: e.clientX - r.left, y0: e.clientY - r.top, el: document.createElement('div') };
+  Object.assign(drawing.el.style, { position: 'absolute', border: '2px solid #03c75a', background: 'rgba(3,199,90,.15)', pointerEvents: 'none' });
+  box.append(drawing.el); e.target.setPointerCapture(e.pointerId);
+});
+$('#paper').addEventListener('pointermove', e => {
+  if (!drawing) return; const { r, x0, y0, el } = drawing, x1 = Math.min(Math.max(0, e.clientX - r.left), r.width), y1 = Math.min(Math.max(0, e.clientY - r.top), r.height);
+  const cv = drawing.box.querySelector('canvas'), ox = cv.offsetLeft, oy = cv.offsetTop;
+  Object.assign(el.style, { left: ox + Math.min(x0, x1) + 'px', top: oy + Math.min(y0, y1) + 'px', width: Math.abs(x1 - x0) + 'px', height: Math.abs(y1 - y0) + 'px' });
+  drawing.x1 = x1; drawing.y1 = y1;
+});
+$('#paper').addEventListener('pointerup', () => {
+  if (!drawing) return; const { box, r, x0, y0, x1 = x0, y1 = y0, el } = drawing; el.remove(); drawing = null;
+  if (Math.abs(x1 - x0) < 6 || Math.abs(y1 - y0) < 6) return;
+  const p = S.photos.find(x => x.id === box.dataset.id), s = p.w / r.width;
+  p.boxes.push({ x: Math.min(x0, x1) * s, y: Math.min(y0, y1) * s, w: Math.abs(x1 - x0) * s, h: Math.abs(y1 - y0) * s });
+  drawPhoto(p.id);
+});
+
+// ===== 얼굴 자동으로 가리기 (구글 MediaPipe, 내 브라우저 안에서만 돌아요) =====
+let detector = null;
+async function getDetector() {
+  if (detector) return detector;
+  const V = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const { FaceDetector, FilesetResolver } = await import(V + '/vision_bundle.mjs');
+  const fs = await FilesetResolver.forVisionTasks(V + '/wasm');
+  detector = await FaceDetector.createFromOptions(fs, {
+    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' },
+    runningMode: 'IMAGE', minDetectionConfidence: 0.45,
+  });
+  return detector;
+}
+// 작은 얼굴도 찾도록 사진을 여러 조각으로 나눠 살펴봐요
+function detectAll(d, p) {
+  const found = [];
+  const scan = (sx, sy, sw, sh) => {
+    const side = 640, s = Math.min(1, side / Math.max(sw, sh));
+    const c = document.createElement('canvas'); c.width = Math.round(sw * s); c.height = Math.round(sh * s);
+    c.getContext('2d').drawImage(p.img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    for (const det of d.detect(c).detections) { const b = det.boundingBox; found.push({ x: sx + b.originX / s, y: sy + b.originY / s, w: b.width / s, h: b.height / s }); }
+  };
+  scan(0, 0, p.w, p.h);
+  for (const n of [2, 3]) {
+    const tw = p.w / n * 1.3, th = p.h / n * 1.3;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) scan(Math.max(0, Math.min(p.w - tw, i * p.w / n - tw * .12)), Math.max(0, Math.min(p.h - th, j * p.h / n - th * .12)), Math.min(tw, p.w), Math.min(th, p.h));
+  }
+  // 겹치는 상자 합치기
+  const out = [];
+  for (const b of found.sort((a, b) => b.w * b.h - a.w * a.h)) {
+    if (!out.some(o => { const ix = Math.max(0, Math.min(o.x + o.w, b.x + b.w) - Math.max(o.x, b.x)), iy = Math.max(0, Math.min(o.y + o.h, b.y + b.h) - Math.max(o.y, b.y)); return ix * iy > .3 * Math.min(o.w * o.h, b.w * b.h); })) out.push(b);
+  }
+  return out.map(b => { const pad = .3; return { x: b.x - b.w * pad, y: b.y - b.h * pad * 1.4, w: b.w * (1 + 2 * pad), h: b.h * (1 + 2 * pad * 1.2) }; });
+}
+async function autoFaces(list) {
+  toast('얼굴을 찾고 있어요…', 20000);
+  let d; try { d = await getDetector(); } catch { return toast('얼굴 찾기 도구를 불러오지 못했어요. ‘직접 가리기’로 가려 주세요.', 5000); }
+  let total = 0;
+  for (const p of list) { const boxes = detectAll(d, p); p.boxes.push(...boxes); total += boxes.length; drawPhoto(p.id); }
+  toast(total ? `얼굴 ${total}곳을 가렸어요. 빠진 얼굴은 ‘직접 가리기’로 가려 주세요.` : '찾은 얼굴이 없어요. 있다면 ‘직접 가리기’로 가려 주세요.', 5000);
+}
+$('#faces-all').onclick = () => S.photos.length ? autoFaces(S.photos) : toast('사진이 없어요.');
+$('#rewrite').onclick = write;
+$('#go').onclick = write;
+
+// ===== 복사·저장 =====
+async function copyText(text, msg) {
+  try { await navigator.clipboard.writeText(text); }
+  catch { const ta = document.createElement('textarea'); ta.value = text; document.body.append(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  toast(msg || '복사했어요 ✓');
+}
+function bodyText() {
+  const P = S.post, order = P.order.filter(id => S.photos.some(p => p.id === id)), L = [];
+  if (P.intro) L.push(P.intro, '');
+  order.forEach((id, i) => { L.push(`[사진 ${i + 1}]`); if (P.text[id]) L.push(P.text[id]); L.push(''); });
+  if (P.good.length || P.bad.length || P.recommend) {
+    L.push($('[data-k="sumtitle"]')?.innerText.trim() || '한눈에 정리', '');
+    if (P.good.length) L.push('👍 좋았던 점', ...P.good.map(x => '· ' + x), '');
+    if (P.bad.length) L.push('👀 아쉬웠던 점', ...P.bad.map(x => '· ' + x), '');
+    if (P.recommend) L.push(P.recommend, '');
+  }
+  if (P.place) L.push(`📍 ${P.place}${P.area ? ' · ' + P.area : ''}`, '');
+  if (P.outro) L.push(P.outro);
+  return L.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+const need = () => { if (!S.post) { toast('먼저 글을 써 주세요.'); return false; } return true; };
+$('#copy-title').onclick = () => need() && copyText(S.post.title, '제목을 복사했어요 ✓');
+$('#copy-body').onclick = () => need() && copyText(bodyText(), '본문을 복사했어요 ✓ 네이버 본문에 붙여넣어 주세요');
+$('#copy-tags').onclick = () => need() && copyText(S.post.tags.map(t => '#' + t).join(' '), '태그를 복사했어요 ✓');
+
+// 가린 곳이 없으면 원본 파일을 그대로, 있으면 원래 크기로 다시 그려서 저장해요 (화질 유지)
+async function photoBlob(p) {
+  if (!p.boxes.length && /jpe?g|png|webp|gif/i.test(p.file.type)) return p.file;
+  return await new Promise(r => render(p).toBlob(r, 'image/jpeg', .95));
+}
+async function copyImage(p) {
+  try {
+    const blob = await new Promise(r => render(p).toBlob(r, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    toast('사진을 복사했어요 ✓ 네이버 편집기의 [사진] 자리에 붙여넣어 주세요');
+  } catch { toast('이 브라우저에선 사진 복사가 안 돼요. ‘사진 모두 저장’을 써 주세요.', 4000); }
+}
+function save(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
+$('#save-photos').onclick = async () => {
+  if (!need()) return;
+  const order = S.post.order.map(id => S.photos.find(p => p.id === id)).filter(Boolean);
+  if (!order.length) return toast('사진이 없어요.');
+  toast('사진을 준비하고 있어요…', 20000);
+  const files = [];
+  for (const [i, p] of order.entries()) {
+    const b = await photoBlob(p), ext = b.type === 'image/png' ? 'png' : b.type === 'image/webp' ? 'webp' : b.type === 'image/gif' ? 'gif' : 'jpg';
+    const no = String(i + 1).padStart(2, '0');
+    files.push({ name: `사진${no}.${ext}`, ascii: `photo${no}.${ext}`, blob: b });
+  }
+  // 내려받는 파일 이름은 영어로 (한글 이름은 일부 브라우저에서 'download'로 바뀌어요)
+  if (files.length === 1) save(files[0].blob, files[0].ascii);
+  else if (window.JSZip) { const z = new JSZip(); files.forEach(f => z.file(f.name, f.blob)); save(await z.generateAsync({ type: 'blob' }), `cuttory_blog_photos_${files.length}.zip`); }
+  else for (const f of files) { save(f.blob, f.ascii); await new Promise(r => setTimeout(r, 400)); }
+  toast(`사진 ${files.length}장을 저장했어요. 파일 이름의 번호가 [사진 N] 자리예요.`, 4000);
+};
+
+// 네이버 글쓰기 열기
+function blogId() { const v = $('#blog').value.trim(); return v.replace(/^https?:\/\//, '').replace(/^(m\.)?blog\.naver\.com\//, '').split(/[/?#]/)[0]; }
+$('#blog').value = store.get('cuttory-blog') || '';
+$('#blog').addEventListener('input', () => store.set('cuttory-blog', $('#blog').value.trim()));
+$('#open-naver').onclick = () => {
+  const id = blogId();
+  window.open(/^[a-z0-9_-]{3,30}$/i.test(id) ? `https://blog.naver.com/${id}?Redirect=Write&` : 'https://blog.naver.com/GoBlogWrite.naver', '_blank', 'noopener');
+};
+
+// ===== 크레딧 =====
+$('#credits').onclick = async () => {
+  if (DEMO) return toast('체험 모드에선 크레딧을 쓰지 않아요.');
+  try { await H.session(); await H.call('/api/me'); } catch (e) { return toast(e.message || '접속하지 못했어요.'); }
+  $('#credit-text').textContent = `남은 크레딧 ${(H.credits || 0).toLocaleString()} · 블로그 글 하나에 ${COST}크레딧이에요. 카드뉴스와 같은 크레딧을 함께 써요.`;
+  $('#dlg-credit').showModal();
+};
+$('#redeem').onclick = async () => {
+  const code = $('#code').value.trim(); if (!code) return toast('코드를 넣어 주세요.');
+  try { const j = await H.call('/api/redeem', { code }); toast(`${j.added}크레딧을 받았어요!`); $('#code').value = ''; $('#dlg-credit').close(); }
+  catch (e) { toast(e.message); }
+};
+
+// ===== 인앱 브라우저 안내 =====
+const ua = navigator.userAgent;
+if (/KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(|Line\/|everytimeApp|Threads/i.test(ua)) {
+  const ios = /iPhone|iPad|iPod/i.test(ua), kakao = /KAKAOTALK/i.test(ua);
+  $('#inapp').hidden = false;
+  $('#inapp').innerHTML = kakao
+    ? `카카오톡 안에서는 사진 저장이 안 돼요. <a href="kakaotalk://web/openExternal?url=${encodeURIComponent(location.href)}">다른 브라우저로 열기</a>`
+    : `이 앱 안에서는 사진 저장이 안 될 수 있어요. 오른쪽 위 ⋯ 메뉴에서 '${ios ? 'Safari' : '다른 브라우저'}로 열기'를 눌러 주세요.`;
+}
+
+// ===== 시작 =====
+if (DEMO) {
+  $('#demo-note').hidden = false; $('#credits').textContent = '✨ 체험';
+  $('#demo-note').innerHTML = '<b>체험 모드</b>예요. AI 대신 예시 글로 흐름만 보여 드려요.';
+} else if (H.token) H.call('/api/me').catch(() => {});
+renderThumbs(); renderBar();
+</script>
+</body>
+</html>
