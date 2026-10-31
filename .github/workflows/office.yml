@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       kind:
-        description: '따로 만들 리포트 (비우면 오늘 날짜에 맞춰 자동) 예: daily / weekly / monthly / quarterly'
+        description: '따로 만들 것 (비우면 오늘 날짜에 맞춰 자동) 예: daily / weekly / monthly / quarterly / hot(모아의 핫이슈) / drafts(시안)'
         default: ''
       id:
         description: '날짜·기간 예: 2026-10-30 / 2026-W44 / 2026-10 / 2026-Q4'

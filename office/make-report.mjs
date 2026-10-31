@@ -420,27 +420,78 @@ async function naverArticle(url) {
   const press = decode((h.match(/<meta property="og:article:author" content="([^"]*)"/) || [])[1] || '');
   return { text: decode(body.replace(/<br\s*\/?>/g, ' ')).slice(0, 2500), press };
 }
-// 오늘 가장 바이럴 되기 좋은 이슈 하나를 골라 카드뉴스 재료로 만들어요
-async function hotIssue(id) {
-  const list = await collectNaver();
-  if (list.length < 5) throw new Error('네이버 뉴스를 충분히 모으지 못했어요');
-  const pick = await ask(`당신은 인스타그램 카드뉴스 에디터입니다. ${AUDIENCE}
-아래는 ${id} 네이버 뉴스홈 헤드라인과 많이 본·댓글 많은 뉴스입니다. [ ] 안은 이 기사가 걸린 곳과 순위예요. 여러 곳에 걸릴수록 화제성이 큽니다.
-오늘 카드뉴스로 만들었을 때 가장 저장·공유가 많이 될(바이럴 되기 좋은) 이슈 하나와 예비 2개를 고르세요.
-- 고르기 좋은 것: 많은 사람이 공감하거나 놀랄 생활·경제·소비·트렌드·IT·사회 화제, "나도 알아야 하는" 정보
-- 피할 것: 정당 간 공방·정치인 발언 다툼처럼 편이 갈리는 정치 기사, 사망·참사·범죄 피해처럼 비극을 소재로 소비하게 되는 기사, 단순 주가·환율
-JSON으로만 답하세요: {"pick":번호,"backup":[번호,번호],"why":"왜 바이럴 될지 1문장","angle":"카드뉴스로 풀 각도 1문장"}
 
-${list.map((it, i) => `[${i + 1}] ${it.title} [${it.signals.join(', ')}]`).join('\n')}`);
-  for (const n of [pick.pick, ...[].concat(pick.backup || [])].map(Number)) {
-    const it = list[n - 1]; if (!it) continue;
+
+// ───── 모아의 오늘의 핫이슈 (네이버 + 구글 뉴스 + 마케팅 매체) ─────
+// 여러 곳에 동시에 걸린 기사일수록 '핫하다'고 보고, 그중 카드뉴스로 쓸만한 5개를 골라 다온에게 넘겨요.
+const bigrams = s => { const t = String(s).replace(/\[[^\]]*\]|\([^)]*\)/g, '').replace(/[^0-9A-Za-z가-힣]/g, ''); const out = new Set(); for (let i = 0; i < t.length - 1; i++) out.add(t.slice(i, i + 2)); return out; };
+const similar = (a, b) => { if (!a.size || !b.size) return 0; let n = 0; for (const x of a) if (b.has(x)) n++; return n / Math.min(a.size, b.size); };
+async function collectHot(id) {
+  const naver = await collectNaver();
+  const pool = naver.map(it => ({ ...it, press: '', from: ['네이버'], bg: bigrams(it.title) }));
+  const stats = { '네이버 뉴스홈 헤드라인': 0, '네이버 많이 본 뉴스': 0, '네이버 댓글 많은 뉴스': 0, '구글 뉴스 주요 기사': 0 };
+  for (const it of naver) for (const s of it.signals) stats[s.startsWith('뉴스홈') ? '네이버 뉴스홈 헤드라인' : s.startsWith('언론사별 많이 본') ? '네이버 많이 본 뉴스' : '네이버 댓글 많은 뉴스']++;
+  const merge = (title, url, press, signal, w, src, desc) => {
+    const bg = bigrams(title), hit = pool.find(p => similar(p.bg, bg) >= 0.5);
+    if (hit) { if (!hit.signals.includes(signal)) hit.signals.push(signal); if (!hit.from.includes(src)) hit.from.push(src); hit.heat += w; if (!hit.press && press) hit.press = press; return; }
+    pool.push({ id: url, url, title, press, signals: [signal], heat: w, from: [src], bg, desc });
+  };
+  try {
+    const g = parseRss(await getText('https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko'), '구글 뉴스');
+    g.slice(0, 40).forEach((it, i) => {
+      const m = it.title.match(/^(.*) - ([^-]+)$/), title = m ? m[1].trim() : it.title, press = it.source !== '구글 뉴스' ? it.source : m ? m[2].trim() : '';
+      stats['구글 뉴스 주요 기사']++;
+      merge(title, it.url, press, `구글 뉴스 주요 ${i + 1}위`, 3 * (1 - Math.min(0.6, i / 50)), '구글', '');
+    });
+  } catch (e) { console.warn('구글 뉴스 실패', e.message); }
+  for (const [name, url] of FEEDS) {
     try {
-      const a = await naverArticle(it.url);
-      if (a.text.length < 200) continue;
-      return { ...it, ...a, why: n === +pick.pick ? pick.why : '', angle: n === +pick.pick ? pick.angle : '' };
-    } catch (e) { console.warn('기사 읽기 실패', it.url, e.message); }
+      const items = parseRss(await getText(url), name).filter(it => it.date >= addDays(id, -1) && it.date <= id).slice(0, 15);
+      stats[`마케팅 매체 · ${name}`] = items.length;
+      for (const it of items) merge(it.title, it.url, name, `${name} 새 기사`, 1, '마케팅 매체', it.desc);
+    } catch (e) { stats[`마케팅 매체 · ${name}`] = 0; console.warn('피드 실패', name, e.message); }
   }
-  throw new Error('고른 기사를 읽지 못했어요');
+  // 두 곳 이상에 걸린 기사는 한 번 더 가산점
+  for (const p of pool) if (p.from.length > 1) p.heat += 2 * (p.from.length - 1);
+  const list = pool.filter(p => !/부음|부고|인사\]|\[인사|주가|증시|코스피|환율|\[속보\]/.test(p.title)).sort((a, b) => b.heat - a.heat).slice(0, 70);
+  return { list, stats, total: pool.length, cross: pool.filter(p => p.from.length > 1).length };
+}
+async function readHot(it) {
+  if (artId(it.url)) return naverArticle(it.url);
+  if (/news\.google\.com/.test(it.url)) return { text: it.desc || '', press: it.press };  // 구글 뉴스 링크는 원문으로 바로 못 읽어요
+  return { text: articleText(await getText(it.url, 10000)) || it.desc || '', press: it.press };
+}
+const hfile = id => path.join(DIR, 'hot', id + '.json');
+async function makeHot(id) {
+  if (!FORCE && fs.existsSync(hfile(id))) { console.log(`hot ${id}: 이미 있어요`); return JSON.parse(fs.readFileSync(hfile(id), 'utf8')); }
+  const { list, stats, total, cross } = await collectHot(id);
+  console.log(`hot ${id}: 기사 ${total}개 모음 (두 곳 이상 ${cross}개)`, JSON.stringify(stats));
+  if (list.length < 5) throw new Error('뉴스를 충분히 모으지 못했어요');
+  const r = await ask(`당신은 마케팅 에이전시에서 매일 아침 트렌드를 보고하는 데일리 담당 "모아"입니다. 오늘 뽑은 이슈는 카드뉴스 디자이너 "다온"이 인스타그램 카드뉴스로 만듭니다. ${AUDIENCE}
+아래는 ${id} 네이버 뉴스(뉴스홈·많이 본·댓글 많은), 구글 뉴스 주요 기사, 마케팅 매체 새 기사를 합친 목록입니다. [ ] 안은 걸린 곳과 순위예요. 여러 곳에 걸릴수록 오늘 화제입니다.
+오늘 가장 핫하면서 카드뉴스로 만들었을 때 저장·공유가 많이 될 이슈 5개를 카드뉴스로 좋은 순서대로 고르세요.
+- 좋은 것: 많은 사람이 공감하거나 놀랄 생활·경제·소비·트렌드·IT·사회 화제, "나도 알아야 하는" 정보, 브랜드·마케팅 화제
+- 피할 것: 정당 간 공방·정치인 발언 다툼처럼 편이 갈리는 정치 기사, 사망·참사·범죄 피해처럼 비극을 소재로 소비하게 되는 기사, 단순 주가·환율, 같은 사건을 다룬 기사 중복
+JSON으로만 답하세요: {"top":[{"n":번호,"card_fit":카드뉴스 적합도 0~100,"category":"생활|경제|소비|IT|사회|문화|마케팅 중 하나","why":"왜 오늘 핫한지와 바이럴 포인트 1문장 (어디에 걸렸는지 근거 포함)","angle":"카드뉴스로 풀 각도 1문장"} 를 5개],"note":"모아가 다온에게 1위 이슈를 넘기며 하는 한마디 (친근하게 1문장)"}
+
+${list.map((it, i) => `[${i + 1}] ${it.title}${it.press ? ` (${it.press})` : ''} [${it.signals.join(', ')}]`).join('\n')}`);
+  const top = [].concat(r.top || []).map(x => ({ ...x, it: list[+x.n - 1] })).filter(x => x.it).filter((x, i, a) => a.findIndex(y => y.it === x.it) === i).slice(0, 5);
+  if (!top.length) throw new Error('모아가 이슈를 고르지 못했어요');
+  const items = top.map((x, i) => ({ rank: i + 1, title: x.it.title, url: x.it.url, press: x.it.press || '', signals: x.it.signals, from: x.it.from, heat: Math.round(x.it.heat * 10) / 10, category: String(x.category || ''), card_fit: Math.max(0, Math.min(100, Math.round(+x.card_fit || 0))), why: String(x.why || ''), angle: String(x.angle || '') }));
+  let pick = -1, text = '';
+  for (const [i, x] of top.entries()) {
+    try { const a = await readHot(x.it); if (a.text.length < 200) continue; pick = i; text = a.text; if (a.press) items[i].press = a.press; break; }
+    catch (e) { console.warn('기사 읽기 실패', x.it.url, e.message); }
+  }
+  const out = {
+    date: id, by: 'daily', at: new Date().toISOString().slice(0, 19),
+    stats: { total, cross, sources: Object.entries(stats).map(([name, n]) => ({ name, n })) },
+    items, pick, note: String(r.note || ''), text: text.slice(0, 2500),
+  };
+  fs.mkdirSync(path.dirname(hfile(id)), { recursive: true });
+  fs.writeFileSync(hfile(id), JSON.stringify(out, null, 1) + '\n');
+  console.log(`hot ${id}: ${items.map(x => `${x.rank}. ${x.title}`).join(' / ')} → 다온에게 ${pick + 1}위`);
+  return out;
 }
 
 
@@ -472,18 +523,21 @@ async function makeDrafts(id) {
   for (const [k, K] of Object.entries(DRAFT_KINDS)) {
     if (ONLY && k !== ONLY) continue;
     let card, ref;
-    if (k === 'card') { // 카드뉴스는 오늘 네이버 뉴스에서 가장 핫한 이슈로
+    if (k === 'card') { // 카드뉴스는 모아가 네이버·구글·마케팅 매체에서 뽑아 넘긴 오늘의 핫이슈로
       try {
-        const hot = await hotIssue(id);
-        card = { title: hot.title, section: '오늘의 이슈 · 네이버 뉴스', signals: hot.signals, sources: [{ name: `${hot.press || '네이버 뉴스'} · ${hot.title}`.slice(0, 90), url: hot.url }] };
-        ref = `[오늘의 이슈] ${hot.title}\n화제 신호: ${hot.signals.join(', ')}\n${hot.why ? `바이럴 포인트: ${hot.why}\n` : ''}${hot.angle ? `풀 각도: ${hot.angle}\n` : ''}[기사 본문${hot.press ? ` · ${hot.press}` : ''}] ${hot.text}\n출처: ${hot.url}`;
-        console.log(`  오늘의 이슈: ${hot.title} (${hot.signals.join(', ')})`);
-      } catch (e) { console.warn('  오늘의 이슈를 못 골라서 데일리 카드로 대신해요:', e.message); }
+        const hot = await makeHot(id), h = hot.items[hot.pick];
+        if (!h || !hot.text) throw new Error('모아가 넘긴 이슈의 기사를 읽지 못했어요');
+        card = { title: h.title, section: `모아의 오늘의 핫이슈 ${h.rank}위`, signals: h.signals, sources: [{ name: `${h.press || '뉴스'} · ${h.title}`.slice(0, 90), url: h.url }],
+          handoff: { by: 'daily', note: hot.note, rank: h.rank, of: hot.items.length, total: hot.stats.total, why: h.why, angle: h.angle } };
+        ref = `[오늘의 이슈] ${h.title}\n화제 신호: ${h.signals.join(', ')}\n${h.why ? `바이럴 포인트: ${h.why}\n` : ''}${h.angle ? `풀 각도: ${h.angle}\n` : ''}[기사 본문${h.press ? ` · ${h.press}` : ''}] ${hot.text}\n출처: ${h.url}`;
+        console.log(`  모아가 넘긴 이슈: ${h.title} (${h.signals.join(', ')})`);
+      } catch (e) { console.warn('  오늘의 핫이슈를 못 받아서 데일리 카드로 대신해요:', e.message); }
     }
     if (k === 'reels') { // 릴스는 콘텐츠 비서가 고른 가장 바이럴 될 주제로
       const t = secretaryTopic(id);
       if (t) {
-        card = { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type, t.sourceViews ? `원본 조회수 ${Number(t.sourceViews).toLocaleString('ko-KR')}` : ''].filter(Boolean), sources: [] };
+        card = { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type, t.sourceViews ? `원본 조회수 ${Number(t.sourceViews).toLocaleString('ko-KR')}` : ''].filter(Boolean), sources: [],
+          handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' } };
         const g = t.growth || {};
         ref = `[콘텐츠 비서 주제] ${t.title}\n포맷: ${t.format || '-'} · 종류: ${t.type || '-'} · 축: ${t.axis || '-'}\n왜 터질까: ${t.whyViral || '-'}\n왜 지금: ${t.whyNow || '-'}\n노리는 것: ${t.goal || '-'}\n가져갈 것: ${t.takeaway || '-'}\n근거: ${t.evidence || '-'}${t.sourceTitle ? `\n참고한 원본: ${t.sourceTitle}${t.sourceViews ? ` (조회수 ${t.sourceViews})` : ''}` : ''}${g.thumbHook ? `\n[터지게 만드는 것] 썸네일 훅: ${g.thumbHook} / 연재 라벨: ${g.label || '-'} / 팔로우 CTA: ${g.cta || '-'} / 해시태그: ${g.tags || '-'} / 댓글 키워드: ${g.commentKeyword || '-'} / 끝 질문: ${g.closingQ || '-'}` : ''}\n제목의 훅 문장 구조는 살리고, [N]·[직접 채우기]는 그대로 비워 두세요.`;
         console.log(`  콘텐츠 비서 주제: ${t.title}`);
@@ -491,7 +545,8 @@ async function makeDrafts(id) {
     }
     if (!card) {
       if (!cards.length) { console.warn(`  ${k}: 데일리가 없어서 건너뛰어요`); continue; }
-      card = cards[i++ % cards.length];
+      card = { ...cards[i++ % cards.length] };
+      card.handoff = { by: 'daily', note: `데일리 리포트 「${card.section}」 카드`, why: card.why || '' };
       ref = `[원본 카드] ${card.title}\n${card.brand ? `브랜드: ${card.brand}\n` : ''}${card.body}\n왜: ${card.why}\n${(card.sources || []).map(x => `출처: ${x.name} ${x.url}`).join('\n')}`;
     }
     try {
@@ -514,7 +569,7 @@ ${JSON.stringify(cur)}
 
 ${ref}`),
       });
-      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, signals: card.signals, sources: (card.sources || []).slice(0, 2) }, versions: res.versions, ...res.review, draft: res.draft };
+      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, signals: card.signals, sources: (card.sources || []).slice(0, 2), handoff: card.handoff }, versions: res.versions, ...res.review, draft: res.draft };
     } catch (e) { console.error(`  ${k} 시안 실패:`, e.message); }
   }
   if (!Object.keys(out.items).length) throw new Error('시안을 하나도 못 만들었어요');
@@ -528,16 +583,18 @@ function build() {
   for (const kind of Object.keys(KEEP)) reports[kind] = list(kind).slice(-KEEP[kind]).map(id => ({ id, doc: load(kind, id) })).filter(r => r.doc);
   let drafts = [];
   try { drafts = fs.readdirSync(path.join(DIR, 'drafts')).filter(f => f.endsWith('.json')).sort().slice(-14).map(f => ({ id: f.slice(0, -5), doc: JSON.parse(fs.readFileSync(path.join(DIR, 'drafts', f), 'utf8')) })); } catch {}
-  const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts })};\n`;
+  let hot = [];
+  try { hot = fs.readdirSync(path.join(DIR, 'hot')).filter(f => f.endsWith('.json')).sort().slice(-14).map(f => { const { text, ...doc } = JSON.parse(fs.readFileSync(path.join(DIR, 'hot', f), 'utf8')); return { id: f.slice(0, -5), doc }; }); } catch {}
+  const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts, hot })};\n`;
   fs.writeFileSync(path.join(DIR, 'reports-data.js'), out);
-  console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '), `drafts ${drafts.length}`);
+  console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '), `drafts ${drafts.length}`, `hot ${hot.length}`);
 }
 
 (async () => {
   const [kind, id] = args;
   const jobs = [];
   if (kind && kind !== 'build') jobs.push([kind, id || ymd(kstNow())]);
-  if (!kind) jobs.push(['drafts', ymd(kstNow())]);
+  if (!kind) jobs.push(['drafts', ymd(kstNow())], ['hot', ymd(kstNow())]);
   if (!kind) {
     const today = ymd(kstNow()), d = day(today);
     jobs.push(['daily', today]);
@@ -549,9 +606,10 @@ function build() {
     }
   }
   let failed = 0;
-  // 시안은 그날 데일리가 나온 뒤에 만들어요
-  jobs.sort((a, b) => (a[0] === 'drafts') - (b[0] === 'drafts'));
-  for (const [k, i] of jobs) { try { await (k === 'drafts' ? makeDrafts(i) : make(k, i)); } catch (e) { failed++; console.error(`${k} ${i} 실패:`, e.message); } }
+  // 리포트 → 모아의 핫이슈 → 시안 순서로 (시안은 앞 사람이 넘긴 걸 받아서 써요)
+  const order = k => k === 'drafts' ? 2 : k === 'hot' ? 1 : 0;
+  jobs.sort((a, b) => order(a[0]) - order(b[0]));
+  for (const [k, i] of jobs) { try { await (k === 'drafts' ? makeDrafts(i) : k === 'hot' ? makeHot(i) : make(k, i)); } catch (e) { failed++; console.error(`${k} ${i} 실패:`, e.message); } }
   build();
   if (failed && failed === jobs.length) process.exit(1);
 })();
