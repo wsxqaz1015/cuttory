@@ -190,6 +190,47 @@
   dialog p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
   .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); z-index: 50; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 13.5px; max-width: calc(100vw - 32px); box-shadow: 0 8px 20px rgba(0,0,0,.2); white-space: pre-line; }
+
+  /* ===== 모바일 우선 (Layered Studio처럼 깔끔한 흰 화면 · 검은 알약 버튼) ===== */
+  .ct-page main { max-width: 620px; gap: 18px; }
+  .ct-page .layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .ct-page .hero { text-align: center; padding: 34px 18px 30px; border-radius: 24px; background: radial-gradient(120% 90% at 0% 0%, #eef6d8 0%, transparent 55%), radial-gradient(120% 90% at 100% 0%, #fbeccd 0%, transparent 55%), radial-gradient(120% 100% at 80% 100%, #f7dbe8 0%, transparent 60%), #fbfbf8; color: #15161a; }
+  .ct-page .hero p { color: #5d6169; font-size: 14.5px; }
+  .ct-page .card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 20px 18px; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+  .ct-page .card h2, .ct-page .pv-head h2 { font-size: 19px; font-weight: 800; letter-spacing: -.02em; gap: 10px; }
+  .ct-page span.step { width: 30px; height: 30px; font-size: 12px; font-weight: 800; letter-spacing: 0; }
+  .ct-page .sub { margin: 0 0 14px; padding-left: 10px; border-left: 2px solid var(--ink); color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .ct-page .seg { background: none; padding: 0; gap: 6px; }
+  .ct-page .seg button { border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; background: var(--surface); }
+  .ct-page .seg button.on { background: var(--ct-pill); border-color: var(--ct-pill); color: var(--ct-pill-ink); box-shadow: none; }
+  .ct-page textarea, .ct-page input[type=text], .ct-page input[type=url] { background: var(--sunk); border-color: transparent; border-radius: 14px; }
+  .ct-page .drop { border-radius: 18px; background: var(--sunk); border-color: var(--line); }
+  .ct-page .preview { border-radius: 22px; }
+  .ct-page .pv-head { padding: 16px 18px; }
+  .ct-page .paper { padding: 26px 16px 34px; }
+  .ct-page .bar .btn.primary { border-radius: 999px; padding: 13px 24px; }
+  .ct-page .bar-in { max-width: 620px; }
+  .mode button { font-weight: 700; }
+  #cards-view { padding: 16px 16px 22px; border-top: 1px solid var(--line); }
+  .cfg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-bottom: 14px; }
+  .cfg label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+  .cfg label:last-child { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
+  .deck { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 10px; scrollbar-width: thin; }
+  .deck .ci { flex: 0 0 min(78%, 300px); scroll-snap-align: center; position: relative; border: 0; padding: 0; background: none; border-radius: 14px; }
+  .deck .ci canvas { width: 100%; height: auto; display: block; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+  .deck .ci.on canvas { outline: 3px solid var(--ct-pill); outline-offset: 2px; }
+  .deck .ci .n { position: absolute; left: 8px; top: 8px; background: rgba(20,20,20,.7); color: #fff; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 1px 8px; }
+  .deck .add { flex: 0 0 120px; border: 2px dashed var(--line); border-radius: 14px; background: var(--sunk); color: var(--muted); font-weight: 700; }
+  .cedit { display: grid; gap: 8px; margin: 6px 0 14px; padding: 14px; border-radius: 18px; background: var(--sunk); }
+  .cedit:empty { display: none; }
+  .cedit input, .cedit textarea { background: var(--surface) !important; }
+  .cedit textarea { min-height: 110px; }
+  .cedit .pick { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .cedit .pick button { flex: 0 0 56px; height: 56px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: var(--surface); font-size: 11px; color: var(--muted); }
+  .cedit .pick button.on { border-color: var(--ct-pill); }
+  .cedit .pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cedit .lb { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+  .cv-actions { justify-content: flex-end; }
 </style>
 <link rel="stylesheet" href="brand.css">
 </head>
@@ -227,7 +268,7 @@
   <div class="layout">
     <div class="inputs">
       <section class="card">
-        <h2><span class="step">1</span>사진·영상 넣기</h2>
+        <h2><span class="step">01</span>사진·영상 넣기</h2>
         <p class="sub">다 넣어 주면 AI가 글 흐름에 맞는 것만 골라 넣어요. 끌어서 순서를 바꿀 수 있어요. (사진 20장, 영상 5개까지)</p>
         <label class="drop" id="drop">
           <input type="file" id="file" accept="image/*,video/*" multiple hidden>
@@ -237,7 +278,7 @@
       </section>
 
       <section class="card">
-        <h2><span class="step">2</span>메모 쓰기</h2>
+        <h2><span class="step">02</span>메모 쓰기</h2>
         <p class="sub">실제로 겪은 일만 적어 주세요. 여기 없는 가격·메뉴는 지어내지 않아요.</p>
         <textarea id="memo" placeholder="예) 성수동 골목 카페 브런치. 창가 자리 햇빛이 좋았고 라떼 6,000원. 주말 오전이라 한산했음. 화장실은 좀 좁았음"></textarea>
         <label class="lbl" for="url">가게 링크 <small>(선택 · 네이버 지도 링크를 넣으면 가게 정보·메뉴·방문자 리뷰를 읽고 사실을 확인해요)</small></label>
@@ -262,7 +303,8 @@
 
     <section class="preview">
       <div class="pv-head">
-        <h2><span class="step">3</span>미리보기 · 고치기</h2>
+        <h2><span class="step">03</span>미리보기 · 고치기</h2>
+        <div class="seg mode" id="mode" hidden><button data-v="post" class="on">블로그 글</button><button data-v="cards">인스타 카드</button></div>
         <div class="row" id="pv-actions" hidden>
           <button class="btn small" id="faces-all">🙂 얼굴 모두 가리기</button>
           <button class="btn small" id="rewrite">↻ 다시 쓰기</button>
@@ -272,13 +314,24 @@
         <div class="empty"><div class="big">📝</div><b>여기에 글이 나와요</b>사진과 메모를 넣고 아래 ‘글 쓰기’를 눌러 주세요.<br>글자는 눌러서 바로 고칠 수 있어요.</div>
       </div></div>
       <div class="card" id="post-how" hidden style="border:0;border-top:1px solid var(--line);border-radius:0">
-        <h2><span class="step">4</span>네이버에 올리기</h2>
+        <h2><span class="step">04</span>네이버에 올리기</h2>
         <ol class="how">
           <li><b>네이버 글쓰기 열기</b><div class="row"><input type="url" id="blog" placeholder="내 블로그 주소 (예: blog.naver.com/아이디)" style="flex:1;min-width:200px"><button class="btn naver small" id="open-naver">글쓰기 열기 ↗</button></div></li>
           <li><b>제목과 본문 붙여넣기</b>본문에는 사진·영상 자리가 <code>[사진 3~4 · 2장 나란히]</code>, <code>[영상 1]</code>처럼, 소제목은 <code>[인용구]</code>로 표시돼요.<div class="row"><button class="btn small" id="copy-title">제목 복사</button><button class="btn small" id="copy-body">본문 복사</button></div></li>
           <li><b>사진·영상 넣기</b>저장한 파일을 네이버 편집기의 ‘사진’·‘동영상’ 버튼으로 표시된 자리에 넣어요. 여러 장을 고르면 나오는 창에서 ‘슬라이드’나 ‘콜라주’(나란히)를 고르면 돼요. 영상은 고른 구간만 잘라서 저장돼요.<div class="row"><button class="btn small" id="save-photos">사진·영상 모두 저장</button></div></li>
           <li><b>태그 넣고 발행·예약</b>‘발행’을 누른 창에서 태그를 붙여넣고, 바로 발행하거나 ‘예약’에서 날짜와 시간을 골라요.<div class="row"><button class="btn small" id="copy-tags">태그 복사</button></div></li>
         </ol>
+      </div>
+      <div id="cards-view" hidden>
+        <p class="sub cv-sub">블로그 화면을 캡처한 듯한 인스타 캐러셀 카드예요. 글 내용으로 자동으로 나눴고, 카드를 눌러 글·사진을 바꿀 수 있어요. 영상이 들어간 카드는 소리까지 담아 영상으로 저장돼요.</p>
+        <div class="cfg">
+          <label>블로그명<input type="text" id="c-blog" placeholder="예) 오늘의 기록"></label>
+          <label>닉네임<input type="text" id="c-nick" placeholder="예) 리지"></label>
+          <label>테두리<span class="seg" id="c-frame"><button data-v="soft" class="on">그라데이션</button><button data-v="plain">흰 바탕</button></span></label>
+        </div>
+        <div class="deck" id="deck"></div>
+        <div class="cedit" id="cedit"></div>
+        <div class="row cv-actions"><button class="btn" id="c-remake">↻ 글로 다시 나누기</button><button class="btn primary" id="c-save">카드 모두 저장</button></div>
       </div>
     </section>
   </div>
@@ -430,16 +483,18 @@ function recMime() {
     || (!ok('video/webm') && ok('video/mp4') ? 'video/mp4' : '')
     || ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(ok) || '';
 }
-async function exportVideo(m, onProgress) {
+// card: 인스타 카드처럼 영상을 다른 그림 위에 그려 녹화할 때 { w, h, paint(g, video) }
+async function exportVideo(m, onProgress, card) {
   const whole = m.start <= 0.05 && m.start + m.len >= m.dur - 0.1;
-  if (whole && !m.muted) return m.file;
+  if (whole && !m.muted && !card) return m.file;
   const mime = recMime();
   if (!mime) throw new Error('이 브라우저에서는 영상을 자를 수 없어요. 크롬이나 사파리 최신 버전에서 해 주세요.');
   const v = document.createElement('video'); v.src = m.url; v.playsInline = true; v.muted = m.muted; v.preload = 'auto';
   Object.assign(v.style, { position: 'fixed', left: '-9999px', width: '2px', height: '2px' }); document.body.append(v);
   await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = rej; });
-  const s = Math.min(1, 1920 / Math.max(m.w, m.h)), c = document.createElement('canvas'); c.width = Math.round(m.w * s / 2) * 2; c.height = Math.round(m.h * s / 2) * 2;
+  const s = Math.min(1, 1920 / Math.max(m.w, m.h)), c = document.createElement('canvas'); c.width = card ? card.w : Math.round(m.w * s / 2) * 2; c.height = card ? card.h : Math.round(m.h * s / 2) * 2;
   const g = c.getContext('2d'), stream = c.captureStream(30);
+  const paint = card ? () => card.paint(g, v) : () => g.drawImage(v, 0, 0, c.width, c.height);
   if (!m.muted) {
     try {
       const ac = new (window.AudioContext || window.webkitAudioContext)(), src = ac.createMediaElementSource(v), dst = ac.createMediaStreamDestination();
@@ -450,8 +505,8 @@ async function exportVideo(m, onProgress) {
   const chunks = [], rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8e6 });
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const done = new Promise(res => { rec.onstop = res; });
-  let raf = 0; const draw = () => { g.drawImage(v, 0, 0, c.width, c.height); onProgress && onProgress(Math.min(1, (v.currentTime - m.start) / m.len)); if (v.currentTime >= m.start + m.len || v.ended) { v.pause(); rec.state !== 'inactive' && rec.stop(); return; } raf = requestAnimationFrame(draw); };
-  g.drawImage(v, 0, 0, c.width, c.height); rec.start(250); await v.play(); draw();
+  let raf = 0; const draw = () => { paint(); onProgress && onProgress(Math.min(1, (v.currentTime - m.start) / m.len)); if (v.currentTime >= m.start + m.len || v.ended) { v.pause(); rec.state !== 'inactive' && rec.stop(); return; } raf = requestAnimationFrame(draw); };
+  paint(); rec.start(250); await v.play(); draw();
   await done; cancelAnimationFrame(raf); v._ac && v._ac.close(); v.remove();
   return new Blob(chunks, { type: mime.split(';')[0] });
 }
@@ -703,7 +758,8 @@ async function write() {
       const src = await readSource(); renderBar();
       j = (await H.call('/api/ai', { prompt: buildPrompt(src), json: true, kind: 'gen', images: aiImages() })).json;
     }
-    S.post = shape(j); renderPaper();
+    S.post = shape(j); C.list = []; renderPaper();
+    if (!$('#cards-view').hidden) makeCards();
     if (!DEMO) betterTitles(S.post);
     toast('글을 다 썼어요. 글자를 눌러 바로 고칠 수 있어요.');
   } catch (e) {
@@ -856,7 +912,8 @@ function renderPaper() {
   postIds().forEach(id => byId(id).kind === 'photo' && drawPhoto(id));
   $$('.ph.video').forEach(setupVideo);
   $$('.mb.slide .track').forEach(t => t.addEventListener('scroll', () => { const i = Math.round(t.scrollLeft / t.clientWidth); t.parentElement.querySelector('.cnt').textContent = `${i + 1} / ${t.children.length}`; }, { passive: true }));
-  $('#pv-actions').hidden = false; $('#post-how').hidden = false;
+  $('#mode').hidden = false;
+  if ($('#cards-view').hidden) { $('#pv-actions').hidden = false; $('#post-how').hidden = false; }
 }
 // 글 아래 (복사·저장에는 안 들어가요): 후킹 포인트, 사실 확인, 안 쓴 사진
 function extraHTML() {
@@ -1139,6 +1196,180 @@ $('#save-photos').onclick = async () => {
     else if (window.JSZip) { toast('파일을 묶고 있어요…', 20000); const z = new JSZip(); files.forEach(f => z.file(f.name, f.blob)); save(await z.generateAsync({ type: 'blob' }), `cuttory_blog_${files.length}.zip`); }
     else for (const f of files) { save(f.blob, f.name); await sleep(400); }
     toast(`${files.length}개를 저장했어요. 파일 이름의 번호가 본문의 [사진 N]·[영상 N] 자리예요.`, 4500);
+  } catch (e) { toast(e.message || '저장하지 못했어요.', 5000); }
+  finally { btn.disabled = false; }
+};
+
+// ===== 인스타 카드: 블로그 화면을 캡처한 듯한 4:5 캐러셀 카드 (1080×1350) =====
+const CW = 1080, CH = 1350;
+const C = { list: [], sel: -1, frame: store.get('cuttory_card_frame') || 'soft' };
+const cleanHead = (t) => String(t || '').replace(/^[“"'‘]+|[”"'’]+$/g, '').trim();
+// 문장 단위로 잘라 카드 한 장에 들어갈 만큼만
+function clip(text, max) {
+  const t = String(text || '').replace(/\n{2,}/g, '\n\n').trim(); if (t.length <= max) return t;
+  const cut = t.slice(0, max), at = Math.max(cut.lastIndexOf('.'), cut.lastIndexOf('!'), cut.lastIndexOf('?'), cut.lastIndexOf('요'), cut.lastIndexOf('\n'));
+  return (at > max * .5 ? cut.slice(0, at + 1) : cut.replace(/\s+\S*$/, '') + '…').trim();
+}
+// 블로그 글을 카드로 나눠요: 표지 → 소제목마다 한 장 → 추천 한 장
+function cardsFromPost() {
+  const P = S.post; if (!P) return [];
+  const firstMedia = (blocks) => (blocks.find(b => b.ids && b.ids.some(byId)) || { ids: [] }).ids.find(byId) || null;
+  const out = [];
+  const intro = P.intro.replace(/^안녕하세요[^\n]*\n?/, '').trim();
+  out.push({ title: P.title, text: clip(intro, 120), media: firstMedia(P.sections.flatMap(s => s.blocks)) });
+  const used = new Set(out[0].media ? [out[0].media] : []);
+  for (const sec of P.sections) {
+    const text = sec.blocks.filter(b => !b.ids).map(b => b.text).join('\n\n');
+    const ids = sec.blocks.filter(b => b.ids).flatMap(b => b.ids).filter(byId);
+    const media = ids.find(id => !used.has(id)) || null; if (media) used.add(media);
+    if (!text && !media) continue;
+    out.push({ title: cleanHead(sec.heading) || P.place || '', text: clip(text, media ? 150 : 330), media });
+  }
+  if (P.recommend) out.push({ title: '이런 분께 추천해요', text: clip(P.recommend + (P.tip ? '\n\n✔ ' + P.tip.split('\n')[0] : ''), 330), media: null });
+  return out.slice(0, 10);
+}
+// 줄바꿈: 띄어쓰기 단위로, 너무 긴 낱말은 글자 단위로
+function wrapLines(g, text, maxW) {
+  const lines = [];
+  for (const para of String(text || '').split('\n')) {
+    if (!para.trim()) { lines.push(''); continue; }
+    let line = '';
+    for (const word of para.split(/(\s+)/)) {
+      const tryL = line + word;
+      if (g.measureText(tryL).width <= maxW) { line = tryL; continue; }
+      if (line.trim()) { lines.push(line.trimEnd()); line = word.trimStart(); }
+      while (g.measureText(line).width > maxW) { let k = line.length; while (k > 1 && g.measureText(line.slice(0, k)).width > maxW) k--; lines.push(line.slice(0, k)); line = line.slice(k); }
+    }
+    lines.push(line.trimEnd());
+  }
+  return lines;
+}
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function drawCover(g, src, x, y, w, h) {
+  const sw = src.videoWidth || src.width, sh = src.videoHeight || src.height; if (!sw || !sh) return;
+  const s = Math.max(w / sw, h / sh), cw = w / s, ch = h / s;
+  g.drawImage(src, (sw - cw) / 2, (sh - ch) / 2, cw, ch, x, y, w, h);
+}
+// 카드 한 장 그리기. 영상 카드는 media 칸 위치를 돌려줘서 녹화할 때 그 칸만 다시 그려요
+function paintCard(g, card, i, n, mediaSrc) {
+  const F = '"Pretendard", system-ui, sans-serif', soft = C.frame === 'soft';
+  g.save(); g.clearRect(0, 0, CW, CH);
+  if (soft) {
+    g.fillStyle = '#fbfbf8'; g.fillRect(0, 0, CW, CH);
+    for (const [x, y, r, col] of [[0, 0, 900, 'rgba(225,240,190,.85)'], [CW, 80, 800, 'rgba(250,228,190,.8)'], [CW * .8, CH, 950, 'rgba(244,205,222,.75)']]) {
+      const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, CW, CH);
+    }
+  } else { g.fillStyle = '#ffffff'; g.fillRect(0, 0, CW, CH); }
+  const X = soft ? 64 : 0, Y = soft ? 64 : 0, W = CW - X * 2, H = CH - Y * 2;
+  if (soft) { g.shadowColor = 'rgba(0,0,0,.10)'; g.shadowBlur = 40; g.shadowOffsetY = 12; rr(g, X, Y, W, H, 44); g.fillStyle = '#fff'; g.fill(); g.shadowColor = 'transparent'; }
+  // 위쪽 바: ‹ 블로그명 ≡
+  const blog = $('#c-blog').value.trim() || S.post?.place || '오늘의 기록', nick = $('#c-nick').value.trim() || '닉네임', sub = S.post?.area || '';
+  g.fillStyle = '#9a9ea6'; g.font = `500 30px ${F}`; g.textBaseline = 'middle'; g.textAlign = 'center';
+  g.fillText(blog.slice(0, 22), X + W / 2, Y + 58);
+  g.font = `400 40px ${F}`; g.textAlign = 'left'; g.fillText('‹', X + 40, Y + 56);
+  g.strokeStyle = '#9a9ea6'; g.lineWidth = 3; for (const k of [-10, 0, 10]) { g.beginPath(); g.moveTo(X + W - 72, Y + 58 + k); g.lineTo(X + W - 42, Y + 58 + k); g.stroke(); }
+  g.fillStyle = '#eeeeef'; g.fillRect(X, Y + 112, W, 2);
+  const L = X + 56, R = X + W - 56, TW = R - L;
+  let y = Y + 192;
+  // 제목
+  g.fillStyle = '#16171b'; g.textBaseline = 'alphabetic'; g.font = `800 50px ${F}`;
+  const tl = wrapLines(g, card.title || '', TW).filter(Boolean).slice(0, 2);
+  tl.forEach((l, k) => g.fillText(l, L, y + k * 66)); y += (tl.length || 1) * 66 - 12;
+  // 프로필
+  y += 34; g.fillStyle = '#e6e7ea'; g.beginPath(); g.arc(L + 22, y, 22, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#b5b8bf'; g.beginPath(); g.arc(L + 22, y - 5, 8, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(L + 22, y + 16, 13, Math.PI, 0); g.fill();
+  g.fillStyle = '#9a9ea6'; g.font = `500 28px ${F}`; g.textBaseline = 'middle'; g.fillText([nick, sub].filter(Boolean).join(' · ').slice(0, 30), L + 60, y);
+  y += 50;
+  const bottom = Y + H - 70;
+  // 사진·영상 칸
+  let mediaRect = null;
+  const m = card.media && byId(card.media);
+  const fs = m ? 33 : 38; g.font = `400 ${fs}px ${F}`;
+  const lh = Math.round(fs * 1.7), lines = wrapLines(g, card.text || '', TW);
+  if (m) {
+    const textNeed = Math.min(lines.length, 6) * lh + (lines.length ? 30 : 0);
+    const mh = Math.max(300, Math.min(TW * 1.0, bottom - y - textNeed - 20));
+    mediaRect = { x: L, y, w: TW, h: mh };
+    g.save(); rr(g, L, y, TW, mh, 22); g.clip(); g.fillStyle = '#f1f2f4'; g.fillRect(L, y, TW, mh);
+    const src = mediaSrc || (m.kind === 'photo' ? render(m, 1600) : m.img); drawCover(g, src, L, y, TW, mh); g.restore();
+    if (m.kind === 'video' && !m.muted) { g.font = `700 24px ${F}`; const bw = g.measureText('소리 켜기').width + 36; rr(g, R - bw - 18, y + 18, bw, 46, 23); g.fillStyle = 'rgba(20,20,20,.72)'; g.fill(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText('소리 켜기', R - 18 - bw / 2, y + 42); g.textAlign = 'left'; }
+    y += mh + 46;
+  } else y += 18;
+  // 본문
+  g.fillStyle = '#3a3c42'; g.font = `400 ${fs}px ${F}`; g.textBaseline = 'alphabetic';
+  const room = Math.max(1, Math.floor((bottom - y) / lh) + 1), shown = lines.slice(0, room);
+  if (lines.length > room && shown.length) shown[shown.length - 1] = shown[shown.length - 1].replace(/.{0,2}$/, '…');
+  shown.forEach((l, k) => g.fillText(l, L, y + 10 + k * lh));
+  // 넘김 점
+  if (n > 1) { const dx = 22, sx = X + W / 2 - (n - 1) * dx / 2; for (let k = 0; k < n; k++) { g.fillStyle = k === i ? '#16171b' : '#d5d7db'; g.beginPath(); g.arc(sx + k * dx, Y + H - 36, 6, 0, Math.PI * 2); g.fill(); } }
+  g.restore();
+  return mediaRect;
+}
+function cardCanvas(i) {
+  const c = document.createElement('canvas'); c.width = CW; c.height = CH; paintCard(c.getContext('2d'), C.list[i], i, C.list.length); return c;
+}
+function renderDeck() {
+  $('#deck').innerHTML = C.list.map((_, i) => `<button class="ci ${i === C.sel ? 'on' : ''}" data-ci="${i}" aria-label="카드 ${i + 1} 고치기"><span class="n">${i + 1}${byId(C.list[i].media)?.kind === 'video' ? ' · 영상' : ''}</span></button>`).join('') + `<button class="add" data-cadd>+ 카드 추가</button>`;
+  $$('#deck .ci').forEach((b, i) => b.prepend(cardCanvas(i)));
+  renderCardEdit();
+}
+function redrawCard(i) { const b = $(`#deck [data-ci="${i}"]`); if (b) b.querySelector('canvas').replaceWith(cardCanvas(i)); }
+function renderCardEdit() {
+  const k = C.sel, c = C.list[k]; if (!c) { $('#cedit').innerHTML = ''; return; }
+  const pool = S.media;
+  $('#cedit').innerHTML = `<div class="lb">카드 ${k + 1} 고치기</div>
+    <input type="text" data-cf="title" value="${esc(c.title)}" placeholder="제목">
+    <textarea data-cf="text" placeholder="본문">${esc(c.text)}</textarea>
+    <div class="lb">사진·영상</div>
+    <div class="pick"><button data-cm="" class="${c.media ? '' : 'on'}">글만</button>${pool.map(m => `<button data-cm="${m.id}" class="${c.media === m.id ? 'on' : ''}"><img src="${m.thumb}" alt=""></button>`).join('')}</div>
+    <div class="row"><button class="btn small" data-cmv="-1">◀ 앞으로</button><button class="btn small" data-cmv="1">뒤로 ▶</button><button class="btn small" data-cdel>카드 빼기</button></div>`;
+}
+function makeCards() { C.list = cardsFromPost(); C.sel = -1; renderDeck(); }
+$('#mode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $$('#mode button').forEach(x => x.classList.toggle('on', x === b));
+  const cards = b.dataset.v === 'cards';
+  $('.paper').hidden = cards; $('#post-how').hidden = cards; $('#cards-view').hidden = !cards; $('#pv-actions').hidden = cards;
+  if (cards) { if (!C.list.length) makeCards(); else renderDeck(); }
+});
+$('#c-frame').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; C.frame = b.dataset.v; store.set('cuttory_card_frame', C.frame); $$('#c-frame button').forEach(x => x.classList.toggle('on', x === b)); renderDeck(); });
+$$('#c-frame button').forEach(x => x.classList.toggle('on', x.dataset.v === C.frame));
+for (const id of ['c-blog', 'c-nick']) { $('#' + id).value = store.get('cuttory_' + id) || ''; $('#' + id).addEventListener('change', () => { store.set('cuttory_' + id, $('#' + id).value.trim()); renderDeck(); }); }
+$('#deck').addEventListener('click', e => {
+  if (e.target.closest('[data-cadd]')) { C.list.splice(C.sel + 1 || C.list.length, 0, { title: '', text: '', media: null }); C.sel = C.sel + 1 || C.list.length - 1; renderDeck(); return; }
+  const b = e.target.closest('[data-ci]'); if (!b) return; C.sel = +b.dataset.ci;
+  $$('#deck .ci').forEach((x, i) => x.classList.toggle('on', i === C.sel)); renderCardEdit();
+});
+$('#cedit').addEventListener('input', e => { const f = e.target.dataset.cf; if (!f) return; C.list[C.sel][f] = e.target.value; redrawCard(C.sel); });
+$('#cedit').addEventListener('click', e => {
+  const m = e.target.closest('[data-cm]'), mv = e.target.closest('[data-cmv]');
+  if (m) { C.list[C.sel].media = m.dataset.cm || null; renderDeck(); return; }
+  if (mv) { const j = C.sel + +mv.dataset.cmv; if (j < 0 || j >= C.list.length) return; [C.list[C.sel], C.list[j]] = [C.list[j], C.list[C.sel]]; C.sel = j; renderDeck(); return; }
+  if (e.target.closest('[data-cdel]')) { C.list.splice(C.sel, 1); C.sel = Math.min(C.sel, C.list.length - 1); renderDeck(); }
+});
+$('#c-remake').onclick = () => { makeCards(); toast('글 내용으로 카드를 다시 나눴어요.'); };
+$('#c-save').onclick = async () => {
+  if (!C.list.length) return toast('카드가 없어요.');
+  const btn = $('#c-save'); btn.disabled = true;
+  try {
+    await document.fonts.load(`800 50px Pretendard`).catch(() => {});
+    const files = [], n = C.list.length;
+    for (let i = 0; i < n; i++) {
+      const card = C.list[i], m = byId(card.media), no = String(i + 1).padStart(2, '0');
+      if (m && m.kind === 'video') {
+        // 카드 바탕을 한 번 그려 두고, 영상 칸만 프레임마다 다시 그려요
+        const base = document.createElement('canvas'); base.width = CW; base.height = CH;
+        const rect = paintCard(base.getContext('2d'), card, i, n);
+        const blob = await exportVideo(m, r => toast(`카드 ${i + 1} 영상 만드는 중… ${Math.round(r * 100)}%\n창을 닫거나 다른 앱으로 넘어가지 말아 주세요.`, 60000), {
+          w: CW, h: CH,
+          paint: (g, v) => { g.drawImage(base, 0, 0); g.save(); rr(g, rect.x, rect.y, rect.w, rect.h, 22); g.clip(); drawCover(g, v, rect.x, rect.y, rect.w, rect.h); g.restore(); },
+        });
+        files.push({ name: `card${no}.${extOf(blob)}`, blob });
+      } else files.push({ name: `card${no}.png`, blob: await new Promise(r => cardCanvas(i).toBlob(r, 'image/png')) });
+    }
+    if (files.length === 1) save(files[0].blob, files[0].name);
+    else { toast('파일을 묶고 있어요…', 20000); const z = new JSZip(); files.forEach(f => z.file(f.name, f.blob)); save(await z.generateAsync({ type: 'blob' }), `cuttory_cards_${files.length}.zip`); }
+    toast(`카드 ${files.length}장을 저장했어요. 인스타에 번호 순서대로 올려 주세요.`, 4500);
   } catch (e) { toast(e.message || '저장하지 못했어요.', 5000); }
   finally { btn.disabled = false; }
 };
