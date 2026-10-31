@@ -6,7 +6,11 @@
 //   node office/make-report.mjs weekly 2026-W43      그 주의 위클리만
 //   node office/make-report.mjs monthly 2026-10      그 달의 먼슬리만
 //   node office/make-report.mjs quarterly 2026-Q3    그 분기 리포트만
+//   node office/make-report.mjs drafts 2026-10-30    그 날 데일리로 제작팀 콘텐츠 시안(카드뉴스·블로그·릴스)만
 //   node office/make-report.mjs build                reports-data.js만 다시 만들기
+//
+// 모든 결과물은 팀장 검토를 거쳐요: 팀원이 시안을 쓰면 팀장이 점수와 수정 지시를 주고, 통과할 때까지 최대 5번까지 고쳐요.
+// 통과한(또는 5번째) 시안이 대표 결재함으로 올라가요. 검토 기록은 각 json의 review에 남아요.
 //   --force 를 붙이면 이미 있는 리포트도 다시 써요.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -241,6 +245,46 @@ function finish(kind, id, plan, out, srcOf) {
   };
 }
 
+
+// ───── 팀장 검토 (대표 대신 1차 결재) ─────
+const MAX_DRAFTS = 5, PASS_SCORE = 80;
+const LEAD = '당신은 마케팅 콘텐츠 에이전시의 팀장입니다. 대표를 대신해 팀원의 시안을 먼저 검토하고, 대표에게 올릴 만한지 판단합니다. 기준이 높고 지적은 구체적이며, 잘한 점도 짧게 인정합니다.';
+async function leadReview(what, rubric, draft, ref, v) {
+  const r = await ask(`${LEAD}
+지금 검토할 것: ${what} (시안 ${v}번${v > 1 ? ', 지난 지적을 반영해 고친 버전' : ''})
+채점 기준 (100점):
+${rubric}
+${PASS_SCORE}점 이상이면 통과입니다. 고칠 점은 "어디를 어떻게"가 드러나게 최대 5개, 통과라도 다듬을 점이 있으면 1~2개 적으세요.
+JSON으로만 답하세요: {"score":0~100 정수,"pass":true|false,"good":"잘한 점 1문장","feedback":["수정 지시"],"memo":"대표님께 올리는 한 줄 보고 (통과 이유 또는 남은 걱정)"}
+
+시안:
+${JSON.stringify(draft).slice(0, 24000)}
+${ref ? `\n근거 자료:\n${ref.slice(0, 24000)}` : ''}`);
+  const score = Math.max(0, Math.min(100, Math.round(+r.score || 0)));
+  return { v, score, pass: score >= PASS_SCORE, good: String(r.good || ''), feedback: [].concat(r.feedback || []).map(String).slice(0, 5), memo: String(r.memo || '') };
+}
+// 시안 → 팀장 검토 → (통과 못 하면) 수정 … 최대 MAX_DRAFTS번
+async function reviewLoop({ name, what, rubric, ref, first, revise, valid, keep }) {
+  let draft = first;
+  const rounds = [], versions = [];
+  for (let v = 1; v <= MAX_DRAFTS; v++) {
+    const r = await leadReview(what, rubric, draft, ref, v);
+    rounds.push(r); if (keep) versions.push({ v, draft });
+    console.log(`  ${name} 시안 ${v}: ${r.score}점 ${r.pass ? '통과' : '수정'}`);
+    if (r.pass || v === MAX_DRAFTS) break;
+    try { const next = await revise(draft, r.feedback); if (valid(next)) draft = next; else console.warn('  수정본 모양이 이상해서 이전 시안을 다시 봐요'); }
+    catch (e) { console.warn('  수정 실패', e.message); }
+  }
+  const last = rounds[rounds.length - 1];
+  return { draft, versions, review: { rounds, passed: last.pass, final_v: last.v, max: MAX_DRAFTS, memo: last.memo } };
+}
+const REPORT_RUBRIC = `- 근거 (30): 모든 카드 내용이 근거 자료에 있는가. 자료에 없는 숫자·결과·날짜가 있으면 크게 감점
+- 구체성 (25): 사례 이름, 숫자, 장소가 들어갔는가. '효과적이다' 같은 뻔한 말이 없는가
+- 쓸모 (20): why가 먹힌 구조를 짚고, action이 30분 안에 해볼 구체적 과제인가
+- 구성 (15): 헤드라인이 전체를 꿰는가, 카드끼리 겹치지 않는가, 마케팅과 무관한 기사가 섞이지 않았는가
+- 문체 (10): 담백한 리포트 문체(~했다), 이모지 없음, 퀴즈 정답이 본문에 있는가`;
+function validReport(o) { return o && Array.isArray(o.sections) && o.sections.length && o.sections.every(s => Array.isArray(s.items) && s.items.length && s.items.every(it => it.title && it.body)); }
+
 const file = (kind, id) => path.join(DIR, 'reports', kind, id + '.json');
 const load = (kind, id) => { try { return JSON.parse(fs.readFileSync(file(kind, id), 'utf8')); } catch { return null; } };
 const list = kind => { try { return fs.readdirSync(path.join(DIR, 'reports', kind)).filter(f => f.endsWith('.json')).map(f => f.slice(0, -5)).sort(); } catch { return []; } };
@@ -271,24 +315,125 @@ async function make(kind, id) {
     items = news;
     srcOf = n => { const it = news[n - 1]; return it ? [{ name: `${it.source} · ${it.title}`.slice(0, 90), url: it.url, date: it.date }] : []; };
   }
-  const doc = finish(kind, id, plan, await write(kind, id, plan, items, extra), srcOf);
+  const first = await write(kind, id, plan, items, extra);
+  const cited = n => { const it = items[n - 1]; return it ? `[${n}] (${it.date} · ${it.source}) ${it.title}${it.desc ? ` — ${it.desc}` : ''}` : ''; };
+  const refOf = o => [...new Set((o.sections || []).flatMap(s => (s.items || []).flatMap(it => [].concat(it.src || []).map(Number))))].sort((a, b) => a - b).map(cited).filter(Boolean).join('\n');
+  const { draft, review } = await reviewLoop({
+    name: `${kind} ${id}`, what: `${label(kind, id)} ${KIND_KO[kind]} 리포트`, rubric: REPORT_RUBRIC, ref: refOf(first), first, valid: validReport,
+    revise: (cur, fb) => ask(`${ROLE}
+당신이 쓴 ${label(kind, id)} ${KIND_KO[kind]} 리포트 초안을 팀장이 돌려보냈습니다. 지적을 모두 반영해 같은 JSON 모양으로 리포트 전체를 다시 쓰세요.
+- 섹션 제목과 카드 수는 그대로 두고, 각 카드의 "src" 번호를 유지하세요. 근거가 약한 카드는 같은 섹션의 다른 자료로 바꿔도 되지만 src도 함께 바꾸세요.
+- quiz도 고친 본문에 맞춰 다시 쓰세요.
+팀장 지적:
+${fb.map((f, i) => `${i + 1}. ${f}`).join('\n')}
+${RULES}
+
+초안:
+${JSON.stringify(cur)}
+
+자료:
+${articleList(items)}`),
+  });
+  const doc = finish(kind, id, plan, draft, srcOf);
+  doc.review = review;
   fs.mkdirSync(path.dirname(file(kind, id)), { recursive: true });
   fs.writeFileSync(file(kind, id), JSON.stringify(doc, null, 1) + '\n');
   console.log(`${kind} ${id}: "${doc.headline}" 카드 ${doc.sections.reduce((n, s) => n + s.items.length, 0)}개, 퀴즈 ${doc.quiz.length}개`);
 }
 
+
+// ───── 제작팀 콘텐츠 시안 (그날 데일리로) ─────
+const AUDIENCE = '독자는 마케팅에 관심 있는 2030 인스타그램·블로그 팔로워입니다. 친근한 존댓말로, 과장 없이 씁니다.';
+const DRAFT_KINDS = {
+  card: {
+    who: '카드뉴스 디자이너', what: '인스타그램 카드뉴스 6장 문구',
+    spec: '{"title":"작업 이름","slides":[{"head":"장마다 큰 제목 (18자 안쪽)","body":"작은 본문 1~2줄 (60자 안쪽)"} 를 정확히 6장],"caption":"인스타 캡션 3~5줄","hashtags":["해시태그 8개, # 없이"]}',
+    guide: '1장은 스크롤을 멈추게 하는 훅, 2~5장은 사례와 이유, 6장은 저장·공유를 부르는 마무리.',
+    rubric: `- 훅 (30): 1장 제목만 보고도 넘기고 싶어지는가
+- 정확성 (25): 사례 내용이 원본 카드와 맞는가. 없는 숫자를 지어내지 않았는가
+- 흐름 (20): 6장이 훅 → 내용 → 마무리로 자연스럽게 이어지는가
+- 형식 (15): 정확히 6장, 제목 18자·본문 60자 안쪽인가
+- 캡션 (10): 캡션과 해시태그가 바로 올릴 수 있는 수준인가`,
+    ok: d => Array.isArray(d.slides) && d.slides.length >= 5 && d.slides.every(x => x.head),
+  },
+  blog: {
+    who: '블로그 에디터', what: '네이버 블로그 원고',
+    spec: '{"title":"검색어가 앞쪽에 들어간 제목","keywords":["검색어 3개"],"intro":"도입 3문장","sections":[{"h":"소제목","p":"본문 4~6문장"} 를 3개],"outro":"마무리 2문장 (댓글·이웃추가 유도는 한 번만)","tags":["태그 8개"]}',
+    guide: '검색으로 들어온 사람이 끝까지 읽게, 소제목만 훑어도 내용이 잡히게 씁니다.',
+    rubric: `- 검색 (25): 제목 앞쪽과 본문에 검색어가 자연스럽게 들어갔는가
+- 정확성 (25): 사례 내용이 원본 카드와 맞는가
+- 읽기 쉬움 (25): 소제목만 봐도 흐름이 잡히고 문단이 짧은가
+- 쓸모 (15): 읽은 사람이 써먹을 포인트가 있는가
+- 마무리 (10): 억지스럽지 않은 마무리와 태그`,
+    ok: d => d.title && Array.isArray(d.sections) && d.sections.length >= 2,
+  },
+  reels: {
+    who: '릴스 PD', what: '30초 릴스 대본',
+    spec: '{"title":"작업 이름","hook":"첫 1.5초 화면 문구 (15자 안쪽)","scenes":[{"sec":"0-3","shot":"화면 구성","text":"화면 자막","voice":"내레이션"} 를 5~7개],"caption":"캡션 2~4줄","hashtags":["해시태그 6개, # 없이"]}',
+    guide: '전체 30초 안쪽, 첫 장면에서 결론이나 가장 놀라운 점부터 보여 줍니다. 혼자 휴대폰으로 찍을 수 있는 화면으로 구성합니다.',
+    rubric: `- 훅 (30): 첫 1.5초에 끝까지 볼 이유가 생기는가
+- 정확성 (20): 사례 내용이 원본 카드와 맞는가
+- 찍을 수 있음 (20): 혼자 휴대폰으로 찍을 수 있는 장면인가
+- 길이·리듬 (20): 30초 안쪽이고 장면이 3~5초씩 끊기는가
+- 캡션 (10): 바로 올릴 수 있는 캡션과 해시태그인가`,
+    ok: d => d.hook && Array.isArray(d.scenes) && d.scenes.length >= 3,
+  },
+};
+const dfile = id => path.join(DIR, 'drafts', id + '.json');
+async function makeDrafts(id) {
+  if (!FORCE && fs.existsSync(dfile(id))) { console.log(`drafts ${id}: 이미 있어요`); return; }
+  const daily = load('daily', id);
+  if (!daily) throw new Error('그 날 데일리가 없어서 시안 재료가 없어요');
+  const cards = daily.sections.flatMap(s => s.items.map(it => ({ ...it, section: s.title })));
+  const out = { date: id, source: { kind: 'daily', id, label: daily.period_label, headline: daily.headline }, items: {} };
+  let i = 0;
+  for (const [k, K] of Object.entries(DRAFT_KINDS)) {
+    const card = cards[i++ % cards.length];
+    const ref = `[원본 카드] ${card.title}\n${card.brand ? `브랜드: ${card.brand}\n` : ''}${card.body}\n왜: ${card.why}\n${(card.sources || []).map(x => `출처: ${x.name} ${x.url}`).join('\n')}`;
+    try {
+      const first = await ask(`당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${AUDIENCE}
+아래 트렌드 리포트 카드 하나로 ${K.what}을 쓰세요. ${K.guide}
+원본 카드에 없는 숫자·결과를 지어내지 마세요. 이모지는 꼭 필요한 곳에만 쓰세요.
+JSON으로만 답하세요: ${K.spec}
+
+${ref}`);
+      const res = await reviewLoop({
+        name: `${k} ${id}`, what: `${K.what} (원본: ${card.title})`, rubric: K.rubric, ref, first, valid: K.ok, keep: true,
+        revise: (cur, fb) => ask(`당신은 마케팅 콘텐츠 에이전시의 ${K.who}입니다. ${AUDIENCE}
+팀장이 시안을 돌려보냈습니다. 지적을 모두 반영해 같은 JSON 모양으로 전체를 다시 쓰세요. ${K.guide}
+팀장 지적:
+${fb.map((f, n) => `${n + 1}. ${f}`).join('\n')}
+JSON 모양: ${K.spec}
+
+지금 시안:
+${JSON.stringify(cur)}
+
+${ref}`),
+      });
+      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, sources: (card.sources || []).slice(0, 2) }, versions: res.versions, ...res.review, draft: res.draft };
+    } catch (e) { console.error(`  ${k} 시안 실패:`, e.message); }
+  }
+  if (!Object.keys(out.items).length) throw new Error('시안을 하나도 못 만들었어요');
+  fs.mkdirSync(path.dirname(dfile(id)), { recursive: true });
+  fs.writeFileSync(dfile(id), JSON.stringify(out, null, 1) + '\n');
+  console.log(`drafts ${id}: ${Object.entries(out.items).map(([k, x]) => `${k} 시안 ${x.final_v}번 ${x.passed ? '통과' : '보류'}`).join(', ')}`);
+}
+
 function build() {
   const reports = {};
   for (const kind of Object.keys(KEEP)) reports[kind] = list(kind).slice(-KEEP[kind]).map(id => ({ id, doc: load(kind, id) })).filter(r => r.doc);
-  const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports })};\n`;
+  let drafts = [];
+  try { drafts = fs.readdirSync(path.join(DIR, 'drafts')).filter(f => f.endsWith('.json')).sort().slice(-14).map(f => ({ id: f.slice(0, -5), doc: JSON.parse(fs.readFileSync(path.join(DIR, 'drafts', f), 'utf8')) })); } catch {}
+  const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts })};\n`;
   fs.writeFileSync(path.join(DIR, 'reports-data.js'), out);
-  console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '));
+  console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '), `drafts ${drafts.length}`);
 }
 
 (async () => {
   const [kind, id] = args;
   const jobs = [];
   if (kind && kind !== 'build') jobs.push([kind, id || ymd(kstNow())]);
+  if (!kind) jobs.push(['drafts', ymd(kstNow())]);
   if (!kind) {
     const today = ymd(kstNow()), d = day(today);
     jobs.push(['daily', today]);
@@ -300,7 +445,9 @@ function build() {
     }
   }
   let failed = 0;
-  for (const [k, i] of jobs) { try { await make(k, i); } catch (e) { failed++; console.error(`${k} ${i} 실패:`, e.message); } }
+  // 시안은 그날 데일리가 나온 뒤에 만들어요
+  jobs.sort((a, b) => (a[0] === 'drafts') - (b[0] === 'drafts'));
+  for (const [k, i] of jobs) { try { await (k === 'drafts' ? makeDrafts(i) : make(k, i)); } catch (e) { failed++; console.error(`${k} ${i} 실패:`, e.message); } }
   build();
   if (failed && failed === jobs.length) process.exit(1);
 })();
