@@ -1,0 +1,40 @@
+name: 트렌드 오피스 리포트
+on:
+  schedule:
+    - cron: '20 23 * * *'   # 한국 시간 매일 아침 8:20 (팀원 출근 전에)
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: '따로 만들 리포트 (비우면 오늘 날짜에 맞춰 자동) 예: daily / weekly / monthly / quarterly'
+        default: ''
+      id:
+        description: '날짜·기간 예: 2026-10-30 / 2026-W44 / 2026-10 / 2026-Q4'
+        default: ''
+      force:
+        description: '이미 있는 리포트도 다시 쓰기 (yes)'
+        default: ''
+permissions:
+  contents: write
+concurrency: office-reports
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 리포트 쓰기
+        env:
+          CUTTORY_API: https://cuttory-api.wsxqaz1015.workers.dev
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OFFICE_MODEL: ${{ vars.OFFICE_MODEL }}
+        run: |
+          node office/make-report.mjs ${{ inputs.kind }} ${{ inputs.id }} ${{ inputs.force == 'yes' && '--force' || '' }}
+      - name: 저장소에 넣기
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add office
+          git commit -m "트렌드 오피스 리포트 $(TZ=Asia/Seoul date +%F)" || echo "바뀐 리포트 없음"
+          git pull --rebase origin ${{ github.ref_name }} && git push

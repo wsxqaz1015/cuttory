@@ -36,6 +36,8 @@ export default {
       if (path === '/api/models') { const m = await models(env).catch(e => ({ error: e.message })); return json({ text: m.text, image: m.image, all: m.all, error: m.error }, 200, cors); }
       if (path === '/api/session') return json(await newSession(req, env), 200, cors);
       if (path.startsWith('/api/admin/')) return await admin(path, req, env, cors);
+      if (path === '/api/office/board') return json({ rows: await officeBoard(env) }, 200, cors);
+      if (path === '/api/office/score') return json(await officeScore(req, await req.json(), env), 200, cors);
 
       const user = await auth(req, env);
       if (!user) return fail('unauthorized', '다시 접속해 주세요.', 401, cors);
@@ -151,6 +153,35 @@ async function samples(env, cors) {
   const out = {};
   await Promise.all(list.keys.map(async k => { out[k.name.slice(7)] = await env.KV.get(k.name); }));
   return new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300', ...cors } });
+}
+
+// ===== 트렌드 오피스 리더보드 =====
+// 닉네임·경험치만 저장해요. key는 처음 올린 브라우저만 알고 있어서, 다른 사람이 같은 id로 덮어쓸 수 없어요.
+async function officeBoard(env) {
+  const all = JSON.parse(await env.KV.get('office:board') || '{}');
+  return Object.entries(all).map(([id, r]) => ({ id, nick: r.nick, xp: r.xp, lv: r.lv, streak: r.streak, look: r.look }))
+    .sort((a, b) => b.xp - a.xp).slice(0, 100);
+}
+async function officeScore(req, b, env) {
+  const id = String(b.id || ''), key = String(b.key || '');
+  if (!/^o_[0-9a-f]{12}$/.test(id) || !/^[0-9a-f]{32}$/.test(key)) throw err('bad_request', '잘못된 요청이에요.');
+  const nick = String(b.nick || '').trim().slice(0, 12);
+  if (!nick) throw err('bad_request', '닉네임이 없어요.');
+  const all = JSON.parse(await env.KV.get('office:board') || '{}'), prev = all[id];
+  if (prev && prev.key !== key) throw err('forbidden', '다른 기록이에요.', 403);
+  const ip = req.headers.get('cf-connecting-ip') || 'x';
+  if (!prev) {  // 새 기록은 네트워크당 하루 5개까지
+    const k = `office:new:${new Date().toISOString().slice(0, 10)}:${ip}`, n = +(await env.KV.get(k)) || 0;
+    if (n >= 5) throw err('rate_limited', '오늘은 더 등록할 수 없어요.', 429);
+    await env.KV.put(k, String(n + 1), { expirationTtl: 60 * 60 * 26 });
+  }
+  const num = (v, max) => Math.max(0, Math.min(max, Math.floor(+v || 0)));
+  all[id] = { key, nick, xp: num(b.xp, 100000), lv: Math.max(1, num(b.lv, 10)), streak: num(b.streak, 3650), look: num(b.look, 3), at: Date.now() };
+  // 오래 안 들어온 기록은 정리 (최대 2,000명)
+  const ids = Object.keys(all);
+  if (ids.length > 2000) ids.sort((a, c) => all[a].at - all[c].at).slice(0, ids.length - 2000).forEach(x => delete all[x]);
+  await env.KV.put('office:board', JSON.stringify(all));
+  return { ok: true };
 }
 
 // ===== OpenAI =====
