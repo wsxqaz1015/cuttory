@@ -462,6 +462,7 @@ async function readHot(it) {
   return { text: articleText(await getText(it.url, 10000)) || it.desc || '', press: it.press };
 }
 const hfile = id => path.join(DIR, 'hot', id + '.json');
+const hotRef = (h, text) => `[오늘의 이슈] ${h.title}\n화제 신호: ${h.signals.join(', ')}\n${h.why ? `바이럴 포인트: ${h.why}\n` : ''}${h.angle ? `풀 각도: ${h.angle}\n` : ''}[기사 본문${h.press ? ` · ${h.press}` : ''}] ${text}\n출처: ${h.url}`;
 async function makeHot(id) {
   if (!FORCE && fs.existsSync(hfile(id))) { console.log(`hot ${id}: 이미 있어요`); return JSON.parse(fs.readFileSync(hfile(id), 'utf8')); }
   const { list, stats, total, cross } = await collectHot(id);
@@ -478,9 +479,10 @@ ${list.map((it, i) => `[${i + 1}] ${it.title}${it.press ? ` (${it.press})` : ''}
   const top = [].concat(r.top || []).map(x => ({ ...x, it: list[+x.n - 1] })).filter(x => x.it).filter((x, i, a) => a.findIndex(y => y.it === x.it) === i).slice(0, 5);
   if (!top.length) throw new Error('모아가 이슈를 고르지 못했어요');
   const items = top.map((x, i) => ({ rank: i + 1, title: x.it.title, url: x.it.url, press: x.it.press || '', signals: x.it.signals, from: x.it.from, heat: Math.round(x.it.heat * 10) / 10, category: String(x.category || ''), card_fit: Math.max(0, Math.min(100, Math.round(+x.card_fit || 0))), why: String(x.why || ''), angle: String(x.angle || '') }));
+  // 후보 5개 모두 기사 본문을 읽어 둬요 (대표님이 다른 후보를 골라도 바로 시안을 쓸 수 있게)
   let pick = -1, text = '';
   for (const [i, x] of top.entries()) {
-    try { const a = await readHot(x.it); if (a.text.length < 200) continue; pick = i; text = a.text; if (a.press) items[i].press = a.press; break; }
+    try { const a = await readHot(x.it); if (a.press) items[i].press = a.press; if (a.text.length < 200) continue; items[i].text = a.text.slice(0, 1800); if (pick < 0) { pick = i; text = a.text; } }
     catch (e) { console.warn('기사 읽기 실패', x.it.url, e.message); }
   }
   const out = {
@@ -498,6 +500,7 @@ ${list.map((it, i) => `[${i + 1}] ${it.title}${it.press ? ` (${it.press})` : ''}
 // ───── 콘텐츠 비서 주제 (릴스 소재) ─────
 // office/content-secretary/<날짜>.json: 콘텐츠 전략 비서가 고른 그날 주제 10개 (승인한 주제 approvedIdx, TOP 1~3)
 // 아직 릴스로 안 만든 주제 중 승인한 것 → TOP 순위 → 점수 순으로, 릴스 포맷을 먼저 골라요.
+const reelsRef = t => { const g = t.growth || {}; return `[콘텐츠 비서 주제] ${t.title}\n포맷: ${t.format || '-'} · 종류: ${t.type || '-'} · 축: ${t.axis || '-'}\n왜 터질까: ${t.whyViral || '-'}\n왜 지금: ${t.whyNow || '-'}\n노리는 것: ${t.goal || '-'}\n가져갈 것: ${t.takeaway || '-'}\n근거: ${t.evidence || '-'}${t.sourceTitle ? `\n참고한 원본: ${t.sourceTitle}${t.sourceViews ? ` (조회수 ${t.sourceViews})` : ''}` : ''}${g.thumbHook ? `\n[터지게 만드는 것] 썸네일 훅: ${g.thumbHook} / 연재 라벨: ${g.label || '-'} / 팔로우 CTA: ${g.cta || '-'} / 해시태그: ${g.tags || '-'} / 댓글 키워드: ${g.commentKeyword || '-'} / 끝 질문: ${g.closingQ || '-'}` : ''}\n제목의 훅 문장 구조는 살리고, [N]·[직접 채우기]는 그대로 비워 두세요.`; };
 function secretaryTopic(id) {
   const dir = path.join(DIR, 'content-secretary');
   let files = []; try { files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.slice(0, -5) <= id).sort().reverse(); } catch {}
@@ -528,8 +531,8 @@ async function makeDrafts(id) {
         const hot = await makeHot(id), h = hot.items[hot.pick];
         if (!h || !hot.text) throw new Error('모아가 넘긴 이슈의 기사를 읽지 못했어요');
         card = { title: h.title, section: `모아의 오늘의 핫이슈 ${h.rank}위`, signals: h.signals, sources: [{ name: `${h.press || '뉴스'} · ${h.title}`.slice(0, 90), url: h.url }],
-          handoff: { by: 'daily', note: hot.note, rank: h.rank, of: hot.items.length, total: hot.stats.total, why: h.why, angle: h.angle } };
-        ref = `[오늘의 이슈] ${h.title}\n화제 신호: ${h.signals.join(', ')}\n${h.why ? `바이럴 포인트: ${h.why}\n` : ''}${h.angle ? `풀 각도: ${h.angle}\n` : ''}[기사 본문${h.press ? ` · ${h.press}` : ''}] ${hot.text}\n출처: ${h.url}`;
+          handoff: { by: 'daily', note: hot.note, rank: h.rank, of: hot.items.length, total: hot.stats.total, why: h.why, angle: h.angle }, text: hot.text.slice(0, 2500) };
+        ref = hotRef(h, hot.text);
         console.log(`  모아가 넘긴 이슈: ${h.title} (${h.signals.join(', ')})`);
       } catch (e) { console.warn('  오늘의 핫이슈를 못 받아서 데일리 카드로 대신해요:', e.message); }
     }
@@ -538,8 +541,7 @@ async function makeDrafts(id) {
       if (t) {
         card = { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type, t.sourceViews ? `원본 조회수 ${Number(t.sourceViews).toLocaleString('ko-KR')}` : ''].filter(Boolean), sources: [],
           handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' } };
-        const g = t.growth || {};
-        ref = `[콘텐츠 비서 주제] ${t.title}\n포맷: ${t.format || '-'} · 종류: ${t.type || '-'} · 축: ${t.axis || '-'}\n왜 터질까: ${t.whyViral || '-'}\n왜 지금: ${t.whyNow || '-'}\n노리는 것: ${t.goal || '-'}\n가져갈 것: ${t.takeaway || '-'}\n근거: ${t.evidence || '-'}${t.sourceTitle ? `\n참고한 원본: ${t.sourceTitle}${t.sourceViews ? ` (조회수 ${t.sourceViews})` : ''}` : ''}${g.thumbHook ? `\n[터지게 만드는 것] 썸네일 훅: ${g.thumbHook} / 연재 라벨: ${g.label || '-'} / 팔로우 CTA: ${g.cta || '-'} / 해시태그: ${g.tags || '-'} / 댓글 키워드: ${g.commentKeyword || '-'} / 끝 질문: ${g.closingQ || '-'}` : ''}\n제목의 훅 문장 구조는 살리고, [N]·[직접 채우기]는 그대로 비워 두세요.`;
+        ref = reelsRef(t);
         console.log(`  콘텐츠 비서 주제: ${t.title}`);
       } else console.warn('  콘텐츠 비서 주제가 없어서 데일리 카드로 대신해요');
     }
@@ -569,7 +571,7 @@ ${JSON.stringify(cur)}
 
 ${ref}`),
       });
-      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, signals: card.signals, sources: (card.sources || []).slice(0, 2), handoff: card.handoff }, versions: res.versions, ...res.review, draft: res.draft };
+      out.items[k] = { by: k, what: K.what, from: { title: card.title, section: card.section, signals: card.signals, sources: (card.sources || []).slice(0, 2), handoff: card.handoff, ...(card.text ? { text: card.text } : {}) }, versions: res.versions, ...res.review, draft: res.draft };
     } catch (e) { console.error(`  ${k} 시안 실패:`, e.message); }
   }
   if (!Object.keys(out.items).length) throw new Error('시안을 하나도 못 만들었어요');
@@ -584,8 +586,21 @@ function build() {
   let drafts = [];
   try { drafts = fs.readdirSync(path.join(DIR, 'drafts')).filter(f => f.endsWith('.json')).sort().slice(-14).map(f => ({ id: f.slice(0, -5), doc: JSON.parse(fs.readFileSync(path.join(DIR, 'drafts', f), 'utf8')) })); } catch {}
   let hot = [];
-  try { hot = fs.readdirSync(path.join(DIR, 'hot')).filter(f => f.endsWith('.json')).sort().slice(-14).map(f => { const { text, ...doc } = JSON.parse(fs.readFileSync(path.join(DIR, 'hot', f), 'utf8')); return { id: f.slice(0, -5), doc }; }); } catch {}
-  const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts, hot })};\n`;
+  try {
+    const fl = fs.readdirSync(path.join(DIR, 'hot')).filter(f => f.endsWith('.json')).sort().slice(-14);
+    hot = fl.map((f, n) => {
+      const { text, ...doc } = JSON.parse(fs.readFileSync(path.join(DIR, 'hot', f), 'utf8'));
+      const fresh = n >= fl.length - 3;  // 최근 사흘 치는 오피스에서 바로 시안을 쓸 수 있게 기사 본문까지 담아요
+      doc.items = (doc.items || []).map((h, i) => { const { text: t, ...rest } = h, body = t || (i === doc.pick ? text : ''); return fresh && body ? { ...rest, text: body.slice(0, 2500), ref: hotRef(h, body) } : rest; });
+      return { id: f.slice(0, -5), doc };
+    });
+  } catch {}
+  // 오피스에서 대표 컨펌 후 시안을 만들 때 쓰는 재료 (팀장 기준·시안 모양·다음 릴스 주제)
+  const today = ymd(kstNow()), t = secretaryTopic(today);
+  const kit = { lead: LEAD, pass: PASS_SCORE, max: MAX_DRAFTS, audience: AUDIENCE,
+    kinds: Object.fromEntries(Object.entries(DRAFT_KINDS).map(([k, K]) => [k, { who: K.who, what: K.what, spec: K.spec, guide: K.guide, rubric: K.rubric }])),
+    reels: t ? { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type].filter(Boolean), handoff: { by: 'content', why: t.whyViral || '', angle: t.takeaway || '', note: t.approved ? '대표님이 승인한 주제예요' : t.top ? `오늘의 주제 TOP ${t.top}` : '' }, ref: reelsRef(t) } : null };
+  const out = `// make-report.mjs가 만드는 파일이에요. 직접 고치지 말고 reports/ 안의 json을 고친 뒤 build 하세요.\nwindow.OFFICE_DATA = ${JSON.stringify({ version: new Date().toISOString().slice(0, 19), reports, drafts, hot, kit })};\n`;
   fs.writeFileSync(path.join(DIR, 'reports-data.js'), out);
   console.log('reports-data.js', Object.entries(reports).map(([k, v]) => `${k} ${v.length}`).join(', '), `drafts ${drafts.length}`, `hot ${hot.length}`);
 }
@@ -594,7 +609,8 @@ function build() {
   const [kind, id] = args;
   const jobs = [];
   if (kind && kind !== 'build') jobs.push([kind, id || ymd(kstNow())]);
-  if (!kind) jobs.push(['drafts', ymd(kstNow())], ['hot', ymd(kstNow())]);
+  // 시안(drafts)은 AI를 많이 써서 자동으로 만들지 않아요. 오피스에서 대표님이 컨펌하면 만들어요. (Actions에서 kind drafts로 직접 돌릴 수도 있어요)
+  if (!kind) jobs.push(['hot', ymd(kstNow())]);
   if (!kind) {
     const today = ymd(kstNow()), d = day(today);
     jobs.push(['daily', today]);
