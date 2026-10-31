@@ -12,7 +12,7 @@
 <script src="poses-art.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
 <style>
   @font-face { font-family: 'Pretendard'; src: url('fonts/PretendardVariable.woff2') format('woff2-variations'), url('fonts/PretendardVariable.woff2') format('woff2'); font-weight: 45 920; font-style: normal; font-display: swap; }
   :root {
@@ -45,6 +45,8 @@
   .tab.on { background: var(--sunk); color: var(--ink); font-weight: 700; }
   .credits { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 700; white-space: nowrap; }
   @media (max-width: 440px) { .tab { padding: 6px 8px; font-size: 13px; } .logo { font-size: 19px; } .logo svg { width: 26px; height: 26px; } .credits { padding: 5px 9px; font-size: 13px; } }
+  .logo, .tab { white-space: nowrap; }
+  @media (max-width: 400px) { .logo { font-size: 0; gap: 0; } }
 
   main { max-width: 1080px; margin: 0 auto; padding: 24px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .hero h1 { font: 34px/1.15 var(--f-display); margin: 0 0 6px; letter-spacing: -.01em; }
@@ -142,6 +144,17 @@
   .opt:hover { border-color: var(--brand-edge); }
   .dlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
+  .res .tag { position: absolute; right: 6px; top: 6px; max-width: calc(100% - 40px); background: rgba(255,253,248,.92); color: #3a2a10; border: 1px solid #e6dac6; border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  dialog.wide { width: min(660px, calc(100vw - 24px)); }
+  .fx-wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 600px) { .fx-wrap { grid-template-columns: minmax(0, 1fr); } }
+  #fx-cv { width: 100%; max-width: 300px; aspect-ratio: 1; border-radius: 14px; border: 1px solid var(--line); background: var(--check); justify-self: center; display: block; }
+  .fx-side { display: grid; gap: 10px; }
+  .fx-side .lab { font-size: 12.5px; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+  .fx-side input[type=text] { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 10px; font: 22px 'Nanum Pen Script', var(--f-ui); }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+  .swatch.on { outline: 2px solid var(--brand-edge); outline-offset: 2px; }
+  .chips.wrap { flex-wrap: wrap; overflow: visible; }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); z-index: 50; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 13.5px; max-width: calc(100vw - 32px); box-shadow: 0 8px 20px rgba(0,0,0,.2); white-space: pre-line; }
 </style>
 </head>
@@ -208,6 +221,11 @@
           <span style="font-size:13px;color:var(--muted)">배경</span>
           <div class="seg" id="bg-seg"><button data-bg="clear" class="on">투명</button><button data-bg="white">흰색</button></div>
         </div>
+        <div class="row">
+          <span style="font-size:13px;color:var(--muted)">그림체</span>
+          <div class="seg" id="style-seg"><button data-style="same" class="on">원래 그림체</button><button data-style="emoticon">이모티콘 낙서체</button></div>
+        </div>
+        <p class="sub" style="margin:0" id="style-tip"></p>
       </div>
     </div>
   </section>
@@ -266,8 +284,25 @@
   <div class="opts">
     <button class="opt" data-kind="plain"><b>일반용</b><span>만든 크기 그대로 PNG (1024×1024)</span></button>
     <button class="opt" data-kind="ogq"><b>스티커용</b><span>OGQ 마켓 규격 740×640px PNG · 한 장 1MB 이하</span></button>
+    <button class="opt" data-kind="gif"><b>움직이는 이모티콘</b><span>360×360 GIF · 그림마다 넣은 글자와 움직임 그대로</span></button>
+    <button class="opt" data-kind="emo"><b>멈춘 이모티콘</b><span>360×360 PNG · 글자 포함</span></button>
   </div>
   <div class="dlg-actions"><button class="btn small" data-close>취소</button></div>
+</dialog>
+
+<dialog id="dlg-fx" class="wide">
+  <h3>이모티콘 꾸미기</h3>
+  <p>글자와 움직임을 고르면 바로 미리 보여 드려요. 바꾼 내용은 저장돼서 여러 장 받을 때도 그대로 쓰여요.</p>
+  <div class="fx-wrap">
+    <canvas id="fx-cv" width="360" height="360" aria-label="움직이는 이모티콘 미리보기"></canvas>
+    <div class="fx-side">
+      <div><div class="lab">글자</div><input type="text" id="fx-cap" maxlength="14" placeholder="예: 네~, 좋아!, 파이팅!"></div>
+      <div class="row"><div class="seg" id="fx-pos"><button data-v="top">위에</button><button data-v="bottom">아래에</button></div><div class="row" id="fx-colors"></div></div>
+      <div><div class="lab">움직임</div><div class="chips wrap" id="fx-mo"></div></div>
+      <div class="row"><span class="lab" style="margin:0">GIF 배경</span><div class="seg" id="fx-bg"><button data-v="white">흰색</button><button data-v="clear">투명</button></div></div>
+    </div>
+  </div>
+  <div class="dlg-actions"><button class="btn small" data-close>닫기</button><button class="btn small" id="fx-png">PNG 받기</button><button class="btn small primary" id="fx-gif">GIF 받기</button></div>
 </dialog>
 
 <dialog id="dlg-credit">
@@ -373,7 +408,7 @@ const DB = (() => {
 
 // ===== 상태 =====
 const S = {
-  char: null, sheets: [], sheetAt: 0, useSheet: ls.get('cp_use_sheet', true), bg: ls.get('cp_bg', 'clear'),
+  char: null, sheets: [], sheetAt: 0, useSheet: ls.get('cp_use_sheet', true), bg: ls.get('cp_bg', 'clear'), style: ls.get('cp_style', 'same'),
   cat: '전체', picked: new Set(ls.get('cp_picked', [])), edits: ls.get('cp_edits', {}), custom: ls.get('cp_custom', []),
   results: [], resPicked: new Set(), jobs: [], running: false, stopping: false, sheetBusy: false,
 };
@@ -444,10 +479,15 @@ $('#make-sheet').onclick = async () => {
   S.sheetBusy = false; renderSheet();
 };
 $('#bg-seg').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; S.bg = b.dataset.bg; ls.set('cp_bg', S.bg); renderBg(); };
-const renderBg = () => $('#bg-seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.bg === S.bg));
+const renderBg = () => {
+  $('#bg-seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.bg === S.bg));
+  $('#style-seg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.style === S.style));
+  $('#style-tip').textContent = S.style === 'emoticon' ? '캐릭터는 그대로 두고, 메신저 이모티콘처럼 펜으로 슥슥 그린 낙서 느낌으로 그려요.' : '올린 그림의 선과 색을 그대로 살려서 그려요.';
+};
+$('#style-seg').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; S.style = b.dataset.style; ls.set('cp_style', S.style); renderBg(); };
 
 // ===== 2. 포즈 고르기 =====
-const CATS = ['전체', '긍정', '부정', '정보성', '일상', '기본', '내 포즈'];
+const CATS = ['전체', '이모티콘', '긍정', '부정', '정보성', '일상', '기본', '내 포즈'];
 function renderPoses() {
   const list = allPoses(), shown = S.cat === '전체' ? list : list.filter(p => p.cat === S.cat);
   $('#chips').innerHTML = CATS.map(c => { const n = c === '전체' ? list.length : list.filter(p => p.cat === c).length; return `<button class="chip${c === S.cat ? ' on' : ''}" data-cat="${c}">${c}<small>${n}</small></button>`; }).join('');
@@ -462,7 +502,7 @@ function renderPoses() {
   const vis = shown.map(p => p.id); $('#sel-all').textContent = vis.length && vis.every(id => S.picked.has(id)) ? '선택 해제' : '전체 선택';
   renderBar();
 }
-$('#chips').onclick = (e) => { const b = e.target.closest('.chip'); if (b) { S.cat = b.dataset.cat; renderPoses(); } };
+$('#chips').onclick = (e) => { const b = e.target.closest('.chip'); if (!b) return; S.cat = b.dataset.cat; renderPoses(); if (S.cat === '이모티콘' && S.style !== 'emoticon') toast('이모티콘처럼 낙서 느낌으로 그리려면 1번에서 그림체를 \'이모티콘 낙서체\'로 바꿔 주세요.', 4500); };
 function togglePose(id) { S.picked.has(id) ? S.picked.delete(id) : S.picked.add(id); savePicked(); renderPoses(); }
 $('#poses').onclick = (e) => {
   if (e.target.closest('#add-pose')) return openEdit(null);
@@ -533,7 +573,7 @@ async function start(ids) {
   }
   const sheet = S.useSheet && S.sheets[S.sheetAt];
   const images = sheet ? [S.char, sheet.img] : [S.char];
-  S.jobs = ids.map(id => { const p = poseById(id); return { id: uid(), poseId: id, title: p.title, icon: p.icon, desc: p.desc, state: 'wait' }; });
+  S.jobs = ids.map(id => { const p = poseById(id); return { id: uid(), poseId: id, title: p.title, icon: p.icon, desc: p.desc, cap: p.cap || '', mo: p.mo || 'wiggle', state: 'wait' }; });
   S.running = true; S.stopping = false; renderBar(); renderResults();
   $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   let i = 0;
@@ -541,8 +581,8 @@ async function start(ids) {
     while (!S.stopping && i < S.jobs.length) {
       const job = S.jobs[i++]; job.state = 'run'; renderResults();
       try {
-        const j = await draw({ mode: 'pose', pose: job.desc, title: job.title, images, bg: S.bg === 'white' ? 'white' : 'clear' });
-        const r = { id: job.id, poseId: job.poseId, title: job.title, img: j.image, at: Date.now() };
+        const j = await draw({ mode: 'pose', pose: job.desc, title: job.title, images, bg: S.bg === 'white' ? 'white' : 'clear', style: S.style });
+        const r = { id: job.id, poseId: job.poseId, title: job.title, img: j.image, at: Date.now(), cap: job.cap, mo: job.mo };
         await DB.put(r); S.results.unshift(r); job.state = 'done';
       } catch (e) {
         job.state = 'fail'; job.err = e.message || '';
@@ -570,8 +610,8 @@ function renderResults() {
       <div class="cap"><span>${j.icon} ${esc(j.title)}</span>${j.state === 'fail' ? `<button data-retry="${j.poseId}" data-job="${j.id}">다시</button><button data-dismiss="${j.id}" aria-label="닫기">✕</button>` : ''}</div></div>`).join('') +
     S.results.map(r => `
     <div class="res${S.resPicked.has(r.id) ? ' on' : ''}" data-id="${r.id}" role="checkbox" aria-checked="${S.resPicked.has(r.id)}" tabindex="0">
-      <span class="ck">✓</span><img src="${r.img}" alt="${esc(r.title)} 포즈" loading="lazy">
-      <div class="cap"><span>${esc(r.title)}</span><button data-redo="${r.poseId}" title="같은 포즈로 다시 만들기">↻</button><button data-save="${r.id}" title="다운로드">⬇︎</button><button data-del="${r.id}" title="지우기">🗑</button></div>
+      <span class="ck">✓</span><img src="${r.img}" alt="${esc(r.title)} 포즈" loading="lazy">${r.cap || (r.mo && r.mo !== 'wiggle') ? `<span class="tag">${esc(r.cap || '')}${r.cap ? ' · ' : ''}${MO_NAME[r.mo || 'wiggle']}</span>` : ''}
+      <div class="cap"><span>${esc(r.title)}</span><button data-fx="${r.id}" title="이모티콘 꾸미기 (글자·움직임)">✨</button><button data-redo="${r.poseId}" title="같은 포즈로 다시 만들기">↻</button><button data-save="${r.id}" title="다운로드">⬇︎</button><button data-del="${r.id}" title="지우기">🗑</button></div>
     </div>`).join('');
   $('#res-empty').hidden = !!(S.results.length || pend.length);
   $('#res-count').textContent = S.results.length ? `(${S.results.length}장${S.resPicked.size ? ` · ${S.resPicked.size}장 선택` : ''})` : '';
@@ -585,6 +625,7 @@ $('#results').onclick = async (e) => {
   if (b?.dataset.retry) { S.jobs = S.jobs.filter(j => j.id !== b.dataset.job); start([b.dataset.retry]); return; }
   if (b?.dataset.dismiss) { S.jobs = S.jobs.filter(j => j.id !== b.dataset.dismiss); renderResults(); return; }
   if (b?.dataset.save) return askDownload([b.dataset.save]);
+  if (b?.dataset.fx) return openFx(b.dataset.fx);
   if (b?.dataset.del) { await DB.del(b.dataset.del); S.results = S.results.filter(r => r.id !== b.dataset.del); S.resPicked.delete(b.dataset.del); renderResults(); return; }
   const c = e.target.closest('.res[data-id]'); if (!c) return;
   S.resPicked.has(c.dataset.id) ? S.resPicked.delete(c.dataset.id) : S.resPicked.add(c.dataset.id); renderResults();
@@ -604,31 +645,130 @@ function askDownload(ids) {
   if (inApp) toast('이 앱 안에서는 저장이 막힐 수 있어요. 위 안내대로 다른 브라우저에서 열어 주세요.', 5000);
   dlIds = ids; $('#dl-n').textContent = `${ids.length}장` + (ids.length > 1 ? ' · ZIP 파일 하나로 받아요' : ''); $('#dlg-dl').showModal();
 }
-$('#dlg-dl').querySelectorAll('.opt').forEach(b => b.onclick = () => { $('#dlg-dl').close(); download(dlIds, b.dataset.kind === 'ogq'); });
+$('#dlg-dl').querySelectorAll('.opt').forEach(b => b.onclick = () => { $('#dlg-dl').close(); download(dlIds, b.dataset.kind); });
 const toBlob = (c, q) => new Promise(r => c.toBlob(r, 'image/png', q));
-async function sticker(src) {
-  const img = await loadImg(src), W = 740, Hh = 640, pad = 20;
-  // 투명 여백을 잘라 내고 캐릭터를 꽉 차게 넣어요
-  const t = document.createElement('canvas'); t.width = img.width; t.height = img.height; const tg = t.getContext('2d'); tg.drawImage(img, 0, 0);
+// 투명(또는 흰) 여백을 잘라 낸 캐릭터 그림
+const trimCache = new Map();
+async function trimmed(src) {
+  if (trimCache.has(src)) return trimCache.get(src);
+  const img = await loadImg(src);
+  const t = document.createElement('canvas'); t.width = img.width; t.height = img.height; const tg = t.getContext('2d', { willReadFrequently: true }); tg.drawImage(img, 0, 0);
   const d = tg.getImageData(0, 0, t.width, t.height).data; let x0 = t.width, y0 = t.height, x1 = 0, y1 = 0;
-  for (let y = 0; y < t.height; y += 2) for (let x = 0; x < t.width; x += 2) { if (d[(y * t.width + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+  for (let y = 0; y < t.height; y += 2) for (let x = 0; x < t.width; x += 2) { const k = (y * t.width + x) * 4; if (d[k + 3] > 8 && !(d[k] > 245 && d[k + 1] > 245 && d[k + 2] > 245)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
   if (x1 <= x0 || y1 <= y0) { x0 = 0; y0 = 0; x1 = t.width; y1 = t.height; }
-  const w = x1 - x0, h = y1 - y0, s = Math.min((W - pad * 2) / w, (Hh - pad * 2) / h);
+  const c = document.createElement('canvas'); c.width = x1 - x0 + 2; c.height = y1 - y0 + 2; c.getContext('2d').drawImage(t, x0 - 1, y0 - 1, c.width, c.height, 0, 0, c.width, c.height);
+  trimCache.set(src, c); return c;
+}
+async function sticker(src) {
+  const t = await trimmed(src), W = 740, Hh = 640, pad = 20, w = t.width, h = t.height, s = Math.min((W - pad * 2) / w, (Hh - pad * 2) / h);
   const c = document.createElement('canvas'); c.width = W; c.height = Hh; const g = c.getContext('2d');
-  g.imageSmoothingQuality = 'high'; g.drawImage(t, x0, y0, w, h, (W - w * s) / 2, (Hh - h * s) / 2, w * s, h * s);
+  g.imageSmoothingQuality = 'high'; g.drawImage(t, (W - w * s) / 2, (Hh - h * s) / 2, w * s, h * s);
   return toBlob(c);
 }
-const safeName = (s) => String(s).replace(/[\\/:*?"<>|]+/g, '').trim() || 'pose';
-async function download(ids, ogq) {
-  const rs = ids.map(id => S.results.find(r => r.id === id)).filter(Boolean); if (!rs.length) return;
-  toast('파일을 준비하고 있어요…');
-  const files = []; let big = 0;
-  for (const [i, r] of rs.entries()) {
-    const blob = ogq ? await sticker(r.img) : await (await fetch(r.img)).blob();
-    if (ogq && blob.size > 1024 * 1024) big++;
-    files.push({ name: `${String(i + 1).padStart(2, '0')}_${safeName(r.title)}${ogq ? '_sticker' : ''}.png`, blob });
+
+// ===== 움직이는 이모티콘 (글자 + 움직임 → GIF) =====
+const EMO = 360, FRAMES = 12, DELAY = 80;
+const MOTIONS = [['none', '멈춤'], ['wiggle', '흔들흔들'], ['bounce', '통통'], ['jump', '폴짝'], ['shake', '부들부들'], ['beat', '두근두근'], ['pop', '뿅'], ['sway', '살랑살랑'], ['spin', '빙글']];
+const MO_NAME = Object.fromEntries(MOTIONS);
+const CAP_COLORS = ['#222222', '#e2557a', '#3d7be0', '#f08a24'];
+const BOIL = [[0, 0, 0], [.014, .012, -.012], [-.012, -.014, .01]];
+const fontReady = () => document.fonts ? document.fonts.load('64px "Nanum Pen Script"').catch(() => {}) : Promise.resolve();
+const easeBack = (x) => 1 + 2.7 * Math.pow(x - 1, 3) + 1.7 * Math.pow(x - 1, 2);
+function drawEmo(g, art, r, i, still, bg) {
+  const mo = still ? 'none' : (r.mo || 'wiggle'), t = i / FRAMES, cap = (r.cap || '').trim(), low = r.capPos === 'bottom';
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, EMO, EMO);
+  if (bg === 'white') { g.fillStyle = '#fff'; g.fillRect(0, 0, EMO, EMO); }
+  const top = 22 + (cap && !low ? 66 : 0), bottom = EMO - 18 - (cap && low ? 66 : 0);
+  const s = Math.min((EMO - 44) / art.width, (bottom - top) / art.height), w = art.width * s, h = art.height * s;
+  let dx = 0, dy = 0, rot = 0, sx = 1, sy = 1, center = false;
+  const wave = Math.sin(t * Math.PI * 2);
+  if (mo === 'bounce') { const a = Math.abs(Math.sin(t * Math.PI * 2)); dy = -a * 16; sy = a < .2 ? .94 : 1.02; sx = 2 - sy; }
+  if (mo === 'jump') { const a = Math.max(0, wave); dy = -a * 42; if (a === 0) { sy = .92; sx = 1.07; } }
+  if (mo === 'shake') { dx = (i % 2 ? 1 : -1) * 5; rot = (i % 2 ? 1 : -1) * .035; }
+  if (mo === 'beat') { const p = Math.max(0, Math.sin(t * Math.PI * 4)); sx = sy = 1 + .09 * p * p; }
+  if (mo === 'pop') { const e = t < .4 ? easeBack(t / .4) : 1; sx = sy = .5 + .5 * e; }
+  if (mo === 'sway') rot = wave * .13;
+  if (mo === 'spin') { rot = t * Math.PI * 2; center = true; sx = sy = .9; }
+  const boil = mo === 'none' ? BOIL[0] : BOIL[Math.floor(i / 2) % 3].map(v => v * (mo === 'wiggle' ? 2.2 : 1));
+  g.save();
+  g.translate(EMO / 2 + dx, (center ? bottom - h / 2 : bottom) + dy);
+  g.rotate(rot + boil[0]); g.transform(1, 0, boil[1], 1, 0, 0); g.scale(sx * (1 + boil[2]), sy * (1 - boil[2]));
+  g.imageSmoothingQuality = 'high'; g.drawImage(art, -w / 2, center ? -h / 2 : -h, w, h);
+  g.restore();
+  if (cap) {
+    let size = 70; g.font = `${size}px "Nanum Pen Script", "Gaegu", cursive`;
+    while (g.measureText(cap).width > EMO - 40 && size > 30) { size -= 4; g.font = `${size}px "Nanum Pen Script", "Gaegu", cursive`; }
+    g.save(); g.translate(EMO / 2, low ? EMO - 46 : 52); g.rotate(mo === 'none' ? 0 : BOIL[(Math.floor(i / 2) + 1) % 3][0] * 1.5);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+    g.lineWidth = 9; g.strokeStyle = '#fff'; g.strokeText(cap, 0, 0);
+    g.fillStyle = r.capColor || CAP_COLORS[0]; g.fillText(cap, 0, 0); g.restore();
   }
-  const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+}
+async function emoPng(r) {
+  const art = await trimmed(r.img); await fontReady();
+  const c = document.createElement('canvas'); c.width = c.height = EMO; drawEmo(c.getContext('2d'), art, r, 0, true, 'clear'); return toBlob(c);
+}
+let gifLib;
+async function emoGif(r) {
+  gifLib = gifLib || await import('https://cdn.jsdelivr.net/npm/gifenc@1.0.3/dist/gifenc.esm.js');
+  const { GIFEncoder, quantize, applyPalette } = gifLib;
+  const art = await trimmed(r.img); await fontReady();
+  const c = document.createElement('canvas'); c.width = c.height = EMO; const g = c.getContext('2d', { willReadFrequently: true });
+  const clear = r.gifBg === 'clear', enc = GIFEncoder(), n = (r.mo || 'wiggle') === 'none' ? 1 : FRAMES;
+  for (let i = 0; i < n; i++) {
+    drawEmo(g, art, r, i, false, clear ? 'clear' : 'white');
+    const data = g.getImageData(0, 0, EMO, EMO).data;
+    if (clear) {
+      const palette = quantize(data, 256, { format: 'rgba4444', oneBitAlpha: true }), index = applyPalette(data, palette, 'rgba4444');
+      const ti = palette.findIndex(p => p[3] === 0);
+      enc.writeFrame(index, EMO, EMO, { palette, delay: DELAY, repeat: 0, transparent: ti >= 0, transparentIndex: Math.max(ti, 0), dispose: 2 });
+    } else {
+      const palette = quantize(data, 256), index = applyPalette(data, palette);
+      enc.writeFrame(index, EMO, EMO, { palette, delay: DELAY, repeat: 0 });
+    }
+  }
+  enc.finish(); return new Blob([enc.bytes()], { type: 'image/gif' });
+}
+let fxR = null, fxTimer = null, fxArt = null;
+async function openFx(id) {
+  fxR = S.results.find(r => r.id === id); if (!fxR) return;
+  fxArt = await trimmed(fxR.img); await fontReady();
+  $('#fx-cap').value = fxR.cap || '';
+  renderFx(); $('#dlg-fx').showModal();
+  let i = 0; clearInterval(fxTimer);
+  fxTimer = setInterval(() => { drawEmo($('#fx-cv').getContext('2d'), fxArt, fxR, i++ % FRAMES, false, fxR.gifBg === 'clear' ? 'clear' : 'white'); }, DELAY);
+}
+function renderFx() {
+  const r = fxR;
+  $('#fx-pos').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === (r.capPos || 'top')));
+  $('#fx-bg').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === (r.gifBg || 'white')));
+  $('#fx-colors').innerHTML = CAP_COLORS.map(c => `<button class="swatch${(r.capColor || CAP_COLORS[0]) === c ? ' on' : ''}" data-c="${c}" style="background:${c}" aria-label="글자 색"></button>`).join('');
+  $('#fx-mo').innerHTML = MOTIONS.map(([k, n]) => `<button class="chip${(r.mo || 'wiggle') === k ? ' on' : ''}" data-mo="${k}">${n}</button>`).join('');
+}
+const fxSave = () => { DB.put(fxR); renderResults(); renderFx(); };
+$('#dlg-fx').addEventListener('close', () => clearInterval(fxTimer));
+$('#fx-cap').oninput = (e) => { fxR.cap = e.target.value; clearTimeout(fxR._t); fxR._t = setTimeout(() => { delete fxR._t; DB.put(fxR); renderResults(); }, 300); };
+$('#fx-pos').onclick = (e) => { const b = e.target.closest('button'); if (b) { fxR.capPos = b.dataset.v; fxSave(); } };
+$('#fx-bg').onclick = (e) => { const b = e.target.closest('button'); if (b) { fxR.gifBg = b.dataset.v; fxSave(); } };
+$('#fx-colors').onclick = (e) => { const b = e.target.closest('[data-c]'); if (b) { fxR.capColor = b.dataset.c; fxSave(); } };
+$('#fx-mo').onclick = (e) => { const b = e.target.closest('[data-mo]'); if (b) { fxR.mo = b.dataset.mo; fxSave(); } };
+$('#fx-gif').onclick = () => download([fxR.id], 'gif');
+$('#fx-png').onclick = () => download([fxR.id], 'emo');
+
+const safeName = (s) => String(s).replace(/[\\/:*?"<>|]+/g, '').trim() || 'pose';
+async function download(ids, kind) {
+  const rs = ids.map(id => S.results.find(r => r.id === id)).filter(Boolean); if (!rs.length) return;
+  const ogq = kind === 'ogq', gif = kind === 'gif', emo = kind === 'emo';
+  toast(gif ? '움직이는 이모티콘을 만들고 있어요…' : '파일을 준비하고 있어요…', 8000);
+  const files = []; let big = 0;
+  try {
+    for (const [i, r] of rs.entries()) {
+      const blob = gif ? await emoGif(r) : emo ? await emoPng(r) : ogq ? await sticker(r.img) : await (await fetch(r.img)).blob();
+      if (ogq && blob.size > 1024 * 1024) big++;
+      files.push({ name: `${String(i + 1).padStart(2, '0')}_${safeName(r.cap || r.title)}${ogq ? '_sticker' : emo ? '_emoticon' : ''}.${gif ? 'gif' : 'png'}`, blob });
+    }
+  } catch (e) { return toast('파일을 만들지 못했어요. 인터넷 연결을 확인하고 다시 해 주세요.\n' + (e.message || '')); }
+  const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; (document.querySelector('dialog[open]') || document.body).append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
   if (files.length === 1) save(files[0].blob, files[0].name);
   else if (window.JSZip) { const z = new JSZip(); files.forEach(f => z.file(f.name, f.blob)); save(await z.generateAsync({ type: 'blob' }), `cuttory_poses_${files.length}.zip`); }
   else { for (const f of files) { save(f.blob, f.name); await new Promise(r => setTimeout(r, 400)); } }
