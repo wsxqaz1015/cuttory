@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>컷토리 포트폴리오</title>
+<meta name="description" content="인스타 운영 성과와 작업물을 모아 회사 지원용·프리랜서 영업용 포트폴리오로 정리해 드려요.">
+<meta name="theme-color" content="#ffffff">
+<script src="config.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ct-bg, #fff); color: var(--ct-ink, #15161a); font: 15px/1.6 "Pretendard", system-ui, sans-serif; word-break: keep-all; padding-bottom: 96px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 16px; }
+  .hero { margin-bottom: 18px; }
+  .mode { display: inline-flex; background: var(--ct-card); border-radius: 999px; padding: 4px; gap: 2px; margin-top: 14px; }
+  .mode button { border: 0; background: none; border-radius: 999px; padding: 9px 18px; font-weight: 700; color: var(--ct-sub); }
+  .mode button.on { background: var(--ct-pill); color: var(--ct-pill-ink); }
+  .mode-desc { color: var(--ct-sub); font-size: 14px; margin: 8px 0 0; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .inputs { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+  .box { min-width: 0; }
+  .box { background: #fff; border: 1px solid var(--ct-line); border-radius: 20px; padding: 18px; }
+  .box h2 { font-size: 17px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  .num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ct-pill); color: var(--ct-pill-ink); font-size: 13px; font-weight: 800; flex: none; }
+  .sub { color: var(--ct-sub); font-size: 13px; margin: 0 0 10px; }
+  label.f { display: block; font-weight: 700; font-size: 13px; margin: 12px 0 5px; }
+  label.f small { font-weight: 400; color: var(--ct-sub); }
+  input[type=text], input[type=url], input[type=number], input[type=date], textarea, select { width: 100%; border: 1px solid var(--ct-line); background: var(--ct-card); border-radius: 12px; padding: 10px 12px; }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.55; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--ct-ink); outline-offset: 1px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 9px 15px; font-weight: 700; font-size: 13.5px; background: var(--ct-card); white-space: nowrap; }
+  .btn:hover { background: #eceef1; }
+  .btn.dark { background: var(--ct-pill); color: var(--ct-pill-ink); }
+  .btn.dark:hover { background: #2a2c33; }
+  .btn.sm { padding: 6px 11px; font-size: 12.5px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .file-btn { position: relative; overflow: hidden; }
+  .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .tip { background: #fff8dd; border-radius: 12px; padding: 10px 12px; font-size: 13px; margin-top: 10px; }
+  .tip > b { display: block; }
+  .tip ol { margin: 4px 0 0; padding-left: 18px; }
+
+  .ptable { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .ptable th, .ptable td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--ct-line); vertical-align: top; }
+  .ptable th { color: var(--ct-sub); font-weight: 700; font-size: 12px; white-space: nowrap; }
+  .ptable td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ptable .t { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ptable button { border: 0; background: none; color: var(--ct-sub); padding: 0 4px; }
+  .tbl-wrap { overflow-x: auto; }
+
+  .works { display: grid; gap: 8px; margin-top: 10px; }
+  .work-item { display: flex; gap: 10px; align-items: center; background: var(--ct-card); border-radius: 14px; padding: 8px 10px; }
+  .work-item img, .work-item .ph { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: #e3e5e9; flex: none; display: grid; place-items: center; font-size: 20px; }
+  .work-item span { flex: 1; min-width: 0; }
+  .work-item b { display: block; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .work-item small { color: var(--ct-sub); font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 완성본 */
+  .preview-col { position: sticky; top: 76px; }
+  @media (max-width: 960px) { .preview-col { position: static; } }
+  .pv-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .pv-bar .t { font-weight: 800; margin-right: auto; }
+  .sheet { background: #fff; border: 1px solid var(--ct-line); border-radius: 22px; padding: 34px 34px 30px; box-shadow: 0 16px 40px rgba(21,22,26,.08); }
+  @media (max-width: 560px) { .sheet { padding: 22px 18px; border-radius: 18px; } }
+  .sh-eyebrow { color: var(--ct-sub); font-weight: 700; font-size: 13px; margin: 0 0 4px; }
+  .sh-name { font-size: clamp(26px, 5vw, 36px); font-weight: 900; letter-spacing: -.035em; line-height: 1.2; margin: 0; }
+  .sh-head { font-size: 17px; font-weight: 700; margin: 8px 0 0; }
+  .sh-head em, .sh-name em { font-style: normal; background: linear-gradient(transparent 62%, #f2c94c 62%); }
+  .sh-contact { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ct-sub); font-size: 13px; margin-top: 10px; }
+  .sh-sec { margin-top: 28px; }
+  .sh-sec h3 { font-size: 13px; letter-spacing: .02em; color: var(--ct-sub); margin: 0 0 10px; font-weight: 800; }
+  .sh-sum { font-size: 15px; margin: 0; }
+  .sh-sum li { margin: 3px 0; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .kpi { background: var(--ct-card); border-radius: 16px; padding: 12px 14px; }
+  .kpi b { display: block; font-size: 22px; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 12px; color: var(--ct-sub); font-weight: 600; }
+  .bars { display: grid; gap: 6px; margin-top: 12px; }
+  .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; font-size: 13.5px; }
+  .bar-row .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+  .bar-row .v { text-align: right; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .bar-row .track { position: relative; height: 10px; background: var(--ct-card); border-radius: 999px; overflow: hidden; grid-column: 1 / -1; }
+  .bar-row .track i { position: absolute; inset: 0 auto 0 0; background: #15161a; border-radius: 999px; }
+  .bar-row .meta { grid-column: 1 / -1; font-size: 12px; color: var(--ct-sub); min-height: 4px; }
+  .cases { display: grid; gap: 10px; }
+  .case { border: 1px solid var(--ct-line); border-radius: 16px; padding: 14px 16px; }
+  .case h4 { margin: 0 0 6px; font-size: 16px; }
+  .case .metric { display: inline-block; background: #fff6d6; font-weight: 800; font-size: 12.5px; border-radius: 999px; padding: 2px 10px; margin-bottom: 6px; }
+  .case dl { display: grid; grid-template-columns: 54px 1fr; gap: 3px 10px; margin: 0; font-size: 13.5px; }
+  .case dt { color: var(--ct-sub); font-weight: 700; }
+  .case dd { margin: 0; }
+  .case a { color: inherit; font-size: 12.5px; }
+  .gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .gallery figure { margin: 0; }
+  .gallery img { width: 100%; aspect-ratio: 4/5; object-fit: cover; border-radius: 12px; display: block; background: var(--ct-card); }
+  .gallery figcaption { font-size: 12px; color: var(--ct-sub); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips span { background: var(--ct-card); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; }
+  .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .svc { background: var(--ct-card); border-radius: 16px; padding: 14px; }
+  .svc b { display: block; font-size: 15px; }
+  .svc .price { font-size: 20px; font-weight: 900; margin: 4px 0; }
+  .svc small { color: var(--ct-sub); font-size: 12.5px; display: block; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; counter-reset: st; }
+  .steps div { background: var(--ct-card); border-radius: 14px; padding: 10px 12px; font-size: 13px; }
+  .steps div::before { counter-increment: st; content: counter(st); display: block; font-weight: 900; font-size: 18px; }
+  .cta { margin-top: 26px; background: #15161a; color: #fff; border-radius: 18px; padding: 18px 20px; }
+  .cta b { display: block; font-size: 17px; }
+  .empty-note { color: var(--ct-sub); font-size: 13.5px; background: var(--ct-card); border-radius: 14px; padding: 14px; }
+
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: color-mix(in srgb, #fff 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--ct-line); padding: 12px max(16px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: center; }
+  .bottom .msg { flex: 1; min-width: 0; font-size: 13px; color: var(--ct-sub); }
+  .bottom .msg b { display: block; color: var(--ct-ink); font-size: 14px; }
+  .toast { position: fixed; left: 50%; bottom: 90px; transform: translate(-50%, 20px); background: #15161a; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 90; max-width: calc(100% - 32px); text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    body { padding: 0; background: #fff; }
+    .ct-top, .hero, .inputs, .pv-bar, .bottom, .toast { display: none !important; }
+    .wrap { padding: 0; max-width: none; }
+    .layout { display: block; }
+    .sheet { border: 0; box-shadow: none; padding: 0; }
+    .case, .kpi, .svc { break-inside: avoid; }
+    .bar-row .track i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .kpi, .svc, .chips span, .steps div, .case .metric, .cta, .sh-name em, .sh-head em { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+<link rel="stylesheet" href="brand.css">
+</head>
+<body class="ct-page">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="potato" viewBox="0 -2 100 102">
+    <path d="M18 46 Q50 34 82 46 Q86 70 70 86 Q60 96 50 98 Q40 96 30 86 Q14 70 18 46Z" fill="#d9a066" stroke="#7a4a22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M12 46 Q14 22 50 20 Q86 22 88 46 Q70 54 50 54 Q30 54 12 46Z" fill="#8a5a2b" stroke="#5a3515" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M24 34 L36 46 M36 28 L50 44 M50 26 L64 44 M64 28 L76 42 M30 44 L44 30 M46 46 L60 28 M62 46 L74 32" stroke="#6b4220" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    <g stroke="#3a2a1a" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M50 20 L42 6"/><path d="M50 20 L58 6"/></g>
+    <circle cx="40" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="60" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="50" cy="15" r="1.8" fill="#3a2a1a"/>
+    <circle cx="39" cy="68" r="4.5" fill="#2d241b"/><circle cx="61" cy="68" r="4.5" fill="#2d241b"/>
+    <circle cx="40.5" cy="66.5" r="1.5" fill="#fff"/><circle cx="62.5" cy="66.5" r="1.5" fill="#fff"/>
+    <path d="M44 77 Q50 82 56 77" stroke="#2d241b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="31" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/><ellipse cx="69" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/>
+  </symbol>
+</svg>
+
+<header class="top ct-top">
+  <a class="logo" href="index.html" aria-label="컷토리 홈"><svg><use href="#potato"/></svg>컷토리.</a>
+  <nav class="ct-tabs" aria-label="컷토리 도구"><a href="index.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html">릴스</a><a href="poses.html">캐릭터 포즈</a><a href="video.html">AI 영상</a><a href="portfolio.html" class="on" aria-current="page">포트폴리오</a><a href="office.html">업무 오피스</a></nav>
+  <div class="ct-right"><button class="btn sm" id="credits" title="남은 크레딧">✨ –</button></div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <p class="ct-eyebrow">컷토리 포트폴리오</p>
+    <h1 class="ct-h1">내 작업물로 <em class="ct-hl">포트폴리오</em> 완성</h1>
+    <p class="ct-lead">인스타 운영 성과와 작업물을 넣으면, 회사 지원용과 프리랜서 영업용으로 나눠서 정리해 드려요.</p>
+    <div class="mode" role="tablist"><button data-mode="company" class="on">🏢 회사용</button><button data-mode="free">💼 프리랜서용</button></div>
+    <p class="mode-desc" id="mode-desc"></p>
+  </section>
+
+  <div class="layout">
+    <div class="inputs">
+      <section class="box">
+        <h2><span class="num">1</span>나 소개</h2>
+        <label class="f">이름 · 활동명<input type="text" id="p-name" placeholder="예) 리지 (@lucky_marketer)"></label>
+        <label class="f">한 줄 소개<input type="text" id="p-headline" placeholder="예) 숫자로 증명하는 인스타 콘텐츠 마케터"></label>
+        <div class="two">
+          <label class="f">인스타 계정<input type="text" id="p-ig" placeholder="@lucky_marketer"></label>
+          <label class="f">연락처<input type="text" id="p-contact" placeholder="메일 · 오픈채팅"></label>
+        </div>
+        <div data-only="company">
+          <div class="two">
+            <label class="f">지원 직무<input type="text" id="p-role" placeholder="예) 콘텐츠 마케터"></label>
+            <label class="f">지원 회사 <small>(선택)</small><input type="text" id="p-company" placeholder="예) 무신사"></label>
+          </div>
+          <label class="f">경력 · 역할 메모 <small>(선택)</small><textarea id="p-career" placeholder="예) 2024~ 개인 계정 운영, 카페 브랜드 인스타 대행 6개월, 카드뉴스·릴스 기획부터 제작까지 혼자 담당"></textarea></label>
+        </div>
+        <div data-only="free">
+          <label class="f">파는 서비스 <small>(한 줄에 하나: 이름 | 가격 | 범위)</small><textarea id="p-services" placeholder="AI 제품 연출컷 | 19,000원 | 1장, 수정 1회, 3일&#10;카드뉴스 디자인 | 88,000원 | 5장, 수정 2회&#10;릴스 편집 | 30,000원 | 60초 이내, 자막 포함"></textarea></label>
+          <label class="f">이런 분께 맞아요 <small>(선택)</small><input type="text" id="p-target" placeholder="예) 제품 사진은 있는데 연출 이미지가 필요한 1인 브랜드"></label>
+        </div>
+      </section>
+
+      <section class="box">
+        <h2><span class="num">2</span>인스타 운영 성과</h2>
+        <p class="sub">인사이트 화면 캡처나 내보낸 CSV를 넣으면 숫자를 읽어서 정리해요. 직접 적어도 돼요.</p>
+        <div class="three">
+          <label class="f">팔로워<input type="number" id="i-followers" inputmode="numeric" placeholder="15000"></label>
+          <label class="f">기간 내 증가<input type="number" id="i-growth" inputmode="numeric" placeholder="3200"></label>
+          <label class="f">기간<input type="text" id="i-period" placeholder="최근 90일"></label>
+        </div>
+        <div class="two">
+          <label class="f">도달한 계정<input type="number" id="i-reach" inputmode="numeric" placeholder="480000"></label>
+          <label class="f">총 조회수<input type="number" id="i-views" inputmode="numeric" placeholder="3000000"></label>
+        </div>
+        <div class="row">
+          <label class="btn dark file-btn">📸 인사이트 캡처로 읽기<input type="file" id="i-shots" accept="image/*" multiple></label>
+          <label class="btn file-btn">📄 CSV 불러오기<input type="file" id="i-csv" accept=".csv,text/csv"></label>
+          <button class="btn" id="i-add">＋ 게시물 직접 추가</button>
+        </div>
+        <div class="tip"><b>CSV는 이렇게 받아요</b><ol><li>메타 비즈니스 스위트 → 인사이트 → 콘텐츠</li><li>기간을 고르고 오른쪽 위 <b>내보내기</b> → CSV</li></ol>캡처는 프로필 → 프로페셔널 대시보드 → 인사이트 화면이나 게시물별 인사이트 화면을 찍어 주세요. 캡처 읽기는 10 크레딧이에요.</div>
+        <div class="tbl-wrap"><table class="ptable" id="i-table" hidden><thead><tr><th>게시물</th><th>조회</th><th>저장</th><th>공유</th><th></th></tr></thead><tbody></tbody></table></div>
+      </section>
+
+      <section class="box">
+        <h2><span class="num">3</span>작업물</h2>
+        <p class="sub">대표 작업 3~6개면 충분해요. 성과 숫자가 있으면 꼭 같이 적어 주세요.</p>
+        <div class="works" id="works"></div>
+        <div class="row">
+          <button class="btn dark" id="w-add">＋ 작업물 추가</button>
+          <button class="btn" id="w-office">🏢 업무 오피스 기록 불러오기</button>
+        </div>
+        <div id="w-form" hidden>
+          <label class="f">제목<input type="text" id="w-title" placeholder="예) 카페 신메뉴 런칭 카드뉴스"></label>
+          <div class="two">
+            <label class="f">종류<select id="w-type"><option>카드뉴스</option><option>릴스</option><option>블로그</option><option>AI 이미지</option><option>AI 영상</option><option>디자인</option><option>캠페인</option><option>기타</option></select></label>
+            <label class="f">기간<input type="text" id="w-period" placeholder="2026.09"></label>
+          </div>
+          <label class="f">맡은 일<input type="text" id="w-role" placeholder="예) 기획·카피·디자인 전부"></label>
+          <label class="f">결과 숫자 <small>(선택)</small><input type="text" id="w-result" placeholder="예) 조회 12만, 저장 3,400, 매장 문의 2배"></label>
+          <label class="f">설명<textarea id="w-desc" placeholder="왜 만들었고, 무엇을 다르게 했는지"></textarea></label>
+          <div class="two">
+            <label class="f">링크 <small>(선택)</small><input type="url" id="w-link" placeholder="https://"></label>
+            <label class="f">대표 이미지 <small>(선택)</small><input type="file" id="w-img" accept="image/*"></label>
+          </div>
+          <div class="row"><button class="btn dark" id="w-save">저장</button><button class="btn" id="w-cancel">취소</button></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="preview-col">
+      <div class="pv-bar">
+        <span class="t">완성본 미리보기</span>
+        <button class="btn sm" id="copy-text">📋 글로 복사</button>
+        <button class="btn sm" id="print">🖨 PDF로 저장</button>
+      </div>
+      <article class="sheet" id="sheet"></article>
+    </div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="msg" id="bottom-msg"><b>AI로 문장까지 다듬기</b>숫자와 작업물을 읽고 사례를 문제 → 행동 → 결과로 정리해요 · 10 크레딧</div>
+  <button class="ct-pill" id="polish">✨ AI로 정리하기</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.CUTTORY_API || '';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+};
+const KEY = 'cuttory-portfolio-v1';
+const blank = () => ({ mode: 'company', p: {}, ig: { posts: [] }, works: [], ai: {} });
+let S = Object.assign(blank(), store.get(KEY) || {});
+S.ig = Object.assign({ posts: [] }, S.ig); S.p = S.p || {}; S.ai = S.ai || {};
+let saveT; const persist = () => { clearTimeout(saveT); saveT = setTimeout(() => { if (!store.set(KEY, S)) toast('저장 공간이 꽉 찼어요. 이미지 수를 줄여 주세요'); }, 250); };
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2400); }
+const fmt = n => { n = +n || 0; if (n >= 1e8) return (n / 1e8).toFixed(1).replace(/\.0$/, '') + '억'; if (n >= 1e4) return (n / 1e4).toFixed(n >= 1e5 ? 0 : 1).replace(/\.0$/, '') + '만'; return n.toLocaleString(); };
+const num = v => { const n = parseFloat(String(v ?? '').replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; };
+
+/* ===== 서버 (카드뉴스와 같은 계정·크레딧) ===== */
+const H = {
+  token: store.get('cuttory_token') || '',
+  async session() {
+    if (this.token) return this.token;
+    const r = await fetch(API + '/api/session', { method: 'POST' }); const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.message || '접속하지 못했어요.');
+    this.token = j.token; store.set('cuttory_token', j.token); this.credits(j.credits); return j.token;
+  },
+  async call(path, body, retry = true) {
+    if (!API) throw new Error('서버 주소가 없어요.');
+    const tok = await this.session();
+    const r = await fetch(API + path, { method: 'POST', headers: { authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401 && retry) { this.token = ''; store.set('cuttory_token', null); return this.call(path, body, false); }
+    this.credits(j.credits);
+    if (!r.ok) throw new Error(j.message || '서버가 제대로 답하지 못했어요.');
+    return j;
+  },
+  credits(n) { if (n != null) $('#credits').textContent = '✨ ' + Number(n).toLocaleString(); },
+};
+
+/* ===== 모드 ===== */
+const MODE_DESC = {
+  company: '지원 직무에 맞춰 성과 숫자와 일하는 방식을 앞에 세워요. 이력서에 붙이는 1~2장 분량이에요.',
+  free: '고객이 "이 사람한테 맡기면 이렇게 되겠구나"를 바로 알 수 있게 서비스·가격·사례·진행 순서를 보여 줘요.',
+};
+function setMode(m) {
+  S.mode = m; persist();
+  $$('.mode button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $$('[data-only]').forEach(el => el.hidden = el.dataset.only !== m);
+  $('#mode-desc').textContent = MODE_DESC[m];
+  render();
+}
+$$('.mode button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+/* ===== 입력 연결 ===== */
+const PF = { 'p-name': 'name', 'p-headline': 'headline', 'p-ig': 'ig', 'p-contact': 'contact', 'p-role': 'role', 'p-company': 'company', 'p-career': 'career', 'p-services': 'services', 'p-target': 'target' };
+const IF = { 'i-followers': 'followers', 'i-growth': 'growth', 'i-period': 'period', 'i-reach': 'reach', 'i-views': 'views' };
+for (const [id, k] of Object.entries(PF)) { const el = $('#' + id); el.value = S.p[k] || ''; el.oninput = () => { S.p[k] = el.value; persist(); render(); }; }
+for (const [id, k] of Object.entries(IF)) { const el = $('#' + id); el.value = S.ig[k] ?? ''; el.oninput = () => { S.ig[k] = el.value; persist(); render(); }; }
+function syncIgInputs() { for (const [id, k] of Object.entries(IF)) $('#' + id).value = S.ig[k] ?? ''; }
+
+/* ===== 인스타 게시물 ===== */
+const eng = p => num(p.likes) + num(p.comments) + num(p.saves) + num(p.shares);
+function renderPosts() {
+  const t = $('#i-table'), tb = t.querySelector('tbody');
+  t.hidden = !S.ig.posts.length;
+  tb.innerHTML = S.ig.posts.map((p, i) => `<tr><td class="t" title="${esc(p.title)}">${esc(p.title || '(제목 없음)')}</td><td class="n">${fmt(p.views || p.reach)}</td><td class="n">${fmt(p.saves)}</td><td class="n">${fmt(p.shares)}</td><td><button data-del="${i}" aria-label="지우기">✕</button></td></tr>`).join('');
+  tb.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { S.ig.posts.splice(+b.dataset.del, 1); persist(); renderPosts(); render(); });
+}
+$('#i-add').onclick = () => {
+  const title = prompt('게시물 제목이나 첫 줄을 적어 주세요'); if (!title) return;
+  const views = prompt('조회수(또는 도달)를 적어 주세요', '') || '';
+  const saves = prompt('저장 수 (모르면 비워 두세요)', '') || '';
+  const shares = prompt('공유 수 (모르면 비워 두세요)', '') || '';
+  S.ig.posts.push({ title: title.trim(), views: num(views), saves: num(saves), shares: num(shares) });
+  persist(); renderPosts(); render();
+};
+
+// CSV: 메타 비즈니스 스위트 · 프로페셔널 대시보드 내보내기 (한·영 열 이름 모두)
+function parseCSV(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += c;
+  }
+  if (cur || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+const COLS = {
+  title: [/^description$/i, /^설명$/, /caption/i, /^캡션/, /^title$/i, /제목/],
+  link: [/permalink/i, /고유\s*링크/, /^link$/i, /^url$/i, /링크/],
+  date: [/publish\s*time/i, /게시\s*시간/, /^date$/i, /날짜/],
+  type: [/post\s*type/i, /게시물\s*유형/, /^type$/i],
+  views: [/^views$/i, /^plays$/i, /조회/, /재생/, /impressions/i, /노출/],
+  reach: [/^reach$/i, /도달/],
+  likes: [/^likes$/i, /좋아요/],
+  comments: [/^comments$/i, /^댓글/],
+  shares: [/^shares$/i, /공유/],
+  saves: [/^saves$/i, /저장/],
+  follows: [/^follows$/i, /팔로우/],
+};
+$('#i-csv').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const rows = parseCSV(await f.text()); if (rows.length < 2) return toast('CSV에서 표를 찾지 못했어요');
+  const head = rows[0].map(h => h.trim()), idx = {};
+  for (const [k, res] of Object.entries(COLS)) { const i = head.findIndex(h => res.some(r => r.test(h))); if (i >= 0) idx[k] = i; }
+  if (idx.views == null && idx.reach == null) return toast('조회수나 도달 열이 없는 CSV예요');
+  const posts = rows.slice(1).map(r => {
+    const o = {}; for (const [k, i] of Object.entries(idx)) o[k] = r[i] ?? '';
+    for (const k of ['views', 'reach', 'likes', 'comments', 'shares', 'saves', 'follows']) if (k in o) o[k] = num(o[k]);
+    o.title = String(o.title || '').replace(/\s+/g, ' ').trim().slice(0, 80); return o;
+  }).filter(p => p.title || p.views || p.reach);
+  S.ig.posts = posts.sort((a, b) => (b.views || b.reach || 0) - (a.views || a.reach || 0)).slice(0, 60);
+  const sumV = posts.reduce((n, p) => n + (p.views || 0), 0), sumR = posts.reduce((n, p) => n + (p.reach || 0), 0);
+  if (!num(S.ig.views) && sumV) S.ig.views = sumV;
+  if (!num(S.ig.reach) && sumR) S.ig.reach = sumR;
+  const dates = posts.map(p => Date.parse(p.date)).filter(isFinite).sort();
+  if (!S.ig.period && dates.length) S.ig.period = `${new Date(dates[0]).toLocaleDateString('ko-KR')} ~ ${new Date(dates[dates.length - 1]).toLocaleDateString('ko-KR')}`;
+  persist(); syncIgInputs(); renderPosts(); render(); toast(`게시물 ${posts.length}개를 불러왔어요`);
+};
+
+// 캡처 → 이미지 축소 → AI가 숫자 읽기
+async function shrink(file, max = 1280, q = .85) {
+  const img = await new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = rej; im.src = u; });
+  const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q);
+}
+$('#i-shots').onchange = async e => {
+  const files = [...e.target.files].slice(0, 6); e.target.value = ''; if (!files.length) return;
+  const btn = e.target.closest('label'); btn.style.opacity = .5;
+  toast('캡처를 읽고 있어요… (20초쯤)');
+  try {
+    const images = await Promise.all(files.map(f => shrink(f)));
+    const prompt = `These are Instagram insight screenshots (Korean or English UI). Read ONLY numbers that are clearly visible. Never guess.
+Return JSON: {"followers": number|null, "growth": number|null, "period": string|null, "reach": number|null, "views": number|null,
+"posts": [{"title": "post caption first line or short description of the thumbnail (Korean)", "views": number|null, "reach": number|null, "likes": number|null, "comments": number|null, "saves": number|null, "shares": number|null, "follows": number|null}]}
+Convert Korean units: 1.2만 = 12000, 3.4천 = 3400, 1.5억 = 150000000. Use null when a value is not visible. "growth" means follower increase in the shown period.`;
+    const j = await H.call('/api/ai', { kind: 'gen', json: true, prompt, images });
+    const d = j.json || {};
+    for (const k of ['followers', 'growth', 'reach', 'views']) if (d[k] != null && !num(S.ig[k])) S.ig[k] = d[k];
+    if (d.period && !S.ig.period) S.ig.period = d.period;
+    const got = (Array.isArray(d.posts) ? d.posts : []).filter(p => p && (p.views || p.reach || p.likes)).map(p => ({ ...p, title: String(p.title || '').slice(0, 80) }));
+    S.ig.posts.push(...got);
+    persist(); syncIgInputs(); renderPosts(); render();
+    toast(got.length ? `게시물 ${got.length}개와 계정 숫자를 읽었어요. 맞는지 확인해 주세요` : '계정 숫자를 읽었어요. 맞는지 확인해 주세요');
+  } catch (err) { toast(err.message); }
+  btn.style.opacity = '';
+};
+
+/* ===== 작업물 ===== */
+function renderWorks() {
+  $('#works').innerHTML = S.works.map((w, i) => `<div class="work-item">${w.img ? `<img src="${w.img}" alt="">` : `<div class="ph">${{ 카드뉴스: '🗂', 릴스: '🎬', 블로그: '✍️', 'AI 이미지': '🖼', 'AI 영상': '📹', 디자인: '🎨', 캠페인: '📣' }[w.type] || '📁'}</div>`}<span><b>${esc(w.title)}</b><small>${esc([w.type, w.result || w.role].filter(Boolean).join(' · '))}</small></span><button class="btn sm" data-edit="${i}">고치기</button><button class="btn sm" data-wdel="${i}" aria-label="지우기">✕</button></div>`).join('') || '<p class="sub" style="margin:0">아직 작업물이 없어요.</p>';
+  $$('[data-wdel]').forEach(b => b.onclick = () => { if (!confirm('이 작업물을 지울까요?')) return; S.works.splice(+b.dataset.wdel, 1); persist(); renderWorks(); render(); });
+  $$('[data-edit]').forEach(b => b.onclick = () => openWork(+b.dataset.edit));
+}
+let editing = -1, editImg = '';
+const WF = ['title', 'type', 'period', 'role', 'result', 'desc', 'link'];
+function openWork(i) {
+  editing = i; const w = i >= 0 ? S.works[i] : { type: '카드뉴스' }; editImg = w.img || '';
+  WF.forEach(k => $('#w-' + k).value = w[k] || ''); $('#w-type').value = w.type || '카드뉴스'; $('#w-img').value = '';
+  $('#w-form').hidden = false; $('#w-title').focus();
+}
+$('#w-add').onclick = () => openWork(-1);
+$('#w-cancel').onclick = () => { $('#w-form').hidden = true; };
+$('#w-img').onchange = async e => { const f = e.target.files[0]; if (f) editImg = await shrink(f, 520, .78); };
+$('#w-save').onclick = () => {
+  const w = {}; WF.forEach(k => w[k] = $('#w-' + k).value.trim()); w.img = editImg;
+  if (!w.title) return toast('제목을 적어 주세요');
+  if (editing >= 0) S.works[editing] = w; else S.works.push(w);
+  $('#w-form').hidden = true; persist(); renderWorks(); render();
+};
+$('#w-office').onclick = () => {
+  const o = store.get('trend-office-v1');
+  if (!o) return toast('이 브라우저에 업무 오피스 기록이 없어요');
+  const TOOL = { card: '카드뉴스', blog: '블로그', reels: '릴스', emoji: '이모티콘', content: '콘텐츠 기획', free: '프리랜서 업무', video: 'AI 영상', pfc: '포트폴리오', pff: '포트폴리오' };
+  const days = {}; for (const d of Object.values(o.work || {})) for (const k of Object.keys(d)) days[k] = (days[k] || 0) + 1;
+  const ideas = Object.values(o.scraps || {}).filter(s => s.idea && s.idea.trim()).slice(-5);
+  S.office = { days, ideas: ideas.map(s => ({ title: (s.item && (s.item.title || s.item.headline)) || '', idea: s.idea.trim(), why: (s.why || '').trim() })), scraps: Object.keys(o.scraps || {}).length, xp: o.xp || 0 };
+  S.office.daysText = Object.entries(days).map(([k, n]) => `${TOOL[k] || k} ${n}일`).join(' · ');
+  persist(); render();
+  toast(ideas.length || Object.keys(days).length ? `작업 기록과 트렌드 아이디어 ${ideas.length}개를 넣었어요` : '아직 업무 오피스에 쌓인 기록이 없어요');
+};
+
+/* ===== 완성본 ===== */
+function services() { return String(S.p.services || '').split('\n').map(l => l.split('|').map(x => x.trim())).filter(a => a[0]).map(([name, price, scope]) => ({ name, price: price || '', scope: scope || '' })); }
+function topPosts(n = 5) { return [...S.ig.posts].sort((a, b) => (b.views || b.reach || 0) - (a.views || a.reach || 0)).slice(0, n); }
+function kpis() {
+  const posts = S.ig.posts, out = [];
+  if (num(S.ig.followers)) out.push([fmt(S.ig.followers), '팔로워']);
+  if (num(S.ig.growth)) out.push(['+' + fmt(S.ig.growth), (S.ig.period ? S.ig.period + ' ' : '') + '팔로워 증가']);
+  if (num(S.ig.views)) out.push([fmt(S.ig.views), '누적 조회']);
+  if (num(S.ig.reach)) out.push([fmt(S.ig.reach), '도달 계정']);
+  const top = topPosts(1)[0]; if (top && (top.views || top.reach)) out.push([fmt(top.views || top.reach), '최고 게시물 조회']);
+  const withR = posts.filter(p => (p.reach || p.views) && eng(p));
+  if (withR.length >= 3) { const r = withR.reduce((n, p) => n + eng(p), 0) / withR.reduce((n, p) => n + (p.reach || p.views), 0); out.push([(r * 100).toFixed(1) + '%', '평균 참여율']); }
+  const sv = posts.reduce((n, p) => n + num(p.saves), 0); if (sv) out.push([fmt(sv), '누적 저장']);
+  return out.slice(0, 8);
+}
+function render() {
+  const p = S.p, m = S.mode, A = S.ai[m] || null;
+  const name = p.name || '이름을 적어 주세요';
+  const headline = (A && A.headline) || p.headline || (m === 'company' ? `${p.role || '마케터'} 지원 포트폴리오` : '함께 일하면 이렇게 달라져요');
+  const contact = [p.ig && `📷 ${p.ig}`, p.contact && `✉️ ${p.contact}`].filter(Boolean).map(esc).join('</span><span>');
+  let h = `<p class="sh-eyebrow">${m === 'company' ? `PORTFOLIO${p.company ? ' · ' + esc(p.company) + ' 지원' : ''}` : 'FREELANCE PORTFOLIO'}</p>
+    <h2 class="sh-name">${esc(name)}</h2><p class="sh-head">${hl(headline)}</p>${contact ? `<div class="sh-contact"><span>${contact}</span></div>` : ''}`;
+  const sum = A && (A.summary || A.intro);
+  if (sum) h += `<section class="sh-sec"><h3>${m === 'company' ? '요약' : '소개'}</h3>${Array.isArray(sum) ? `<ul class="sh-sum">${sum.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : `<p class="sh-sum">${esc(sum)}</p>`}</section>`;
+  else if (m === 'company' && p.career) h += `<section class="sh-sec"><h3>경력 · 역할</h3><p class="sh-sum">${esc(p.career)}</p></section>`;
+  else if (m === 'free' && p.target) h += `<section class="sh-sec"><h3>이런 분께 맞아요</h3><p class="sh-sum">${esc(p.target)}</p></section>`;
+
+  if (m === 'free') {
+    const svc = (A && A.services && A.services.length ? A.services : services());
+    if (svc.length) h += `<section class="sh-sec"><h3>서비스 · 가격</h3><div class="services">${svc.map(s => `<div class="svc"><b>${esc(s.name)}</b><div class="price">${esc(s.price || '문의')}</div><small>${esc(s.includes || s.scope || '')}</small>${s.for ? `<small>👉 ${esc(s.for)}</small>` : ''}</div>`).join('')}</div></section>`;
+  }
+
+  const K = kpis();
+  if (K.length || S.ig.posts.length) {
+    h += `<section class="sh-sec"><h3>인스타그램 운영 성과${S.p.ig ? ' · ' + esc(S.p.ig) : ''}</h3>`;
+    if (K.length) h += `<div class="kpis">${K.map(([v, l]) => `<div class="kpi"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('')}</div>`;
+    const tp = topPosts(5); const mx = Math.max(...tp.map(x => x.views || x.reach || 0), 1);
+    if (tp.length) h += `<div class="bars">${tp.map(x => { const v = x.views || x.reach || 0; return `<div class="bar-row"><div class="lbl">${esc(x.title || '게시물')}</div><div class="v">${fmt(v)}</div><div class="track"><i style="width:${Math.max(3, v / mx * 100)}%"></i></div><div class="meta">${[x.saves && '저장 ' + fmt(x.saves), x.shares && '공유 ' + fmt(x.shares)].filter(Boolean).join(' · ')}</div></div>`; }).join('')}</div>`;
+    if (A && A.insta_note) h += `<p class="sh-sum" style="margin-top:10px;font-size:14px">${esc(A.insta_note)}</p>`;
+    h += `</section>`;
+  }
+
+  const cases = A && A.cases && A.cases.length ? A.cases : S.works.map(w => ({ title: w.title, metric: w.result, problem: '', action: w.desc || w.role, result: w.result, link: w.link, type: w.type }));
+  if (cases.length) {
+    h += `<section class="sh-sec"><h3>${m === 'company' ? '대표 프로젝트' : '작업 사례'}</h3><div class="cases">${cases.map(c => {
+      const w = S.works.find(x => x.title === c.title) || {};
+      const rows = m === 'company' ? [['상황', c.problem], ['한 일', c.action], ['결과', c.result]] : [['고민', c.problem || c.client_problem], ['해결', c.action || c.solution], ['결과', c.result]];
+      return `<div class="case">${c.metric ? `<span class="metric">${esc(c.metric)}</span>` : ''}<h4>${esc(c.title)}</h4><dl>${rows.filter(r => r[1]).map(r => `<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>${(c.link || w.link) ? `<a href="${esc(c.link || w.link)}" target="_blank" rel="noopener">${esc(c.link || w.link)}</a>` : ''}</div>`;
+    }).join('')}</div></section>`;
+    const imgs = S.works.filter(w => w.img).slice(0, 6);
+    if (imgs.length) h += `<section class="sh-sec"><h3>작업물 미리보기</h3><div class="gallery">${imgs.map(w => `<figure><img src="${w.img}" alt=""><figcaption>${esc(w.title)}</figcaption></figure>`).join('')}</div></section>`;
+  }
+
+  const O = S.office;
+  if (m === 'company' && O && (O.daysText || (O.ideas || []).length)) {
+    h += `<section class="sh-sec"><h3>꾸준히 하는 일</h3>${O.daysText ? `<p class="sh-sum" style="font-size:14px">업무 오피스 작업 기록: ${esc(O.daysText)}${O.scraps ? ` · 트렌드 스크랩 ${O.scraps}개` : ''}</p>` : ''}${(O.ideas || []).length ? `<ul class="sh-sum" style="font-size:14px">${O.ideas.map(x => `<li><b>${esc(x.title)}</b> → ${esc(x.idea)}</li>`).join('')}</ul>` : ''}</section>`;
+  }
+  if (A && A.strengths && A.strengths.length) h += `<section class="sh-sec"><h3>${m === 'company' ? '강점' : '맡기면 좋은 이유'}</h3><div class="chips">${A.strengths.map(s => `<span>${esc(s)}</span>`).join('')}</div></section>`;
+  if (m === 'free') {
+    const steps = (A && A.process && A.process.length) ? A.process : ['상담 · 레퍼런스 확인', '결제 · 자료 받기', '시안 전달', '수정 1회', '최종 파일 전달'];
+    h += `<section class="sh-sec"><h3>진행 순서</h3><div class="steps">${steps.map(s => `<div>${esc(s)}</div>`).join('')}</div></section>`;
+    h += `<div class="cta"><b>${esc((A && A.cta) || '편하게 문의 주세요')}</b>${esc([p.contact, p.ig].filter(Boolean).join(' · ') || '연락처를 적어 주세요')}</div>`;
+  }
+  if (!K.length && !cases.length && !sum) h += `<section class="sh-sec"><div class="empty-note">왼쪽에 인스타 성과와 작업물을 넣으면 여기에 바로 정리돼요. 다 넣은 뒤 <b>AI로 정리하기</b>를 누르면 문장까지 다듬어 드려요.</div></section>`;
+  $('#sheet').innerHTML = h;
+}
+// "[강조]" 또는 첫 핵심어에 형광펜
+const hl = s => esc(s).replace(/\[(.+?)\]/g, '<em>$1</em>');
+
+/* ===== AI 정리 ===== */
+$('#polish').onclick = async e => {
+  const m = S.mode, p = S.p;
+  if (!S.works.length && !S.ig.posts.length && !num(S.ig.followers)) return toast('인스타 성과나 작업물을 하나 이상 넣어 주세요');
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = '정리하는 중…';
+  const data = {
+    profile: p, insta: { followers: S.ig.followers, growth: S.ig.growth, period: S.ig.period, reach: S.ig.reach, views: S.ig.views, top_posts: topPosts(8).map(({ title, views, reach, likes, comments, saves, shares, follows }) => ({ title, views, reach, likes, comments, saves, shares, follows })), kpis: kpis() },
+    works: S.works.map(({ img, ...w }) => w), office: S.office || null, services: services(),
+  };
+  const shape = m === 'company'
+    ? `{"headline": "한 줄 소개. 핵심 단어 하나를 [대괄호]로 감싸기", "summary": ["3줄 요약, 각 줄에 숫자 하나 이상"], "insta_note": "인스타 성과가 지원 직무에 왜 의미 있는지 1~2문장", "cases": [{"title": "", "metric": "가장 센 숫자 한 줄 (예: 조회 12만 · 저장 3,400)", "problem": "상황·문제", "action": "내가 한 일 (구체적으로)", "result": "결과 (숫자 우선)"}], "strengths": ["강점 키워드 3~5개, 각 12자 이내"]}`
+    : `{"headline": "고객 입장 한 줄 약속. 핵심 단어 하나를 [대괄호]로 감싸기", "intro": "2~3문장 소개 (누구를, 무엇으로, 어떻게 돕는지)", "services": [{"name": "", "price": "", "includes": "포함 범위·수정·납기", "for": "이런 분께"}], "insta_note": "내 계정 성과가 고객에게 주는 믿음 1~2문장", "cases": [{"title": "", "metric": "", "problem": "고객의 고민", "action": "내가 해결한 방법", "result": "결과"}], "strengths": ["맡기면 좋은 이유 3~4개, 각 14자 이내"], "process": ["진행 순서 4~5단계, 각 12자 이내"], "cta": "문의를 부르는 마지막 한 문장"}`;
+  const prompt = `너는 마케터 포트폴리오를 정리하는 에디터야. 아래 자료로 ${m === 'company' ? `회사 지원용 포트폴리오(지원 직무: ${p.role || '마케터'}${p.company ? ', 지원 회사: ' + p.company : ''})` : '프리랜서 외주 영업용 포트폴리오'}를 써 줘.
+규칙:
+- 자료에 없는 숫자·회사·고객·결과는 절대 만들지 마. 숫자가 없으면 숫자 없이 써.
+- 작업물마다 case 하나씩, 순서는 결과가 센 것부터. 작업물이 없으면 인스타 상위 게시물로 사례를 만들어도 돼.
+- 문장은 짧고 구체적으로, 존댓말 '~했어요'가 아니라 이력서 톤 '~함/~했음'은 쓰지 말고 자연스러운 평서문(~했습니다).
+- 프리랜서용 서비스는 내가 적은 서비스·가격을 그대로 쓰고 범위만 다듬어.
+JSON 모양: ${shape}
+자료: ${JSON.stringify(data).slice(0, 14000)}`;
+  try {
+    const j = await H.call('/api/ai', { kind: 'gen', json: true, prompt });
+    S.ai[m] = j.json || null; persist(); render(); toast('정리했어요! 숫자가 맞는지 한 번 확인해 주세요');
+  } catch (err) { toast(err.message); }
+  btn.disabled = false; btn.textContent = '✨ AI로 정리하기';
+};
+
+/* ===== 내보내기 ===== */
+$('#print').onclick = () => window.print();
+$('#copy-text').onclick = async () => {
+  const t = $('#sheet').innerText.replace(/\n{3,}/g, '\n\n');
+  try { await navigator.clipboard.writeText(t); toast('글로 복사했어요. 노션·크몽 소개글에 붙여 넣어 보세요'); } catch { toast('복사하지 못했어요'); }
+};
+
+const QM = new URLSearchParams(location.search).get('mode');
+renderPosts(); renderWorks(); setMode(QM === 'free' || QM === 'company' ? QM : S.mode === 'free' ? 'free' : 'company');
+if (store.get('cuttory_token') && API) fetch(API + '/api/me', { headers: { authorization: 'Bearer ' + store.get('cuttory_token') } }).then(r => r.ok ? r.json() : null).then(j => j && H.credits(j.credits)).catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>컷토리 AI 영상 외주</title>
+<meta name="description" content="외주 의뢰를 받으면 훅 3개, 장면별 AI 프롬프트, 편집 순서, 견적서까지 한 번에 정리해 드려요.">
+<meta name="theme-color" content="#ffffff">
+<script src="config.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--ct-ink, #15161a); font: 15px/1.6 "Pretendard", system-ui, sans-serif; word-break: keep-all; padding-bottom: 96px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 16px; }
+  .hero { margin-bottom: 18px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .col { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+  .box { background: #fff; border: 1px solid var(--ct-line); border-radius: 20px; padding: 18px; min-width: 0; }
+  .box h2 { font-size: 17px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  .num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ct-pill); color: var(--ct-pill-ink); font-size: 13px; font-weight: 800; flex: none; }
+  .sub { color: var(--ct-sub); font-size: 13px; margin: 0 0 10px; }
+  label.f { display: block; font-weight: 700; font-size: 13px; margin: 12px 0 5px; }
+  label.f small { font-weight: 400; color: var(--ct-sub); }
+  input[type=text], input[type=url], input[type=number], textarea, select { width: 100%; border: 1px solid var(--ct-line); background: var(--ct-card); border-radius: 12px; padding: 10px 12px; }
+  textarea { resize: vertical; min-height: 70px; line-height: 1.55; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--ct-ink); outline-offset: 1px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { border: 0; background: var(--ct-card); border-radius: 999px; padding: 7px 13px; font-size: 13.5px; font-weight: 700; color: var(--ct-sub); }
+  .seg button.on { background: var(--ct-pill); color: var(--ct-pill-ink); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 9px 15px; font-weight: 700; font-size: 13.5px; background: var(--ct-card); white-space: nowrap; text-decoration: none; }
+  .btn:hover { background: #eceef1; }
+  a.btn { color: inherit; }
+  details.box > summary { cursor: pointer; list-style: none; }
+  details.box > summary::-webkit-details-marker { display: none; }
+  details.box > summary h2 { margin: 0; }
+  details.box > summary::after { content: '펼치기 ▾'; float: right; font-size: 13px; color: var(--ct-sub); font-weight: 700; margin-top: 2px; }
+  details.box[open] > summary::after { content: '접기 ▴'; }
+  .btn.dark { background: var(--ct-pill); color: var(--ct-pill-ink); }
+  .btn.sm { padding: 5px 11px; font-size: 12.5px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; margin-top: 8px; }
+  .thumbs div { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--ct-card); }
+  .thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumbs button { position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; padding: 0; }
+  .drop { display: grid; place-items: center; text-align: center; min-height: 86px; border: 2px dashed var(--ct-line); border-radius: 14px; cursor: pointer; padding: 12px; position: relative; color: var(--ct-sub); font-size: 13px; }
+  .drop b { display: block; color: var(--ct-ink); font-size: 14px; }
+  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .projects { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-bottom: 4px; }
+  .projects button { border: 1px solid var(--ct-line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .projects button.on { background: var(--ct-pill); color: var(--ct-pill-ink); border-color: var(--ct-pill); }
+
+  /* 결과 */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tabs button { border: 0; background: var(--ct-card); border-radius: 999px; padding: 8px 14px; font-weight: 800; font-size: 13.5px; color: var(--ct-sub); }
+  .tabs button.on { background: var(--ct-pill); color: var(--ct-pill-ink); }
+  .empty { text-align: center; color: var(--ct-sub); padding: 40px 12px; }
+  .empty .ic { font-size: 40px; }
+  .concept { background: var(--ct-card); border-radius: 18px; padding: 16px 18px; margin-bottom: 14px; }
+  .concept h3 { margin: 0 0 4px; font-size: 20px; font-weight: 900; letter-spacing: -.03em; }
+  .concept h3 em { font-style: normal; background: linear-gradient(transparent 62%, #f2c94c 62%); }
+  .concept p { margin: 0; font-size: 14px; }
+  .hooks { display: grid; gap: 8px; }
+  .hook { border: 1px solid var(--ct-line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 4px; text-align: left; background: #fff; width: 100%; }
+  .hook.on { border: 2px solid var(--ct-ink); padding: 11px 13px; }
+  .hook .tp { font-size: 12px; font-weight: 800; color: var(--ct-sub); }
+  .hook .tx { font-size: 17px; font-weight: 900; letter-spacing: -.02em; }
+  .hook .wy { font-size: 13px; color: var(--ct-sub); }
+  .hook .pick { justify-self: start; font-size: 11.5px; font-weight: 800; background: #fff6d6; border-radius: 999px; padding: 1px 9px; }
+  h4.sec { font-size: 13px; color: var(--ct-sub); margin: 18px 0 8px; font-weight: 800; }
+  .scenes { display: grid; gap: 10px; }
+  .scene { border: 1px solid var(--ct-line); border-radius: 18px; padding: 14px; display: grid; gap: 8px; }
+  .scene .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .scene .no { background: var(--ct-pill); color: var(--ct-pill-ink); font-weight: 900; border-radius: 999px; padding: 1px 10px; font-size: 13px; }
+  .scene .sec { font-weight: 800; font-size: 13px; color: var(--ct-sub); }
+  .scene .tool { margin-left: auto; font-size: 12px; font-weight: 800; background: var(--ct-card); border-radius: 999px; padding: 2px 10px; }
+  .scene .shot { font-weight: 700; }
+  .scene .kv { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 4px 10px; font-size: 13.5px; }
+  .scene .kv dt { color: var(--ct-sub); font-weight: 700; }
+  .scene .kv dd { margin: 0; }
+  .prompt { background: #15161a; color: #e9eaee; border-radius: 12px; padding: 10px 12px; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; position: relative; white-space: pre-wrap; word-break: break-word; }
+  .prompt .lb { display: block; color: #f2c94c; font: 800 11px "Pretendard", sans-serif; margin-bottom: 2px; }
+  .prompt button { position: absolute; right: 6px; top: 6px; border: 0; background: #2c2e35; color: #fff; border-radius: 999px; padding: 2px 9px; font: 700 11.5px "Pretendard", sans-serif; }
+  ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; }
+  .cap { background: var(--ct-card); border-radius: 14px; padding: 12px 14px; white-space: pre-wrap; font-size: 14px; }
+  .qt { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .qt td { padding: 9px 4px; border-bottom: 1px solid var(--ct-line); vertical-align: top; }
+  .qt td:last-child { text-align: right; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .qt tr.total td { font-size: 18px; font-weight: 900; border-bottom: 0; }
+  .qt small { display: block; color: var(--ct-sub); font-size: 12px; }
+  .pk { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+  .pk button { text-align: left; border: 1px solid var(--ct-line); background: #fff; border-radius: 16px; padding: 12px 14px; display: grid; gap: 2px; }
+  .pk button.on { border: 2px solid var(--ct-ink); padding: 11px 13px; }
+  .pk b { font-size: 15px; } .pk .pr { font-size: 19px; font-weight: 900; } .pk small { color: var(--ct-sub); font-size: 12px; }
+  .opts { display: grid; gap: 6px; margin-top: 10px; }
+  .opts label { display: flex; align-items: center; gap: 8px; font-size: 14px; background: var(--ct-card); border-radius: 12px; padding: 8px 12px; }
+  .opts label span { margin-left: auto; font-weight: 800; }
+  .msg { background: #fff8dd; border-radius: 14px; padding: 12px 14px; white-space: pre-wrap; font-size: 14px; }
+  .check li { list-style: none; margin: 4px 0; }
+  .check { padding: 0; margin: 0; }
+  .check label { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; }
+  .note { font-size: 12.5px; color: var(--ct-sub); margin: 8px 0 0; }
+
+  .bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: color-mix(in srgb, #fff 92%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--ct-line); padding: 12px max(16px, env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: center; }
+  .bottom .m { flex: 1; min-width: 0; font-size: 13px; color: var(--ct-sub); }
+  .bottom .m b { display: block; color: var(--ct-ink); font-size: 14px; }
+  .toast { position: fixed; left: 50%; bottom: 90px; transform: translate(-50%, 20px); background: #15161a; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 90; max-width: calc(100% - 32px); text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+<link rel="stylesheet" href="brand.css">
+</head>
+<body class="ct-page">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="potato" viewBox="0 -2 100 102">
+    <path d="M18 46 Q50 34 82 46 Q86 70 70 86 Q60 96 50 98 Q40 96 30 86 Q14 70 18 46Z" fill="#d9a066" stroke="#7a4a22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M12 46 Q14 22 50 20 Q86 22 88 46 Q70 54 50 54 Q30 54 12 46Z" fill="#8a5a2b" stroke="#5a3515" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M24 34 L36 46 M36 28 L50 44 M50 26 L64 44 M64 28 L76 42 M30 44 L44 30 M46 46 L60 28 M62 46 L74 32" stroke="#6b4220" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    <g stroke="#3a2a1a" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M50 20 L42 6"/><path d="M50 20 L58 6"/></g>
+    <circle cx="40" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="60" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="50" cy="15" r="1.8" fill="#3a2a1a"/>
+    <circle cx="39" cy="68" r="4.5" fill="#2d241b"/><circle cx="61" cy="68" r="4.5" fill="#2d241b"/>
+    <circle cx="40.5" cy="66.5" r="1.5" fill="#fff"/><circle cx="62.5" cy="66.5" r="1.5" fill="#fff"/>
+    <path d="M44 77 Q50 82 56 77" stroke="#2d241b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="31" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/><ellipse cx="69" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/>
+  </symbol>
+</svg>
+
+<header class="top ct-top">
+  <a class="logo" href="index.html" aria-label="컷토리 홈"><svg><use href="#potato"/></svg>컷토리.</a>
+  <nav class="ct-tabs" aria-label="컷토리 도구"><a href="index.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html">릴스</a><a href="poses.html">캐릭터 포즈</a><a href="video.html" class="on" aria-current="page">AI 영상</a><a href="portfolio.html">포트폴리오</a><a href="office.html">업무 오피스</a></nav>
+  <div class="ct-right"><button class="btn sm" id="credits" title="남은 크레딧">✨ –</button></div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <p class="ct-eyebrow">컷토리 AI 영상 외주</p>
+    <h1 class="ct-h1">의뢰 하나로 <em class="ct-hl">기획·견적</em>까지</h1>
+    <p class="ct-lead">고객이 보낸 제품 사진과 요청만 넣으면, 훅 3개와 장면별 AI 프롬프트, 편집 순서, 견적 메시지까지 정리해 드려요.</p>
+  </section>
+
+  <div class="layout">
+    <div class="col">
+      <section class="box">
+        <div class="projects" id="projects"></div>
+        <h2><span class="num">1</span>의뢰 내용</h2>
+        <div class="two">
+          <label class="f">고객 · 브랜드<input type="text" id="b-client" placeholder="예) 제주 수제 캔들 '바람결'"></label>
+          <label class="f">제품 · 서비스<input type="text" id="b-product" placeholder="예) 동백 향 캔들"></label>
+        </div>
+        <label class="f">어디에 쓰나요</label>
+        <div class="seg" data-k="use"><button data-v="인스타 릴스 광고">릴스 광고</button><button data-v="인스타 릴스 피드">릴스 피드</button><button data-v="상세페이지 영상">상세페이지</button><button data-v="유튜브 쇼츠">쇼츠</button><button data-v="틱톡">틱톡</button></div>
+        <label class="f">길이</label>
+        <div class="seg" data-k="len"><button data-v="8">8초</button><button data-v="15">15초</button><button data-v="30">30초</button><button data-v="60">60초</button></div>
+        <label class="f">만드는 방식</label>
+        <div class="seg" data-k="how"><button data-v="photo">제품 사진 → AI 영상</button><button data-v="full">전부 AI로 생성</button><button data-v="edit">고객 영상 편집</button></div>
+        <label class="f">원하는 분위기 · 레퍼런스<textarea id="b-mood" placeholder="예) 따뜻한 겨울 저녁, 창가 햇살, 느린 카메라. 레퍼런스: https://www.instagram.com/reel/..."></textarea></label>
+        <label class="f">꼭 들어갈 문구 · 정보 <small>(선택)</small><textarea id="b-must" placeholder="예) 12월 한정 20% 할인, 브랜드 로고 마지막 1초"></textarea></label>
+        <label class="f">고객이 보낸 사진 <small>(최대 4장 · AI가 보고 장면을 짜요)</small></label>
+        <label class="drop"><input type="file" id="b-imgs" accept="image/*" multiple><span><b>📷 제품 사진 넣기</b>정면·디테일 사진이면 좋아요</span></label>
+        <div class="thumbs" id="thumbs"></div>
+      </section>
+
+      <details class="box">
+        <summary><h2 style="display:inline-flex"><span class="num">2</span>내 가격표 고치기</h2></summary>
+        <p class="sub" style="margin-top:8px">한 번 정해 두면 견적에 계속 쓰여요. 크몽·피버 시세를 참고한 기본값이에요.</p>
+        <div id="price-edit"></div>
+        <div class="row"><button class="btn sm" id="price-reset">기본값으로</button></div>
+      </details>
+    </div>
+
+    <div class="col">
+      <section class="box" id="out">
+        <div class="tabs" id="tabs"><button data-t="plan" class="on">🎬 기획</button><button data-t="prompts">🤖 장면·프롬프트</button><button data-t="edit">✂️ 편집·캡션</button><button data-t="quote">💰 견적·납품</button></div>
+        <div id="pane"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="m"><b>AI로 기획하기</b>훅 3개 · 장면별 프롬프트 · 편집 순서 · 캡션 · 10 크레딧</div>
+  <button class="ct-pill" id="go">🎬 기획 만들기</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.CUTTORY_API || '';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+};
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2400); }
+const won = n => (Math.round(+n || 0)).toLocaleString() + '원';
+
+const H = {
+  token: store.get('cuttory_token') || '',
+  async session() {
+    if (this.token) return this.token;
+    const r = await fetch(API + '/api/session', { method: 'POST' }); const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.message || '접속하지 못했어요.');
+    this.token = j.token; store.set('cuttory_token', j.token); this.credits(j.credits); return j.token;
+  },
+  async call(path, body, retry = true) {
+    if (!API) throw new Error('서버 주소가 없어요.');
+    const tok = await this.session();
+    const r = await fetch(API + path, { method: 'POST', headers: { authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401 && retry) { this.token = ''; store.set('cuttory_token', null); return this.call(path, body, false); }
+    this.credits(j.credits);
+    if (!r.ok) throw new Error(j.message || '서버가 제대로 답하지 못했어요.');
+    return j;
+  },
+  credits(n) { if (n != null) $('#credits').textContent = '✨ ' + Number(n).toLocaleString(); },
+};
+
+/* ===== 저장: 의뢰 여러 개 + 가격표 ===== */
+const KEY = 'cuttory-video-v1';
+const PRICE0 = {
+  packages: [
+    { id: 'basic', name: '베이직', price: 39000, scope: '15초 · 장면 4개 · 자막 · 수정 1회 · 3일' },
+    { id: 'std', name: '스탠다드', price: 69000, scope: '30초 · 장면 6~8개 · 자막·BGM · 수정 2회 · 4일' },
+    { id: 'pro', name: '프리미엄', price: 120000, scope: '60초 · 장면 10개+ · 모델·나레이션 · 수정 2회 · 5일' },
+  ],
+  extras: [
+    { id: 'rev', name: '추가 수정 (문구·색·위치)', price: 5000 },
+    { id: 'ratio', name: '다른 비율 추가 (1:1 · 16:9)', price: 10000 },
+    { id: 'src', name: '원본 프로젝트 · 소스 파일', price: 20000 },
+    { id: 'rush', name: '급행 (24시간)', price: 20000 },
+    { id: 'voice', name: 'AI 나레이션', price: 15000 },
+  ],
+};
+let D = store.get(KEY) || {};
+D.price = D.price || JSON.parse(JSON.stringify(PRICE0));
+D.list = D.list || [];
+const newProj = () => ({ id: Date.now().toString(36), b: { use: '인스타 릴스 광고', len: '15', how: 'photo' }, imgs: [], plan: null, pick: 0, pkg: 'basic', ex: {}, done: {} });
+if (!D.list.length) D.list.push(newProj());
+D.cur = D.list.some(p => p.id === D.cur) ? D.cur : D.list[0].id;
+const P = () => D.list.find(p => p.id === D.cur);
+let saveT; const persist = () => { clearTimeout(saveT); saveT = setTimeout(() => { if (!store.set(KEY, D)) toast('저장 공간이 꽉 찼어요. 지난 의뢰를 지워 주세요'); }, 250); };
+
+function renderProjects() {
+  $('#projects').innerHTML = D.list.map(p => `<button data-p="${p.id}" class="${p.id === D.cur ? 'on' : ''}">${esc(p.b.client || p.b.product || '새 의뢰')}</button>`).join('') + '<button data-p="+">＋ 새 의뢰</button>' + (D.list.length > 1 ? '<button data-p="-">🗑 이 의뢰 지우기</button>' : '');
+  $$('[data-p]').forEach(b => b.onclick = () => {
+    const v = b.dataset.p;
+    if (v === '+') { const n = newProj(); D.list.unshift(n); D.cur = n.id; }
+    else if (v === '-') { if (!confirm('이 의뢰를 지울까요?')) return; D.list = D.list.filter(p => p.id !== D.cur); D.cur = D.list[0].id; }
+    else D.cur = v;
+    D.list = D.list.slice(0, 20); persist(); load();
+  });
+}
+const BF = ['client', 'product', 'mood', 'must'];
+function load() {
+  const p = P();
+  BF.forEach(k => { const el = $('#b-' + k); el.value = p.b[k] || ''; el.oninput = () => { p.b[k] = el.value; persist(); if (k === 'client' || k === 'product') renderProjects(); }; });
+  $$('.seg[data-k]').forEach(g => {
+    const k = g.dataset.k;
+    g.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.v === String(p.b[k])); b.onclick = () => { p.b[k] = b.dataset.v; persist(); load(); }; });
+  });
+  if (p.b.len === '60' && p.pkg === 'basic') p.pkg = 'pro';
+  renderThumbs(); renderProjects(); renderPane();
+}
+function renderThumbs() {
+  const p = P();
+  $('#thumbs').innerHTML = p.imgs.map((u, i) => `<div><img src="${u}" alt=""><button data-x="${i}" aria-label="빼기">✕</button></div>`).join('');
+  $$('[data-x]').forEach(b => b.onclick = () => { p.imgs.splice(+b.dataset.x, 1); persist(); renderThumbs(); });
+}
+async function shrink(file, max = 768, q = .8) {
+  const img = await new Promise((res, rej) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = rej; im.src = u; });
+  const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement('canvas');
+  c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q);
+}
+$('#b-imgs').onchange = async e => {
+  const p = P(), files = [...e.target.files]; e.target.value = '';
+  for (const f of files) { if (p.imgs.length >= 4) { toast('사진은 4장까지예요'); break; } p.imgs.push(await shrink(f)); }
+  persist(); renderThumbs();
+};
+
+/* ===== 가격표 ===== */
+function renderPrice() {
+  const pr = D.price;
+  $('#price-edit').innerHTML = pr.packages.map((k, i) => `<div class="two" style="grid-template-columns:1fr 110px;margin-top:8px"><input type="text" data-pk="${i}" data-f="scope" value="${esc(k.scope)}" aria-label="${esc(k.name)} 범위"><input type="number" data-pk="${i}" data-f="price" value="${k.price}" aria-label="${esc(k.name)} 가격"></div><small style="color:var(--ct-sub);font-size:12px">${esc(k.name)}</small>`).join('')
+    + '<label class="f">추가 옵션</label>' + pr.extras.map((x, i) => `<div class="two" style="grid-template-columns:1fr 110px;margin-top:6px"><input type="text" data-ex="${i}" data-f="name" value="${esc(x.name)}"><input type="number" data-ex="${i}" data-f="price" value="${x.price}"></div>`).join('');
+  $$('#price-edit input').forEach(el => el.oninput = () => {
+    const arr = el.dataset.pk != null ? pr.packages[+el.dataset.pk] : pr.extras[+el.dataset.ex];
+    arr[el.dataset.f] = el.type === 'number' ? +el.value || 0 : el.value; persist(); if (tab === 'quote') renderPane();
+  });
+}
+$('#price-reset').onclick = () => { if (!confirm('가격표를 기본값으로 되돌릴까요?')) return; D.price = JSON.parse(JSON.stringify(PRICE0)); persist(); renderPrice(); renderPane(); };
+
+/* ===== AI 기획 ===== */
+const HOW = { photo: '고객 제품 사진을 이미지→영상(image-to-video) AI로 움직이게 만들고 편집', full: '장면을 텍스트→이미지→영상 AI로 전부 생성하고 편집', edit: '고객이 준 촬영 영상을 편집 (부족한 컷만 AI로 보충)' };
+$('#go').onclick = async e => {
+  const p = P(), b = p.b;
+  if (!b.product && !b.client) return toast('고객이나 제품을 적어 주세요');
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = '기획하는 중… (30초쯤)';
+  const prompt = `너는 1인 브랜드의 숏폼 광고 영상을 외주로 만드는 AI 영상 크리에이터의 기획 비서야.
+의뢰:
+- 고객/브랜드: ${b.client || '-'}
+- 제품/서비스: ${b.product || '-'}
+- 용도: ${b.use} / 길이: ${b.len}초 / 세로 9:16
+- 제작 방식: ${HOW[b.how]}
+- 분위기·레퍼런스: ${b.mood || '-'}
+- 꼭 들어갈 문구·정보: ${b.must || '-'}
+${p.imgs.length ? `- 첨부 사진 ${p.imgs.length}장: 제품의 색, 재질, 모양, 패키지 문구를 보고 장면에 그대로 반영해. 사진에 없는 제품 디테일은 지어내지 마.` : ''}
+
+규칙:
+- 첫 1.5초 안에 멈추게 하는 훅이 핵심이야. 서로 다른 유형(질문형·결과 먼저 보여주기형·공감형·반전형 등)으로 훅 3개를 쓰고, 가장 좋은 것 하나를 골라 이유를 적어.
+- 장면 수는 길이에 맞게 (8초 3개, 15초 4~5개, 30초 6~8개, 60초 10~12개). 각 장면 초 단위 구간을 적어.
+- image_prompt/video_prompt는 영어로, Kling·Runway·Midjourney에 바로 붙여 넣을 수 있게 구체적으로 (subject, setting, lighting, camera movement, lens, mood, 9:16 vertical). 제품 사진을 쓰는 장면은 "use the uploaded product photo as the first frame"을 넣어.
+- tool은 그 장면에 맞는 도구 하나 (Kling, Runway, Midjourney, 캡컷, 고객 영상 중).
+- 화면 자막은 한 줄 14자 이내 한국어.
+- 꼭 들어갈 정보는 반드시 장면 어딘가에 넣어.
+JSON:
+{"concept_title": "콘셉트 한 줄, 핵심 단어 하나를 [대괄호]로", "concept": "2문장 설명", "hooks": [{"type": "", "text": "화면 첫 자막/첫 대사", "why": ""}], "best_hook": 0, "best_reason": "",
+"scenes": [{"sec": "0-1.5", "shot": "무엇을 보여주는지 한국어 한 줄", "onscreen": "화면 자막", "voice": "나레이션 (없으면 빈칸)", "tool": "", "image_prompt": "", "video_prompt": "", "camera": "카메라 움직임 한국어"}],
+"bgm_prompt": "Suno에 넣을 영어 BGM 프롬프트 (장르, BPM, 악기, 분위기, instrumental)", "edit_steps": ["캡컷 편집 순서 6~9단계, 구체적으로 (컷 길이, 전환, 자막 스타일, 효과음 위치)"],
+"caption": "인스타 캡션 3~5줄 + 행동 유도", "hashtags": ["10개 이내"], "ask_client": ["고객에게 더 받아야 할 자료나 확인할 점 3~5개"], "risk": ["AI로 만들 때 주의할 점 2~3개 (제품 왜곡, 손·글자 깨짐, 음원 저작권 등)"]}`;
+  try {
+    const j = await H.call('/api/ai', { kind: 'gen', json: true, prompt, images: p.imgs });
+    p.plan = j.json || null; p.pick = Math.max(0, Math.min(2, +(p.plan && p.plan.best_hook) || 0));
+    persist(); tab = 'plan'; renderPane(); toast('기획이 나왔어요!');
+    if (innerWidth < 960) $('#out').scrollIntoView({ behavior: 'smooth' });
+  } catch (err) { toast(err.message); }
+  btn.disabled = false; btn.textContent = '🎬 기획 만들기';
+};
+
+/* ===== 결과 화면 ===== */
+let tab = 'plan';
+$$('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; renderPane(); });
+const hl = s => esc(s).replace(/\[(.+?)\]/g, '<em>$1</em>');
+const copyBtn = (text, label) => `<div class="prompt"><span class="lb">${esc(label)}</span>${esc(text)}<button data-copy="${esc(text)}">복사</button></div>`;
+function renderPane() {
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const p = P(), L = p.plan, el = $('#pane');
+  if (tab !== 'quote' && !L) { el.innerHTML = `<div class="empty"><div class="ic">🎬</div><b>여기에 기획이 나와요</b><p>왼쪽에 의뢰 내용을 적고 아래 <b>기획 만들기</b>를 눌러 주세요.<br>견적은 기획 없이도 바로 볼 수 있어요.</p></div>`; return; }
+  if (tab === 'plan') {
+    el.innerHTML = `<div class="concept"><h3>${hl(L.concept_title || '')}</h3><p>${esc(L.concept || '')}</p></div>
+      <h4 class="sec">훅 3개 · 눌러서 고르기</h4><div class="hooks">${(L.hooks || []).map((h, i) => `<button class="hook ${i === p.pick ? 'on' : ''}" data-h="${i}">${i === +L.best_hook ? '<span class="pick">추천</span>' : ''}<span class="tp">${esc(h.type)}</span><span class="tx">${esc(h.text)}</span><span class="wy">${esc(h.why)}</span></button>`).join('')}</div>
+      ${L.best_reason ? `<p class="note">추천 이유: ${esc(L.best_reason)}</p>` : ''}
+      <h4 class="sec">장면 흐름</h4><ol class="steps">${(L.scenes || []).map(s => `<li><b>${esc(s.sec)}초</b> ${esc(s.shot)}${s.onscreen ? ` · <i>"${esc(s.onscreen)}"</i>` : ''}</li>`).join('')}</ol>
+      ${(L.ask_client || []).length ? `<h4 class="sec">고객에게 더 받을 것</h4><ul class="check">${L.ask_client.map(x => `<li>• ${esc(x)}</li>`).join('')}</ul>` : ''}`;
+    $$('[data-h]').forEach(b => b.onclick = () => { p.pick = +b.dataset.h; persist(); renderPane(); });
+  } else if (tab === 'prompts') {
+    const hook = (L.hooks || [])[p.pick];
+    el.innerHTML = `${hook ? `<p class="note" style="margin:0 0 10px">첫 장면 자막은 고른 훅 <b>"${esc(hook.text)}"</b>로 바꿔 쓰세요.</p>` : ''}
+      <div class="scenes">${(L.scenes || []).map((s, i) => `<div class="scene"><div class="top"><span class="no">${i + 1}</span><span class="sec">${esc(s.sec)}초</span><span class="tool">${esc(s.tool)}</span></div>
+        <div class="shot">${esc(s.shot)}</div>
+        <dl class="kv">${s.onscreen || (i === 0 && hook) ? `<dt>자막</dt><dd>${esc(i === 0 && hook ? hook.text : s.onscreen)}</dd>` : ''}${s.voice ? `<dt>나레이션</dt><dd>${esc(s.voice)}</dd>` : ''}${s.camera ? `<dt>카메라</dt><dd>${esc(s.camera)}</dd>` : ''}</dl>
+        ${s.image_prompt ? copyBtn(s.image_prompt, '이미지 프롬프트') : ''}${s.video_prompt ? copyBtn(s.video_prompt, '영상 프롬프트') : ''}</div>`).join('')}</div>
+      ${L.bgm_prompt ? `<h4 class="sec">BGM (Suno)</h4>${copyBtn(L.bgm_prompt, 'Suno 프롬프트')}` : ''}
+      ${(L.risk || []).length ? `<h4 class="sec">만들 때 주의</h4><ul class="check">${L.risk.map(x => `<li>⚠️ ${esc(x)}</li>`).join('')}</ul>` : ''}`;
+  } else if (tab === 'edit') {
+    const tags = (L.hashtags || []).map(t => t.startsWith('#') ? t : '#' + t).join(' ');
+    el.innerHTML = `<h4 class="sec" style="margin-top:0">캡컷 편집 순서</h4><ol class="steps">${(L.edit_steps || []).map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+      <h4 class="sec">업로드 캡션</h4><div class="cap">${esc(L.caption || '')}${tags ? '\n\n' + esc(tags) : ''}</div>
+      <div class="row"><button class="btn dark sm" data-copy="${esc((L.caption || '') + (tags ? '\n\n' + tags : ''))}">캡션 복사</button><a class="btn sm" href="reels.html">릴스 도구에서 헤드카피 얹기 →</a></div>`;
+  } else {
+    renderQuote(el, p);
+  }
+  $$('[data-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast('복사했어요'); } catch { toast('복사하지 못했어요'); } });
+}
+function renderQuote(el, p) {
+  const pr = D.price, pk = pr.packages.find(k => k.id === p.pkg) || pr.packages[0];
+  const ex = pr.extras.filter(x => p.ex[x.id]);
+  const total = pk.price + ex.reduce((n, x) => n + x.price * (p.ex[x.id] || 0), 0);
+  const b = p.b, L = p.plan;
+  const msg = `안녕하세요, ${b.client || '고객'}님 😊
+${b.product ? `${b.product} ` : ''}${b.use} 영상(${b.len}초, 9:16) 견적 보내드려요.
+
+▪︎ ${pk.name}: ${won(pk.price)}
+  ${pk.scope}
+${ex.map(x => `▪︎ ${x.name}${(p.ex[x.id] || 0) > 1 ? ' ×' + p.ex[x.id] : ''}: ${won(x.price * p.ex[x.id])}`).join('\n')}${ex.length ? '\n' : ''}
+합계 ${won(total)}
+
+${L && L.concept_title ? `제안 콘셉트: ${L.concept_title.replace(/[\[\]]/g, '')}\n${L.concept || ''}\n\n` : ''}진행 순서: 상담·레퍼런스 확인 → 결제 → 시안 → 수정 → 최종 파일 전달
+수정은 한 번에 모아서 보내주셔야 1회로 쳐요. 배경·콘셉트를 새로 바꾸는 수정은 해당 컷 금액의 50%가 추가돼요.
+준비해 주실 것: 제품 사진(정면·디테일), 원하는 분위기 레퍼런스, 꼭 들어갈 문구${L && (L.ask_client || []).length ? '\n' + L.ask_client.map(x => '· ' + x).join('\n') : ''}`;
+  const DEL = ['1080×1920 세로, 30fps 이상으로 내보내기', '자막 오타 · 제품명 · 가격 다시 확인', '제품 모양·글자가 AI로 깨진 장면 없는지 확인', 'BGM · 효과음 상업 사용 가능한지 확인', '썸네일(커버) 1장 같이 전달', '수정 횟수 · 남은 횟수 안내', '원본 파일 제공 여부 계약대로'];
+  el.innerHTML = `<h4 class="sec" style="margin-top:0">패키지</h4><div class="pk">${pr.packages.map(k => `<button data-pk="${k.id}" class="${k.id === pk.id ? 'on' : ''}"><b>${esc(k.name)}</b><span class="pr">${won(k.price)}</span><small>${esc(k.scope)}</small></button>`).join('')}</div>
+    <div class="opts">${pr.extras.map(x => `<label><input type="checkbox" data-ex="${x.id}" ${p.ex[x.id] ? 'checked' : ''}>${esc(x.name)}${x.id === 'rev' && p.ex.rev ? ` <input type="number" min="1" max="9" value="${p.ex.rev}" data-exn="rev" style="width:56px;padding:4px 6px">회` : ''}<span>+${won(x.price)}</span></label>`).join('')}</div>
+    <table class="qt" style="margin-top:12px"><tr><td>${esc(pk.name)}<small>${esc(pk.scope)}</small></td><td>${won(pk.price)}</td></tr>${ex.map(x => `<tr><td>${esc(x.name)}${(p.ex[x.id] || 0) > 1 ? ' ×' + p.ex[x.id] : ''}</td><td>${won(x.price * p.ex[x.id])}</td></tr>`).join('')}<tr class="total"><td>합계</td><td>${won(total)}</td></tr></table>
+    <h4 class="sec">고객에게 보낼 견적 메시지</h4><div class="msg">${esc(msg)}</div>
+    <div class="row"><button class="btn dark sm" data-copy="${esc(msg)}">메시지 복사</button><a class="btn sm" href="portfolio.html">포트폴리오에 작업물 올리기 →</a></div>
+    <h4 class="sec">납품 전 체크</h4><ul class="check">${DEL.map((x, i) => `<li><label><input type="checkbox" data-done="${i}" ${p.done[i] ? 'checked' : ''}>${esc(x)}</label></li>`).join('')}</ul>`;
+  $$('[data-pk]').forEach(b => b.onclick = () => { p.pkg = b.dataset.pk; persist(); renderPane(); });
+  $$('[data-ex]').forEach(c => c.onchange = () => { p.ex[c.dataset.ex] = c.checked ? 1 : 0; persist(); renderPane(); });
+  $$('[data-exn]').forEach(c => c.onchange = () => { p.ex[c.dataset.exn] = Math.max(1, Math.min(9, +c.value || 1)); persist(); renderPane(); });
+  $$('[data-done]').forEach(c => c.onchange = () => { p.done[c.dataset.done] = c.checked; persist(); });
+}
+
+renderPrice(); load();
+</script>
+</body>
+</html>
