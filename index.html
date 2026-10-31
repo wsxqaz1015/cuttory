@@ -575,6 +575,7 @@
     <button class="nav-item" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7M5 10v10h14V10"/></svg>홈</button>
     <button class="nav-item on" data-view="studio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20 15 9M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM19 11l.5 1 1 .5-1 .5-.5 1-.5-1-1-.5 1-.5z"/></svg>스튜디오</button>
     <button class="nav-item" data-view="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="8" height="6" rx="1"/><rect x="13" y="14" width="8" height="6" rx="1"/></svg>저장소</button>
+    <a class="nav-item" href="poses.html" style="text-decoration:none;color:inherit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2.5"/><path d="M12 8v7M7 11l5-2 5-3M9 21l3-6 3 6"/></svg>캐릭터 포즈</a>
     <div class="nav-label">설정</div>
     <button class="nav-item" data-view="templates"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2 8 12.7 4 8.8 9.5 8z"/></svg>템플릿</button>
     <button class="nav-item fb-btn" id="btn-fb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/></svg>피드백</button>
@@ -2580,7 +2581,7 @@ function go(v) {
   if (v === 'templates') renderTemplates();
   if (v === 'studio') { syncPanel(); renderAll(); }
 }
-$$('.nav-item').forEach(b => b.onclick = () => go(b.dataset.view));
+$$('.nav-item[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
 
 
 // ===== 계정·크레딧 =====
