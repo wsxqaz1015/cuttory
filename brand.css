@@ -72,3 +72,5 @@ header.ct-top, .ct-top { position: sticky; top: 0; z-index: 30; display: flex; a
 .ct-page .credits { border-radius: 999px; background: var(--ct-card); border: 0; font-weight: 800; }
 .ct-hero-wrap { max-width: 1040px; margin: 0 auto; padding: 26px 16px 0; }
 .ct-lead { color: var(--ct-sub); font-size: 16px; margin: 0; }
+.ct-tabs a.to-office { color: var(--ct-ink); font-weight: 800; margin-right: 6px; box-shadow: inset -1px 0 0 var(--ct-line); border-radius: 999px 0 0 999px; }
+.ct-tabs a.to-office.on { color: var(--ct-pill-ink); box-shadow: none; border-radius: 999px; }
