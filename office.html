@@ -22,7 +22,7 @@
   --paper: #fdf8ee; --paper-ink: #22202c; --paper-muted: #6d6879; --paper-line: #e9e0cd; --paper-card: #ffffff;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; }
+html, body { margin: 0; overflow-x: hidden; }
 body { background: var(--bg); color: var(--ink); font-family: "Pretendard", -apple-system, "Apple SD Gothic Neo", sans-serif; line-height: 1.6; word-break: keep-all; min-height: 100vh; -webkit-text-size-adjust: 100%; }
 .px { font-family: "Galmuri11", "Pretendard", monospace; }
 button { font: inherit; cursor: pointer; color: inherit; }
@@ -101,7 +101,7 @@ a { color: inherit; }
 /* 모달 (종이 느낌) */
 .modal-bg { position: fixed; inset: 0; background: rgba(8,9,18,.66); display: none; align-items: flex-start; justify-content: center; padding: 26px 12px; overflow-y: auto; z-index: 50; }
 .modal-bg.open { display: flex; }
-.modal { background: var(--paper); color: var(--paper-ink); width: 100%; max-width: 860px; border-radius: 14px; border: 3px solid #12131f; box-shadow: 0 8px 0 rgba(0,0,0,.35); position: relative; animation: rise .2s ease-out; }
+.modal { background: var(--paper); color: var(--paper-ink); width: 100%; max-width: 860px; border-radius: 14px; border: 3px solid #12131f; box-shadow: 0 8px 0 rgba(0,0,0,.35); position: relative; animation: rise .2s ease-out; min-width: 0; overflow-wrap: anywhere; }
 .modal.small { max-width: 520px; }
 @keyframes rise { from { transform: translateY(14px); opacity: 0; } }
 .m-head { display: flex; gap: 12px; align-items: center; padding: 14px 18px; border-bottom: 2px solid var(--paper-line); position: sticky; top: 0; background: var(--paper); border-radius: 12px 12px 0 0; z-index: 2; }
@@ -122,7 +122,8 @@ a { color: inherit; }
 .r-sec { margin-top: 26px; }
 .r-sec h3 { font-size: 18px; margin: 0 0 2px; }
 .r-sec .desc { font-size: 12.5px; color: var(--paper-muted); margin: 0 0 12px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); gap: 12px; }
+.cards > * { min-width: 0; }
 .card { background: var(--paper-card); border: 2px solid var(--paper-line); border-radius: 12px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
 .card.scrapped { border-color: var(--gold); box-shadow: 0 0 0 2px #fff0c2; }
 .c-meta { display: flex; align-items: center; gap: 7px; font-size: 12px; margin-bottom: 6px; }
@@ -273,7 +274,7 @@ a { color: inherit; }
   .me-btn { order: 3; }
   .xpbar { width: 70px; }
   .side { grid-template-columns: 1fr; }
-  .cards { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
   .r-title { font-size: 21px; }
   .m-body { padding: 14px 14px 18px; }
   .row2 { grid-template-columns: 1fr; }
