@@ -157,8 +157,9 @@
   .chips.wrap { flex-wrap: wrap; overflow: visible; }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); z-index: 50; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 13.5px; max-width: calc(100vw - 32px); box-shadow: 0 8px 20px rgba(0,0,0,.2); white-space: pre-line; }
 </style>
+<link rel="stylesheet" href="brand.css">
 </head>
-<body>
+<body class="ct-page">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="potato" viewBox="0 -2 100 102">
     <path d="M18 46 Q50 34 82 46 Q86 70 70 86 Q60 96 50 98 Q40 96 30 86 Q14 70 18 46Z" fill="#d9a066" stroke="#7a4a22" stroke-width="3" stroke-linejoin="round"/>
@@ -175,17 +176,15 @@
   </symbol>
 </svg>
 
-<header class="top">
+<header class="top ct-top">
   <a class="logo" href="index.html" aria-label="컷토리 홈"><svg><use href="#potato"/></svg>컷토리.</a>
-  <a class="tab" href="index.html">카드뉴스</a>
-  <a class="tab on" href="poses.html" aria-current="page">캐릭터 포즈</a>
-  <a class="tab" href="blog.html">블로그 글</a>
-  <button class="credits" id="credits" title="크레딧 · 코드 입력">✨ –</button>
+  <nav class="ct-tabs" aria-label="컷토리 도구"><a href="index.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html">릴스</a><a href="poses.html" class="on" aria-current="page">캐릭터 포즈</a><a href="office.html">업무 오피스</a></nav>
+  <div class="ct-right"><button class="credits" id="credits" title="크레딧 · 코드 입력">✨ –</button></div>
 </header>
 
 <main>
   <section class="hero">
-    <h1>캐릭터 포즈 만들기</h1>
+    <h1>캐릭터 <em>포즈</em> 만들기</h1>
     <p>내 캐릭터 그림 한 장만 올리면, 인스타툰에 바로 쓰는 포즈로 다시 그려 드려요.</p>
   </section>
   <div class="banner" id="inapp" hidden></div>
