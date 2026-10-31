@@ -3518,7 +3518,23 @@ function starterProject() {
 function fillStarterImages(p) { p.cards.forEach(c => { if (c._img !== undefined) { c.bg.image = c._img ? DEMO_IMG[c._img] || null : null; c.photos = c._photos.map(k => DEMO_IMG[k]).filter(Boolean); delete c._img; delete c._photos; } }); }
 P = starterProject(); const P0 = P;
 $('#btn-new').onclick = () => { P = norm(newProject()); const c = norm({ cards: [newCard('제목을 써 주세요', '')] }).cards[0]; c.kind = 'cover'; c.layout = 't-cover-white'; c.tag = 'TREND'; P.cards = [c]; styleTrend(P); cur = 0; refPhotos = []; renderThumbs(); savedSig = null; renderCands(); renderDrafts(); go('studio'); };
-openLanding(); renderAcctChip();
+// 업무 오피스에서 승인한 카드뉴스 시안을 받아 바로 편집기에 채워요 (?import=office)
+const IMP = (() => { if (!/[?&]import=office\b/.test(location.search)) return null; try { const v = JSON.parse(localStorage.getItem('cuttory_office_import') || 'null'); localStorage.removeItem('cuttory_office_import'); return v && Array.isArray(v.slides) && v.slides.length ? v : null; } catch { return null; } })();
+if (IMP) {
+  const p = norm(newProject()), BODY = ['t-memo', 't-check', 't-emoji', 't-memo'];
+  p.name = IMP.title || '오피스 카드뉴스'; p.source = IMP.source || ''; p.summary = IMP.caption || '';
+  p.cards = IMP.slides.map((x, i, a) => {
+    const c = norm({ cards: [newCard(String(x.head || ''), String(x.body || ''))] }).cards[0];
+    const last = i === a.length - 1 && a.length > 2;
+    c.kind = i === 0 ? 'cover' : last ? 'end' : 'body';
+    c.layout = i === 0 ? 't-cover-white' : last ? 't-profile' : BODY[(i - 1) % BODY.length];
+    if (i === 0) { c.tag = 'ISSUE'; c.sub = IMP.sub || ''; }
+    return c;
+  });
+  styleTrend(p); p.series = IMP.series || ''; P = p; cur = 0; refPhotos = []; savedSig = null;
+  renderThumbs(); renderCands(); renderDrafts(); syncPanel(); renderAll(); closeLanding(); go('studio');
+} else openLanding();
+renderAcctChip();
 const fontsReady = document.fonts ? Promise.all([document.fonts.load("400 20px 'Pretendard'"), document.fonts.load("900 20px 'Pretendard'")]).catch(() => {}).then(() => document.fonts.ready) : Promise.resolve();
 fontsReady.then(renderAll);
 Promise.all([fontsReady, loadDemoImages().then(loadServerSamples)]).then(() => { if (P === P0) { fillStarterImages(P); syncPanel(); renderAll(); } drawLandingStatic(); landStep(); });

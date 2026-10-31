@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const API = (process.env.CUTTORY_API || 'https://cuttory-api.wsxqaz1015.workers.dev').replace(/\/$/, '');
 const FORCE = process.argv.includes('--force');
+const ONLY = (process.argv.find(a => a.startsWith('--only=')) || '').slice(7);  // drafts에서 한 종류만 다시 (card|blog|reels)
 const args = process.argv.slice(2).filter(a => !a.startsWith('--'));
 const KEEP = { daily: 45, weekly: 16, monthly: 12, quarterly: 8 };  // reports-data.js에 담는 개수 (나머지는 json으로만 남아요)
 
@@ -247,8 +248,8 @@ function finish(kind, id, plan, out, srcOf) {
 
 
 // ───── 팀장 검토 (대표 대신 1차 결재) ─────
-const MAX_DRAFTS = 5, PASS_SCORE = 80;
-const LEAD = '당신은 마케팅 콘텐츠 에이전시의 팀장입니다. 대표를 대신해 팀원의 시안을 먼저 검토하고, 대표에게 올릴 만한지 판단합니다. 기준이 높고 지적은 구체적이며, 잘한 점도 짧게 인정합니다.';
+const MAX_DRAFTS = 5, PASS_SCORE = 85;
+const LEAD = '당신은 마케팅 콘텐츠 에이전시의 깐깐한 팀장입니다. 대표를 대신해 팀원의 시안을 먼저 검토하고, 대표에게 올릴 만한지 판단합니다. 첫 시안은 대부분 고칠 점이 있습니다. 밋밋한 문장, 누구나 쓸 법한 표현, 근거와 다른 내용은 냉정하게 감점하고, 지적은 "어느 부분을 어떻게"까지 구체적으로 씁니다. 잘한 점도 짧게 인정합니다.';
 async function leadReview(what, rubric, draft, ref, v) {
   const r = await ask(`${LEAD}
 지금 검토할 것: ${what} (시안 ${v}번${v > 1 ? ', 지난 지적을 반영해 고친 버전' : ''})
@@ -347,10 +348,10 @@ const AUDIENCE = '독자는 마케팅에 관심 있는 2030 인스타그램·블
 const DRAFT_KINDS = {
   card: {
     who: '카드뉴스 디자이너', what: '인스타그램 카드뉴스 6장 문구',
-    spec: '{"title":"작업 이름","slides":[{"head":"장마다 큰 제목 (18자 안쪽)","body":"작은 본문 1~2줄 (60자 안쪽)"} 를 정확히 6장],"caption":"인스타 캡션 3~5줄","hashtags":["해시태그 8개, # 없이"]}',
+    spec: '{"title":"작업 이름","slides":[{"head":"장마다 큰 제목 (18자 안쪽)","body":"작은 본문 1~2줄 (60자 안쪽)","fact":"이 장 내용의 근거가 된 기사 문장을 그대로 인용 (근거가 필요 없는 마무리 장은 빈 문자열)"} 를 정확히 6장],"caption":"인스타 캡션 3~5줄","hashtags":["해시태그 8개, # 없이"]}',
     guide: '오늘 네이버 뉴스에서 가장 화제인 이슈를 다룹니다. 1장은 스크롤을 멈추게 하는 훅, 2~5장은 무슨 일인지·왜 화제인지·나에게 어떤 의미인지, 6장은 저장·공유·댓글을 부르는 마무리.',
     rubric: `- 훅·바이럴 (30): 1장 제목만 보고도 넘기고 싶고, 저장·공유하고 싶어지는가
-- 정확성 (25): 내용이 원본 기사와 맞는가. 기사에 없는 숫자를 지어내지 않았는가
+- 정확성 (25): 내용이 원본 기사와 맞는가. 기사에 없는 숫자를 지어내지 않았는가. 각 장의 fact가 기사 문장 그대로이고 그 장 내용을 뒷받침하는가
 - 흐름 (20): 6장이 훅 → 내용 → 마무리로 자연스럽게 이어지는가
 - 형식 (15): 정확히 6장, 제목 18자·본문 60자 안쪽인가
 - 캡션 (10): 캡션과 해시태그가 바로 올릴 수 있는 수준인가`,
@@ -368,15 +369,20 @@ const DRAFT_KINDS = {
     ok: d => d.title && Array.isArray(d.sections) && d.sections.length >= 2,
   },
   reels: {
-    who: '릴스 PD', what: '30초 릴스 대본',
-    spec: '{"title":"작업 이름","hook":"첫 1.5초 화면 문구 (15자 안쪽)","scenes":[{"sec":"0-3","shot":"화면 구성","text":"화면 자막","voice":"내레이션"} 를 5~7개],"caption":"캡션 2~4줄","hashtags":["해시태그 6개, # 없이"]}',
-    guide: '전체 30초 안쪽, 첫 장면에서 결론이나 가장 놀라운 점부터 보여 줍니다. 혼자 휴대폰으로 찍을 수 있는 화면으로 구성합니다.',
-    rubric: `- 훅 (30): 첫 1.5초에 끝까지 볼 이유가 생기는가
-- 정확성 (20): 사례 내용이 원본 카드와 맞는가
-- 찍을 수 있음 (20): 혼자 휴대폰으로 찍을 수 있는 장면인가
-- 길이·리듬 (20): 30초 안쪽이고 장면이 3~5초씩 끊기는가
-- 캡션 (10): 바로 올릴 수 있는 캡션과 해시태그인가`,
-    ok: d => d.hook && Array.isArray(d.scenes) && d.scenes.length >= 3,
+    who: '릴스 PD', what: '1분 안쪽 릴스 대본',
+    spec: '{"title":"작업 이름","label":"썸네일 상단 시리즈 라벨 (예: 3n살 백수일기 #NN)","thumb":"썸네일 문구 (15자 안팎 질문형)","hook":"첫 화면 큰 타이틀 (작은 라벨 / 큰 글씨)","scenes":[{"sec":"0-3","shot":"화면 (사진·화면 녹화·셀프 촬영 중 혼자 찍을 수 있는 것)","text":"화면 자막 한 줄"} 를 8~14컷, 마지막 컷 끝 초가 60 이하],"ending":"오프닝과 맞물리는 엔딩 질문","caption":"(저장) 첫 줄 훅 + 감상 2~4줄 + 📌 꿀팁 + 공유 유도 한 줄","hashtags":["해시태그 8~10개, # 없이"],"fill":["직접 채워야 할 실제 경험·숫자 목록"]}',
+    guide: `@lucky_marketer(리지) 계정 릴스입니다. 퇴사 후 콘텐츠를 만들며 독서 굿즈 펀딩을 준비하는 콘텐츠 마케터, '3n살 백수일기' 시리즈.
+- 길이는 1분 안쪽(30~60초), 음악 + 자막(보이스 없음). 컷은 2~5초씩 빠르게, 자막은 짧은 혼잣말 한 줄.
+- 말투: 해요체 + "~함/~음" 담백한 마무리, 말끝 흐리기("..//", "..🫠"), 질문형("~일까요..?"), 나를 놀리는 자조와 괄호 드립 "(나야 나)", "(바보)".
+- 흐름: 오프닝 타이틀 → 상황 → 📌 꿀팁·알게 된 것 1~3개 → 솔직한 자조 에피소드 → 핵심 장면 → 오프닝과 맞물리는 엔딩 질문 + 다음 편 예고·팔로우 이유.
+- 직장인 설정 금지, 실제 경험 미화 금지. 모르는 경험·숫자는 [직접 채우기] 또는 [N]으로 비워 두세요.
+- 과장 광고 문구, 긴 설명형 자막, 누구나 쓸 법한 밋밋한 감성 문장은 피합니다.`,
+    rubric: `- 훅 (30): 썸네일과 첫 3초에 모르는 사람이 멈추고 끝까지 볼 이유가 생기는가
+- 리지다움 (25): 해요체·자조·괄호 드립 말투, 직장인 설정·경험 미화가 없는가, 모르는 건 [직접 채우기]로 비웠는가
+- 길이·리듬 (20): 60초 안쪽, 컷 2~5초, 자막이 짧은 한 줄인가
+- 찍을 수 있음 (15): 사진·화면 녹화·셀프 촬영으로 혼자 만들 수 있는가
+- 캡션 (10): (저장) 첫 줄, 공유 유도, 해시태그 8~10개`,
+    ok: d => d.hook && Array.isArray(d.scenes) && d.scenes.length >= 5,
   },
 };
 
@@ -437,14 +443,34 @@ ${list.map((it, i) => `[${i + 1}] ${it.title} [${it.signals.join(', ')}]`).join(
   throw new Error('고른 기사를 읽지 못했어요');
 }
 
+
+// ───── 콘텐츠 비서 주제 (릴스 소재) ─────
+// office/content-secretary/<날짜>.json: 콘텐츠 전략 비서가 고른 그날 주제 10개 (승인한 주제 approvedIdx, TOP 1~3)
+// 아직 릴스로 안 만든 주제 중 승인한 것 → TOP 순위 → 점수 순으로, 릴스 포맷을 먼저 골라요.
+function secretaryTopic(id) {
+  const dir = path.join(DIR, 'content-secretary');
+  let files = []; try { files = fs.readdirSync(dir).filter(f => f.endsWith('.json') && f.slice(0, -5) <= id).sort().reverse(); } catch {}
+  const used = new Set();
+  try { for (const f of fs.readdirSync(path.join(DIR, 'drafts'))) { if (f === id + '.json') continue; const r = JSON.parse(fs.readFileSync(path.join(DIR, 'drafts', f), 'utf8')).items?.reels; if (r?.from?.title) used.add(r.from.title); } } catch {}
+  for (const f of files.slice(0, 7)) {
+    const day = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    const rank = (t, i) => (i === day.approvedIdx ? 0 : 10) + (t.format === '릴스' ? 0 : 5) + (t.top ? t.top : 4) - (t.score || 0) / 100;
+    const pick = (day.topics || []).map((t, i) => ({ t, i })).filter(x => x.t.title && !used.has(x.t.title)).sort((a, b) => rank(a.t, a.i) - rank(b.t, b.i))[0];
+    if (pick) return { ...pick.t, day: day.date, approved: pick.i === day.approvedIdx };
+  }
+  return null;
+}
+
 const dfile = id => path.join(DIR, 'drafts', id + '.json');
 async function makeDrafts(id) {
-  if (!FORCE && fs.existsSync(dfile(id))) { console.log(`drafts ${id}: 이미 있어요`); return; }
+  if (!FORCE && !ONLY && fs.existsSync(dfile(id))) { console.log(`drafts ${id}: 이미 있어요`); return; }
+  const prev = ONLY ? JSON.parse(fs.readFileSync(dfile(id), 'utf8')) : null;
   const daily = load('daily', id);
   const cards = daily ? daily.sections.flatMap(s => s.items.map(it => ({ ...it, section: s.title }))) : [];
-  const out = { date: id, source: { kind: 'daily', id, label: daily ? daily.period_label : '', headline: daily ? daily.headline : '' }, items: {} };
+  const out = prev || { date: id, source: { kind: 'daily', id, label: daily ? daily.period_label : '', headline: daily ? daily.headline : '' }, items: {} };
   let i = 0;
   for (const [k, K] of Object.entries(DRAFT_KINDS)) {
+    if (ONLY && k !== ONLY) continue;
     let card, ref;
     if (k === 'card') { // 카드뉴스는 오늘 네이버 뉴스에서 가장 핫한 이슈로
       try {
@@ -453,6 +479,15 @@ async function makeDrafts(id) {
         ref = `[오늘의 이슈] ${hot.title}\n화제 신호: ${hot.signals.join(', ')}\n${hot.why ? `바이럴 포인트: ${hot.why}\n` : ''}${hot.angle ? `풀 각도: ${hot.angle}\n` : ''}[기사 본문${hot.press ? ` · ${hot.press}` : ''}] ${hot.text}\n출처: ${hot.url}`;
         console.log(`  오늘의 이슈: ${hot.title} (${hot.signals.join(', ')})`);
       } catch (e) { console.warn('  오늘의 이슈를 못 골라서 데일리 카드로 대신해요:', e.message); }
+    }
+    if (k === 'reels') { // 릴스는 콘텐츠 비서가 고른 가장 바이럴 될 주제로
+      const t = secretaryTopic(id);
+      if (t) {
+        card = { title: t.title, section: `콘텐츠 비서 · ${t.day}${t.approved ? ' 승인 주제' : t.top ? ` TOP ${t.top}` : ''}`, signals: [`비서 점수 ${t.score ?? '-'}점`, t.format, t.type, t.sourceViews ? `원본 조회수 ${Number(t.sourceViews).toLocaleString('ko-KR')}` : ''].filter(Boolean), sources: [] };
+        const g = t.growth || {};
+        ref = `[콘텐츠 비서 주제] ${t.title}\n포맷: ${t.format || '-'} · 종류: ${t.type || '-'} · 축: ${t.axis || '-'}\n왜 터질까: ${t.whyViral || '-'}\n왜 지금: ${t.whyNow || '-'}\n노리는 것: ${t.goal || '-'}\n가져갈 것: ${t.takeaway || '-'}\n근거: ${t.evidence || '-'}${t.sourceTitle ? `\n참고한 원본: ${t.sourceTitle}${t.sourceViews ? ` (조회수 ${t.sourceViews})` : ''}` : ''}${g.thumbHook ? `\n[터지게 만드는 것] 썸네일 훅: ${g.thumbHook} / 연재 라벨: ${g.label || '-'} / 팔로우 CTA: ${g.cta || '-'} / 해시태그: ${g.tags || '-'} / 댓글 키워드: ${g.commentKeyword || '-'} / 끝 질문: ${g.closingQ || '-'}` : ''}\n제목의 훅 문장 구조는 살리고, [N]·[직접 채우기]는 그대로 비워 두세요.`;
+        console.log(`  콘텐츠 비서 주제: ${t.title}`);
+      } else console.warn('  콘텐츠 비서 주제가 없어서 데일리 카드로 대신해요');
     }
     if (!card) {
       if (!cards.length) { console.warn(`  ${k}: 데일리가 없어서 건너뛰어요`); continue; }
