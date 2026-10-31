@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -7,7 +7,7 @@
 <meta name="description" content="매일 아침 팀원들이 마케팅 트렌드 리포트를 들고 출근하는 작은 픽셀 사무실. 읽고, 퀴즈 풀고, 스크랩하면서 인턴에서 CMO까지 승진해요.">
 <meta property="og:title" content="컷토리 업무 오피스">
 <meta property="og:description" content="매일 아침 마케팅 트렌드 리포트가 도착하는 작은 사무실">
-<meta name="theme-color" content="#161827">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="트렌드 오피스">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23161827'/><rect x='3' y='5' width='10' height='8' fill='%23ffb347'/><rect x='5' y='2' width='6' height='3' fill='%23ff6b6b'/></svg>">
@@ -16,10 +16,10 @@
 <style>
 @font-face { font-family: 'Pretendard'; src: url('fonts/PretendardVariable.woff2') format('woff2-variations'), url('fonts/PretendardVariable.woff2') format('woff2'); font-weight: 45 920; font-style: normal; font-display: swap; }
 :root {
-  --bg: #161827; --panel: #222540; --panel-2: #2c3054; --line: #3d4270; --ink: #f2f0ff; --muted: #a3a6cc;
+  --bg: #ffffff; --panel: #f4f5f7; --panel-2: #ffffff; --line: #e7e8ec; --ink: #15161a; --muted: #6b6f78;
   --accent: #ff6b6b; --gold: #ffc94d; --good: #3ccf91;
   --daily: #ff6b6b; --weekly: #4dabf7; --monthly: #3ccf91; --quarterly: #a98bfa;
-  --paper: #fdf8ee; --paper-ink: #22202c; --paper-muted: #6d6879; --paper-line: #e9e0cd; --paper-card: #ffffff;
+  --paper: #ffffff; --paper-ink: #15161a; --paper-muted: #6b6f78; --paper-line: #e7e8ec; --paper-card: #ffffff;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; overflow-x: hidden; }
@@ -259,6 +259,45 @@ a { color: inherit; }
 .confetti { position: fixed; top: -12px; width: 8px; height: 12px; z-index: 95; pointer-events: none; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
 
+
+/* 컷토리 공통 스타일(흰 바탕 · 검은 알약 버튼)에 맞춘 덮어쓰기 */
+.chip-btn { border: 0; border-radius: 999px; background: var(--panel); padding: 7px 13px; }
+.chip-btn:hover { background: #eceef1; }
+.me-btn { background: var(--ink); color: #fff; }
+.me-btn:hover { background: #2a2c33; }
+.me-btn .xptext { color: #c9ccd3; }
+.me-btn .xpbar { background: #3a3c44; }
+.stage { border: 0; border-radius: 20px; box-shadow: 0 10px 30px rgba(21,22,26,.12); }
+.panel { border: 1px solid var(--line); border-radius: 20px; background: var(--panel); }
+.member { background: #fff; border: 1px solid var(--line); border-radius: 14px; }
+.member:hover { border-color: var(--ink); }
+.member.has-new { border-color: var(--ink); box-shadow: inset 0 -3px 0 #f2c94c; }
+.member.todo { border-color: #f2c94c; }
+.log { color: var(--ink); }
+.tools a { background: #fff; border: 1px solid var(--line); border-radius: 999px; text-align: center; }
+.tools a:hover { background: var(--ink); color: #fff; }
+.modal-bg { background: rgba(21,22,26,.45); backdrop-filter: blur(3px); }
+.modal { border: 0; border-radius: 22px; box-shadow: 0 24px 60px rgba(21,22,26,.25); }
+.m-head { border-radius: 22px 22px 0 0; border-bottom: 1px solid var(--paper-line); }
+.r-title { font-weight: 900; letter-spacing: -.035em; }
+.card { border: 1px solid var(--paper-line); border-radius: 18px; background: #fff; }
+.r-sum, .follow, .work-tool, .qexp, .lvlist li, .bdg, .wlist li, .list > li > button, .list > li.row, .qopt, .src-list li { border-width: 1px; border-radius: 14px; }
+.btn { border-radius: 999px; background: var(--ink); }
+.btn:hover { filter: none; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.14); }
+.btn.ghost { background: var(--panel); border: 0; }
+.btn.gold { background: #f2c94c; color: #15161a; }
+.kw span, .kw a { background: #fff6d6; color: #15161a; }
+.c-meta .tag { color: #15161a; background: linear-gradient(transparent 55%, #f2c94c 55%); }
+.toast { background: var(--ink); border: 0; border-radius: 999px; }
+.fab { background: var(--ink); color: #fff; border: 0; box-shadow: 0 8px 20px rgba(0,0,0,.18); }
+.fab:hover { background: #2a2c33; }
+.coach-card { border: 0; border-radius: 18px; box-shadow: 0 18px 40px rgba(0,0,0,.25); }
+.board-view { background: #fff; }
+.rk-list li { border-width: 1px; border-radius: 14px; }
+.hud { margin-top: 4px; }
+.hud .office-title { font-size: 20px; font-weight: 900; letter-spacing: -.03em; margin: 0; white-space: nowrap; }
+.hud .office-title em { font-style: normal; background: linear-gradient(transparent 62%, #f2c94c 62%); }
+
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
   .side { grid-template-columns: 1fr 1fr; }
@@ -283,11 +322,31 @@ a { color: inherit; }
   .stage-tip { display: none; }
 }
 </style>
+<link rel="stylesheet" href="brand.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="potato" viewBox="0 -2 100 102">
+    <path d="M18 46 Q50 34 82 46 Q86 70 70 86 Q60 96 50 98 Q40 96 30 86 Q14 70 18 46Z" fill="#d9a066" stroke="#7a4a22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M12 46 Q14 22 50 20 Q86 22 88 46 Q70 54 50 54 Q30 54 12 46Z" fill="#8a5a2b" stroke="#5a3515" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M24 34 L36 46 M36 28 L50 44 M50 26 L64 44 M64 28 L76 42 M30 44 L44 30 M46 46 L60 28 M62 46 L74 32" stroke="#6b4220" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+    <g stroke="#3a2a1a" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M50 20 L42 6"/><path d="M50 20 L58 6"/></g>
+    <circle cx="40" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="60" cy="3.5" r="3.5" fill="none" stroke="#3a2a1a" stroke-width="2.4"/>
+    <circle cx="50" cy="15" r="1.8" fill="#3a2a1a"/>
+    <circle cx="39" cy="68" r="4.5" fill="#2d241b"/><circle cx="61" cy="68" r="4.5" fill="#2d241b"/>
+    <circle cx="40.5" cy="66.5" r="1.5" fill="#fff"/><circle cx="62.5" cy="66.5" r="1.5" fill="#fff"/>
+    <path d="M44 77 Q50 82 56 77" stroke="#2d241b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <ellipse cx="31" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/><ellipse cx="69" cy="76" rx="5" ry="3" fill="#f08a7a" opacity=".55"/>
+  </symbol>
+</svg>
+<header class="ct-top">
+  <a class="logo" href="index.html" aria-label="컷토리 홈"><svg><use href="#potato"/></svg>컷토리.</a>
+  <nav class="ct-tabs" aria-label="컷토리 도구"><a href="index.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html">릴스</a><a href="poses.html">캐릭터 포즈</a><a href="office.html" class="on" aria-current="page">업무 오피스</a></nav>
+</header>
 <div class="app">
   <header class="hud">
-    <h1 class="px"><a href="index.html" title="컷토리 홈">🏢</a> 업무 오피스</h1>
+    <h1 class="office-title">나의 <em>업무 오피스</em></h1>
     <span class="clock px" id="clock"></span>
     <span class="spacer"></span>
     <button class="chip-btn me-btn" id="btn-level" title="직급표 보기">

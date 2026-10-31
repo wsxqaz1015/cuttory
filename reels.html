@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>컷토리 릴스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gothic+A1:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
@@ -84,7 +84,11 @@
   .font-row input[type=number] { padding: 8px; }
   .slider-row { display: grid; grid-template-columns: 76px minmax(0, 1fr) 36px; gap: 8px; align-items: center; margin-top: 12px; font-size: 13px; }
   .slider-row span:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  body.ct-reels { --accent: var(--ct-pill); }
 </style>
+<link rel="stylesheet" href="brand.css">
+</head>
+<body class="ct-page ct-reels">
 
 <!-- 마스코트 (직접 그린 SVG) -->
 <svg width="0" height="0" style="position:absolute">
@@ -106,9 +110,11 @@
 </svg>
 
 <section id="view-app">
-  <header class="top">
-    <div class="brand"><svg><use href="#mascot"/></svg>컷토리 릴스</div>
+  <header class="top ct-top">
+    <a class="logo" href="index.html" aria-label="컷토리 홈"><svg><use href="#mascot"/></svg>컷토리.</a>
+    <nav class="ct-tabs" aria-label="컷토리 도구"><a href="index.html">카드뉴스</a><a href="blog.html">블로그</a><a href="reels.html" class="on" aria-current="page">릴스</a><a href="poses.html">캐릭터 포즈</a><a href="office.html">업무 오피스</a></nav>
   </header>
+  <section class="ct-hero-wrap"><p class="ct-eyebrow">컷토리 릴스</p><h1 class="ct-h1">영상에 <em class="ct-hl">헤드카피</em> 얹기</h1><p class="ct-lead">세로 영상을 올리고 위아래 문구만 적으면, 릴스에 바로 올릴 영상 파일로 만들어 드려요.</p></section>
   <main class="app">
     <div class="panel">
       <div class="step">
