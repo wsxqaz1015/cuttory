@@ -2,6 +2,8 @@
 //   node office/blog/make-clip.mjs <사진·영상 폴더> <clip.json> <결과.mp4>
 // clip.json 모양:
 //   { "title": ["작은 라벨", "큰 제목"], "cuts": [ { "file": "IMG_01.jpg", "sec": 2.5, "text": "자막 한 줄", "time": "14:20" } ], "ending": "끝 질문 한마디" }
+// 공간 소개형(대표가 고른 mugtraveler 클립 스타일)은 "top" 을 쓰면 영상 내내 위쪽에 고정 타이틀이 떠요:
+//   { "top": { "big": "SEOUL", "small": "CAFE", "line": "낮에는 카페, 밤에는 바로 변하는 혜화의 공간" }, "cuts": [ { "file": "a.jpg", "sec": 2 } ] }
 // - 첫 컷 위에 제목 두 줄(3초), 컷마다 화면 중앙 아래 자막 한 줄, 시간 자막(time)이 있으면 위쪽에 작게.
 // - 사진은 천천히 확대(켄 번스), 영상은 앞에서부터 sec초만 써요. 소리는 넣지 않아요 (음악은 클립 앱에서 골라요).
 // - 업로드는 하지 않아요. 결과 영상은 대표님이 확인하고 직접 올려요.
@@ -14,6 +16,7 @@ if (!dir || !spec || !out) { console.error('사용법: node office/blog/make-cli
 const clip = JSON.parse(fs.readFileSync(spec, 'utf8'));
 const FONT = ['/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc', '/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf', '/System/Library/Fonts/AppleSDGothicNeo.ttc'].find(f => fs.existsSync(f));
 if (!FONT) { console.error('한글 글꼴을 찾지 못했어요'); process.exit(1); }
+const SERIF = ['/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf', '/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf'].find(f => fs.existsSync(f)) || FONT;
 const W = 1080, H = 1920, FPS = 30;
 const tmp = fs.mkdtempSync(path.join(path.dirname(path.resolve(out)), '.clip-'));
 // drawtext 에 넣을 글자는 파일로 넘겨요 (따옴표·콜론 이스케이프 문제를 피해요)
@@ -35,6 +38,12 @@ clip.cuts.forEach((c, i) => {
     const [small, big] = Array.isArray(clip.title) ? clip.title : ['', clip.title];
     if (small) f.push(draw(txt(small), 54, 'h*0.30', false) + ':enable=lt(t\\,3)');
     f.push(draw(txt(big), 84, 'h*0.36', false) + ':enable=lt(t\\,3)');
+  }
+  if (clip.top) { // 고정 타이틀: 세리프 영문 큰 글씨 + 자간 넓은 작은 글씨 + 한 줄 설명 (박스 없이 은은한 그림자)
+    const soft = ':shadowcolor=black@0.45:shadowx=0:shadowy=2';
+    if (clip.top.big) f.push(`drawtext=fontfile=${SERIF.replace(/:/g, '\\:')}:textfile=${txt(String(clip.top.big).split('').join(' '))}:fontsize=74:fontcolor=white:x=(w-text_w)/2:y=h*0.105${soft}`);
+    if (clip.top.small) f.push(`drawtext=fontfile=${SERIF.replace(/:/g, '\\:')}:textfile=${txt(String(clip.top.small).split('').join(' '))}:fontsize=30:fontcolor=white:x=(w-text_w)/2:y=h*0.105+92${soft}`);
+    if (clip.top.line) f.push(`drawtext=fontfile=${FONT.replace(/:/g, '\\:')}:textfile=${txt(clip.top.line)}:fontsize=38:fontcolor=white:x=(w-text_w)/2:y=h*0.105+148${soft}`);
   }
   if (c.time) f.push(draw(txt(c.time), 46, 'h*0.12', false));
   if (c.text) f.push(draw(txt(c.text), 58, 'h*0.70') + (i === 0 && clip.title ? ':enable=gte(t\\,3)' : ''));
