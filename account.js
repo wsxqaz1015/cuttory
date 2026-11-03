@@ -103,10 +103,10 @@
   // ----- 로그인 -----
   let cfg = null;
   async function config() {
+    if (cfg && typeof cfg.google === 'string' && cfg.google) return cfg;
+    try { cfg = JSON.parse(sessionStorage.getItem('ct-config-v2') || 'null'); } catch {}
     if (cfg) return cfg;
-    try { cfg = JSON.parse(sessionStorage.getItem('ct-config') || 'null'); } catch {}
-    if (cfg) return cfg;
-    try { cfg = await (await fetch(API + '/api/config')).json(); sessionStorage.setItem('ct-config', JSON.stringify(cfg)); } catch { cfg = {}; }
+    try { const r = await fetch(API + '/api/config'); if(!r.ok) throw new Error('서버 로그인 설정을 확인하지 못했어요.'); cfg = await r.json(); if(typeof cfg.google !== 'string') throw new Error('서버 로그인 코드 업데이트가 필요해요.'); sessionStorage.setItem('ct-config-v2', JSON.stringify(cfg)); } catch { cfg = { unavailable: true }; }
     return cfg;
   }
   let gisP = null;
@@ -121,7 +121,8 @@
     try {
       const j = await call('/api/login/google', { method: 'POST', body: JSON.stringify({ credential: resp.credential }) });
       put('cuttory_token', j.token);
-      put('cuttory_account', JSON.stringify(j.account || {}));
+      put('cuttory_account', JSON.stringify({...j.account,id:j.id}));
+      window.dispatchEvent(new CustomEvent('cuttory:account-change'));
       for (const a of Object.keys(APPS)) { put(tKey(a), null); put(dirtyKey(a), null); }
       await pull(true);
       try { sessionStorage.removeItem('ct-sync-reload'); } catch {}
@@ -132,7 +133,7 @@
     box.textContent = '불러오는 중…';
     try {
       const c = await config();
-      if (!c.google) { box.textContent = '아직 로그인 설정이 끝나지 않았어요.'; return; }
+      if (!c.google) { box.textContent = c.unavailable ? '서버 로그인 코드 업데이트가 필요해요. 운영자에게 문의해 주세요.' : '운영자가 Google 로그인 설정을 완료해야 사용할 수 있어요.'; return; }
       await loadGis();
       google.accounts.id.initialize({ client_id: c.google, callback: onCredential, ux_mode: 'popup', auto_select: false });
       box.textContent = '';
@@ -143,6 +144,7 @@
     put('cuttory_account', null); put('cuttory_token', null);
     for (const a of Object.keys(APPS)) { put(tKey(a), null); put(dirtyKey(a), null); if (wipe) put(APPS[a], null); }
     paint();
+    window.dispatchEvent(new CustomEvent('cuttory:account-change'));
   }
   async function logout() {
     const wipe = confirm('로그아웃할게요.\n\n이 기기에 남은 작업도 지울까요? 계정에는 그대로 저장돼 있어서 다시 로그인하면 돌아와요.\n\n[확인] 이 기기에서 지우기  [취소] 남겨 두기');
@@ -175,7 +177,7 @@
     const acc = account();
     ui.btn.className = 'ct-acct-btn' + (acc ? ' in' : '');
     if (acc) {
-      const name = acc.name || (acc.email || '').split('@')[0] || '나';
+      const name = acc.nickname || acc.name || (acc.email || '').split('@')[0] || '나';
       ui.btn.innerHTML = '';
       const av = document.createElement('span'); av.className = 'ct-acct-av';
       if (acc.picture) av.style.backgroundImage = `url("${acc.picture.replace(/"/g, '')}")`; else av.textContent = name.slice(0, 1);
@@ -192,7 +194,7 @@
     if (acc) {
       const row = document.createElement('div'); row.className = 'row';
       const av = ui.btn.querySelector('.ct-acct-av').cloneNode(true); av.style.width = av.style.height = '40px';
-      const who = document.createElement('div'); const b = document.createElement('b'); b.textContent = acc.name || '내 계정';
+      const who = document.createElement('div'); const b = document.createElement('b'); b.textContent = acc.nickname || acc.name || '내 계정';
       const em = document.createElement('span'); em.textContent = acc.email || ''; who.append(b, em); row.append(av, who);
       const st = document.createElement('p'); st.className = 'st'; st.textContent = (state === 'error' ? ST.error + ': ' + lastErr : ST[state]) + ' · 오피스 기록, 카드뉴스, 포트폴리오, AI 영상 기획, 크레딧이 어느 기기에서든 이어져요.';
       const out = document.createElement('button'); out.className = 'out'; out.textContent = '로그아웃'; out.onclick = logout;
@@ -220,15 +222,14 @@
     if (head.classList.contains('l-top')) head.insertBefore(wrap, head.querySelector('.l-btn'));
     else { if (!right) { right = document.createElement('div'); right.className = 'ct-right'; head.appendChild(right); } right.appendChild(wrap); }
     ui = { wrap, btn, pop };
-    wrap.hidden = true;
+    wrap.hidden = false;
     paint();
-    // 서버에 구글 설정이 있을 때만 버튼을 보여요. 이미 로그인한 사람은 항상 보여요.
-    if (account()) wrap.hidden = false;
-    else config().then(c => { wrap.hidden = !c.google; });
+    config().then(c => { if(!account() && !c.google) btn.title = '운영자의 로그인 설정이 필요해요'; });
   }
 
   if (!API) return;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
   if (account()) pull(false);
-  window.CuttoryAccount = { account, flush, pull, logout };
+  window.CuttoryAccount = { account, flush, pull, logout, openLogin() { if(!ui) mount(); if(ui){ui.wrap.hidden=false; ui.pop.hidden=false; fillPop();} }, getConfig: config };
+  window.addEventListener('cuttory:account-profile',paint);
 })();
