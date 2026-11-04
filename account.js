@@ -133,7 +133,7 @@
     box.textContent = '불러오는 중…';
     try {
       const c = await config();
-      if (!c.google) { box.textContent = c.unavailable ? '서버 로그인 코드 업데이트가 필요해요. 운영자에게 문의해 주세요.' : '운영자가 Google 로그인 설정을 완료해야 사용할 수 있어요.'; return; }
+      if (!c.google) { box.textContent = c.unavailable ? '서버 로그인 코드 업데이트가 필요해요. 운영자에게 문의해 주세요.' : '로그인 연결을 준비 중이에요. 연결이 완료되면 사용할 수 있어요.'; return; }
       await loadGis();
       google.accounts.id.initialize({ client_id: c.google, callback: onCredential, ux_mode: 'popup', auto_select: false });
       box.textContent = '';
@@ -224,7 +224,7 @@
     ui = { wrap, btn, pop };
     wrap.hidden = false;
     paint();
-    config().then(c => { if(!account() && !c.google) btn.title = '운영자의 로그인 설정이 필요해요'; });
+    config().then(c => { if(!account() && !c.google){btn.textContent='로그인 · 준비 중';btn.title='로그인 연결을 준비 중이에요';btn.setAttribute('aria-label','로그인 연결 준비 중');} });
   }
 
   if (!API) return;

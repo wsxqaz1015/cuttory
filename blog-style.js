@@ -122,18 +122,18 @@
     const copy = bsNode('div', 'bs-compact-copy');
     let label = '내 글 3~5개로 말투를 설정해요';
     if (bsState.busy === 'load') label = '내 블로그 말투 확인 중…';
-    else if (bsState.setup) label = bsState.setup;
+    else if (bsState.setup) label = '로그인 연결 후 내 블로그 글로 말투를 설정할 수 있어요';
     else if (!bsState.identity) label = '구글 로그인 후 내 블로그 말투를 저장해요';
     else if (bsIsReady()) label = bsState.profile.nickname + '님의 말투 · ' + bsState.profile.sourceCount + '개 글 분석 완료';
     else if (bsState.profile) label = '블로그 등록 완료 · 아직 말투 분석 전이에요';
     const text = bsNode('span', 'bs-compact-label', label);
     copy.append(text);
     if (bsIsReady()) copy.append(bsNode('small', '', bsDate(bsState.profile.learnedAt)));
-    const settings = bsButton('설정', bsOpen);
+    const settings = bsButton(bsState.setup ? '안내' : '설정', bsOpen);
     settings.setAttribute('aria-haspopup', 'dialog');
     line.append(copy, settings); bsMount.append(line);
     const personal = document.getElementById('personal-tone');
-    if (personal) { personal.setAttribute('aria-describedby', 'blog-style-panel'); personal.dataset.ready = String(!!bsIsReady()); }
+    if (personal) { personal.textContent = bsState.setup ? '내 블로그 말투 · 준비 중' : '내 블로그 말투'; personal.disabled = !!bsState.setup || bsState.busy === 'load'; personal.setAttribute('aria-describedby', 'blog-style-panel'); personal.dataset.ready = String(!!bsIsReady()); }
   }
   function bsMessage() {
     if (!bsStatus) return;
@@ -212,7 +212,7 @@
     bsForm = bsSourceUI = bsReviewUI = null;
     bsBody.replaceChildren();
     if (bsState.setup) {
-      bsBody.append(bsNode('p', 'bs-notice', bsState.setup), bsNode('p', 'bs-muted', '개인 말투는 현재 사용할 수 없어요. 담백한 기록·정보 위주와 사진 + 메모 글쓰기는 그대로 이용할 수 있어요.'), bsButton('설정 다시 확인', () => bsRefresh()));
+      bsBody.append(bsNode('p', 'bs-notice', '내 블로그 말투는 준비 중이에요'), bsNode('p', 'bs-muted', 'Google 로그인 연결을 완료한 뒤 닉네임과 내 블로그를 등록할 수 있어요. 지금은 담백한 기록·정보 위주로 사진과 메모를 넣어 글을 작성해 주세요.'), bsButton('연결 상태 다시 확인', () => bsRefresh()));
     } else if (bsState.busy === 'load') {
       bsBody.append(bsNode('p', 'bs-muted', '로그인과 내 블로그 설정을 확인하고 있어요.'));
     } else if (!bsState.identity) {
