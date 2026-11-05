@@ -11,10 +11,10 @@
 <script src="account.js?v=blog-profile-v2" defer></script>
 <script src="blog-style.js?v=personal-style-v2" defer></script>
 <link rel="stylesheet" href="blog-style.css?v=personal-style-v2">
-<link rel="stylesheet" href="automation.css?v=auto-v2">
-<link rel="stylesheet" href="blog-video.css?v=auto-v2">
-<script src="automation.js?v=auto-v2" defer></script>
-<script src="blog-video.js?v=auto-v2" defer></script>
+<link rel="stylesheet" href="blog-topics.css?v=simple-v1">
+<link rel="stylesheet" href="blog-video.css?v=simple-v1">
+<script src="automation.js?v=simple-v1" defer></script>
+<script src="blog-video.js?v=simple-v1" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
@@ -267,13 +267,15 @@
 <main>
   <section class="hero">
     <h1>블로그 <em>글쓰기</em></h1>
-    <p>사진·영상과 메모 한 줄만 넣으면, 네이버 블로그에 바로 올릴 후기 글을 써 드려요.</p>
+    <p>AI가 골라 준 글감이나 사진·메모 한 줄로, 네이버 블로그에 바로 올릴 글을 써 드려요.</p>
   </section>
   <div class="banner" id="inapp" hidden></div>
   <div class="banner" id="demo-note" hidden></div>
 
   <div class="layout">
     <div class="inputs">
+      <div id="topic-board"></div>
+      <div id="direct-chip" hidden><span>지금 쓰는 글감</span><b></b><button id="direct-clear">해제</button></div>
       <section class="card">
         <h2><span class="step">01</span>사진·영상 넣기</h2>
         <p class="sub">다 넣어 주면 AI가 글 흐름에 맞는 것만 골라 넣어요. 끌어서 순서를 바꿀 수 있어요. (사진 20장, 영상 5개까지)</p>
@@ -306,7 +308,7 @@
           <button data-v="short">짧게</button><button data-v="mid" class="on">보통</button><button data-v="long">길게</button>
         </div>
       </section>
-      <p class="kit">일상 기록은 그대로 쓰고, 제휴 글은 위의 ‘글감·수익화’에서 준비해요. 실제 공개 발행은 네이버 편집기에서 최종 확인해요.</p>
+      
     </div>
 
     <section class="preview">
@@ -352,6 +354,28 @@
   <button class="btn primary" id="go">✍️ 글 쓰기</button>
 </div></div>
 
+<dialog id="topic-dlg" aria-labelledby="tp-h">
+  <div class="tp-top"><h2 id="tp-h">글감 추가하기</h2><button class="tp-x" id="tp-close" aria-label="닫기">✕</button></div>
+  <div id="tp-tabs" role="tablist"><button role="tab" data-tab="blog">블로그 글쓰기</button><button role="tab" data-tab="shopping">쇼핑 커넥트</button><button role="tab" data-tab="travel">여행 커넥트</button></div>
+  <div class="tp-body">
+    <div id="tp-blog">
+      <label class="tp-f" for="tp-title">글 제목</label><input class="tp-in" id="tp-title" maxlength="60" placeholder="예) 겨울 캠핑 처음 갈 때 꼭 챙길 준비물">
+      <div class="tp-row"><label class="tp-f" for="tp-kw" style="margin:0">키워드</label><button class="tp-auto" id="tp-kw-auto">✦ 제목에서 뽑기</button></div>
+      <input class="tp-in" id="tp-kw" style="margin-top:6px" placeholder="키워드 입력 후 엔터 (최대 5개)"><div class="tp-chips" id="tp-kw-chips"></div>
+      <label class="tp-f" for="tp-emph" style="margin-top:14px">강조 내용 <small style="color:var(--muted);font-weight:400">(선택 · 최대 300자)</small></label>
+      <textarea class="tp-in" id="tp-emph" maxlength="300" placeholder="글에 꼭 들어가야 할 내 경험이나 사실을 적어 주세요.&#10;예) 지난주 토요일 가평 캠핑장, 영하 5도, 전기장판 가져가서 따뜻했음"></textarea>
+      <p class="tp-note">여기 적은 것 말고는 내 경험을 지어내지 않아요. 사진은 아래 ‘01 사진·영상 넣기’에 넣으면 함께 써요.</p>
+    </div>
+    <div id="tp-aff" hidden>
+      <p id="tp-aff-intro"></p>
+      <div id="tp-money"></div>
+      <label class="tp-f" for="tp-link" style="margin-top:12px">발급받은 링크</label><input class="tp-in" id="tp-link" type="url" autocomplete="off" spellcheck="false">
+      <label class="tp-f" for="tp-info" style="margin-top:12px">상품 정보</label><textarea class="tp-in" id="tp-info" maxlength="1500" placeholder="상품 페이지에서 상품명·가격·특징을 복사해 붙여 넣어 주세요. 이 내용으로만 써요."></textarea>
+      <label class="tp-own"><input type="checkbox" id="tp-own"> 내 계정에서 발급한 링크예요. 제목에 [광고], 본문 맨 위에 네이버 공식 고지 문구가 자동으로 들어가요.</label>
+    </div>
+  </div>
+  <div class="tp-foot"><button id="tp-gen">글 생성</button></div>
+</dialog>
 <dialog id="dlg-credit">
   <h3>크레딧</h3>
   <p id="credit-text"></p>
@@ -604,10 +628,11 @@ function renderBar(busyMsg) {
   const info = $('#bar-info');
   if(automationVoiceBusy) info.innerHTML='<b>AI 목소리를 만들고 있어요</b>확인한 대본으로 음성을 만들어요.';
   else if (S.busy) info.innerHTML = busyMsg ? `<b>${esc(busyMsg)}</b>가게 정보와 리뷰로 사실을 확인할게요.` : `<b>글을 쓰는 중이에요…</b>${what || '메모'}를 보고 있어요. 30초쯤 걸려요.`;
+  else if (S.direct) info.innerHTML = `<b>${esc(S.direct.label)}</b>${S.post ? '다시 쓰면' : '글 하나에'} ${COST}크레딧이에요.`;
   else if (!S.media.length && !memo) info.innerHTML = `<b>사진과 메모를 넣어 주세요</b>글 하나에 ${COST}크레딧이에요.`;
   else if (!memo) info.innerHTML = `<b>${what} 준비됐어요</b>메모를 한 줄이라도 적어 주면 훨씬 정확해요.`;
   else info.innerHTML = `<b>${what || '메모'} 준비 완료</b>${S.post ? '다시 쓰면' : '글 하나에'} ${cost}크레딧이에요.${cost > COST ? ' (가게 링크 읽기 포함)' : ''}`;
-  $('#go').disabled = S.busy || automationVoiceBusy || (!S.media.length && !memo && !['shopping','travel'].includes($('#ca-kind')?.value));
+  $('#go').disabled = S.busy || automationVoiceBusy || (!S.media.length && !memo && !S.direct);
   $('#go').textContent = S.post ? '↻ 다시 쓰기' : '✍️ 글 쓰기';
 }
 
@@ -780,9 +805,10 @@ async function write() {
   if(S.busy) return;
   const selectionThisWrite={tone:S.tone,len:S.len}, personalThisWrite = selectionThisWrite.tone === 'personal';
   let writeContext=null, automationRequest=null;
-  try{automationRequest=window.CuttoryAutomation?.getRequest?.()||null;}catch(e){return toast(e.message,6000);}
+  try{automationRequest=S.direct?.affiliate||null;}catch(e){return toast(e.message,6000);}
+  const topicThisWrite=S.direct?.topic||null;
   const automationAccountKey=blogAccountKey();
-  if (!S.media.length && !$('#memo').value.trim() && !automationRequest) return toast('사진이나 메모를 먼저 넣어 주세요.');
+  if (!S.media.length && !$('#memo').value.trim() && !automationRequest && !topicThisWrite) return toast('사진이나 메모를 넣거나, 위에서 글감을 골라 주세요.');
   S.busy = true; setBlogWriteControls(true); renderBar(); automationContextChanged();
   $('#paper').innerHTML = `<div class="skel"><i style="width:70%;height:24px"></i><i></i><i style="width:85%"></i><i class="img"></i><i></i><i style="width:60%"></i></div>`;
   try {
@@ -790,8 +816,8 @@ async function write() {
     let j;
     if (DEMO) { await sleep(1200); j = demoPost(); }
     else {
-      const src = automationRequest ? '' : await readSource(writeContext); assertBlogContext(writeContext); renderBar();
-      j = (await H.call('/api/ai', { prompt: buildPrompt(src,selectionThisWrite,automationRequest), json: true, kind: 'gen', blogPersonalStyle: personalThisWrite, images: aiImages() },writeContext)).json;
+      const src = (automationRequest||topicThisWrite) ? '' : await readSource(writeContext); assertBlogContext(writeContext); renderBar();
+      j = (await H.call('/api/ai', { prompt: topicThisWrite ? topicPrompt(topicThisWrite,selectionThisWrite) : buildPrompt(src,selectionThisWrite,automationRequest), json: true, kind: 'gen', blogPersonalStyle: personalThisWrite, images: aiImages() },writeContext)).json;
     }
     if(!DEMO) assertBlogContext(writeContext);
     S.post = DEMO ? shape(j) : applyAutomationPost(shape(j),automationRequest,automationAccountKey); S.post._personalTone = personalThisWrite; C.list = []; renderPaper();
@@ -1476,7 +1502,7 @@ ${TONE[selection.tone]}
 }
 function applyAutomationPost(post, request, accountKey) {
   if (accountKey !== blogAccountKey()) throw blogAccountChanged();
-  let result = window.CuttoryAutomation ? window.CuttoryAutomation.onPost(post, {request, accountKey}) : post;
+  let result = request ? window.CuttoryAutomation.helpers.compliantPost(post, request) : JSON.parse(JSON.stringify(post));
   if(Array.isArray(result.titles))result.titles=[...new Set(result.titles)];
   if (request) { result._automationRequest = JSON.parse(JSON.stringify(request)); result.place = ''; result.area = ''; }
   else delete result._automationRequest;
@@ -1513,9 +1539,7 @@ async function synthesizeBlogSpeech(text, voice, requestId) {
 async function exportPublicationPackage() {
   if (!need()) return;
   if (S.busy || automationVoiceBusy) return toast('진행 중인 작업이 끝난 뒤 내보내 주세요.');
-  const check = window.CuttoryAutomation?.preflight?.();
-  if (check && !check.ok) { $('#cuttory-automation').open = true; return toast('글감·수익화의 발행 전 확인을 마쳐 주세요.\n'+check.errors.join('\n'),6500); }
-  protectCommercialOutput();
+    protectCommercialOutput();
   const account = blogAccountKey(), post = JSON.parse(JSON.stringify(S.post)), body = bodyText();
   if (!window.JSZip) return toast('파일 묶기 도구를 읽지 못했어요. 새로고침 후 다시 해 주세요.');
   const z = new JSZip(), order = [], ids = postIds();
@@ -1549,7 +1573,7 @@ function initBlogAutomation() {
     async getAssets(){return S.media.map(m=>m.kind==='video'?{id:m.id,kind:'video',source:m.cands.find(c=>Math.abs(c.start-m.start)<.1)?.frame||m.cands[0]?.frame,src:m.url,start:m.start,end:Math.min(m.dur,m.start+m.len),label:labels()[m.id]||'영상'}:{id:m.id,kind:'photo',source:render(m,1280),label:labels()[m.id]||'사진'});}
   };
   window.CuttoryBlogHost=host;
-  window.CuttoryAutomation?.init(host);window.CuttoryBlogVideo?.init(host);
+  window.CuttoryBlogVideo?.init(host);initTopics();
   $('#memo').addEventListener('input',automationContextChanged);
   $('#paper').addEventListener('input',automationContextChanged);
   $('#publish-package').addEventListener('click',()=>exportPublicationPackage().catch(e=>toast(e.message,6500)));
@@ -1559,7 +1583,145 @@ function initBlogAutomation() {
   automationContextChanged();
 }
 
-function blogEstimatedCost(){const affiliate=['shopping','travel'].includes($('#ca-kind')?.value);const url=$('#url').value.trim();return COST+(!affiliate&&url&&!srcCache[url]&&!DEMO?placePages(url).length*LINK_COST:0);}
+// ===== 오늘의 글감 · 글감 추가하기 (판다랭크식 간단 흐름) =====
+const TOPIC_COST = 2;
+const AFF_NOTICE = { shopping: '이 포스팅은 네이버 쇼핑 커넥트 활동의 일환으로, 판매 발생 시 수수료를 제공받습니다.', travel: '이 포스팅은 네이버 여행 커넥트 활동의 일환으로, 예약 발생 시 수수료를 제공받습니다.' };
+const AFF_NAME = { shopping: '쇼핑 커넥트', travel: '여행 커넥트' };
+let topicBusy = false;
+const T = { tab: 'blog', keywords: [], money: { shopping: [], travel: [] } };
+const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const topicStoreKey = () => 'cuttory_topics_' + (blogAccountKey() || 'guest');
+function savedTopics() { try { const v = JSON.parse(store.get(topicStoreKey()) || 'null'); return v && v.date === todayKey() && Array.isArray(v.topics) ? v.topics : []; } catch { return []; } }
+
+function profileBrief() {
+  const p = currentBlogProfile();
+  if (!p) return '(아직 내 블로그 말투를 설정하지 않았어요. 일상·정보 블로그 기준으로 추천해 줘.)';
+  const titles = (p.sources || []).map(s => String(s.title || '').trim()).filter(Boolean).slice(0, 5);
+  return [`닉네임: ${p.nickname || ''}`, titles.length ? `최근 글 제목: ${titles.join(' / ')}` : '', p.style?.summary ? `문체 요약: ${p.style.summary}` : ''].filter(Boolean).join('\n');
+}
+function topicsPrompt(mode) {
+  const base = `너는 네이버 블로그 글감 기획자야. 아래 블로거의 기존 글과 관심사에 맞춰 글감을 추천해 줘.\n[블로거]\n${profileBrief()}\n[오늘 날짜] ${todayKey()}\n규칙:\n- 기존 글의 주제·관심사와 이어지되 같은 글을 반복하지 마.\n- 실시간 검색량, 순위, 가격, 판매량을 안다고 주장하지 마. 숫자를 지어내지 마.\n- 제목은 20~32자, 검색어가 앞쪽에 오게.`;
+  if (mode === 'blog') return base + `\n- 블로거가 자기 경험이나 사진을 덧붙이기 쉬운 주제 3개.\n답은 JSON 하나: {"topics":[{"title":"글 제목","keywords":["키워드 최대 5개"],"why":"이 블로그에 맞는 이유 한 줄"}]}`;
+  const what = mode === 'shopping' ? '네이버 쇼핑 커넥트로 소개하기 좋은 상품 종류' : '네이버 여행 커넥트로 소개하기 좋은 여행지·투어 종류';
+  return base + `\n- ${what} 5개. 특정 상품명·가격·수수료율은 쓰지 마.\n- search에는 브랜드커넥트 상품 찾기에 그대로 넣을 짧은 검색어를 적어.\n답은 JSON 하나: {"topics":[{"title":"글감","search":"검색어","why":"이 블로그에 맞는 이유 한 줄"}]}`;
+}
+async function askTopics(mode) {
+  if (DEMO) throw new Error('체험 모드에서는 AI 추천을 쓰지 않아요.');
+  if (S.busy || topicBusy || automationVoiceBusy) throw new Error('진행 중인 작업이 끝난 뒤 다시 눌러 주세요.');
+  topicBusy = true; paintTopics(); let ctx;
+  try {
+    ctx = await createBlogContext();
+    const j = (await H.call('/api/ai', { prompt: topicsPrompt(mode), json: true, kind: 'topics' }, ctx)).json || {};
+    assertBlogContext(ctx);
+    const list = (Array.isArray(j.topics) ? j.topics : []).map(t => ({ title: String(t?.title || '').trim().slice(0, 60), keywords: (Array.isArray(t?.keywords) ? t.keywords : []).map(k => String(k).trim().replace(/^#/, '')).filter(Boolean).slice(0, 5), search: String(t?.search || '').trim().slice(0, 40), why: String(t?.why || '').trim().slice(0, 120) })).filter(t => t.title).slice(0, mode === 'blog' ? 3 : 5);
+    if (!list.length) throw new Error('추천을 받지 못했어요. 잠시 뒤 다시 해 주세요.');
+    return list;
+  } finally { if (activeBlogContext === ctx) activeBlogContext = null; topicBusy = false; paintTopics(); }
+}
+
+// --- 홈 카드 ---
+function paintTopics() {
+  const box = $('#topic-board'); if (!box) return;
+  const list = savedTopics();
+  box.innerHTML = `<div class="tb-head"><div><h2>오늘의 글감</h2><p>내 블로그 글을 보고 AI가 쓸 만한 주제를 골라요.</p></div><button class="tb-add" data-open="blog">+ 직접 입력</button></div>
+    ${list.length ? `<div class="tb-list">${list.map((t, i) => `<div class="tb-item"><div class="tb-txt"><b>${esc(t.title)}</b>${t.why ? `<span>${esc(t.why)}</span>` : ''}</div><button class="tb-use" data-use="${i}">이 글감으로 쓰기</button></div>`).join('')}</div>`
+      : `<button class="tb-ask" id="tb-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '글감을 고르는 중이에요…' : `✦ AI 글감 추천받기 · ${TOPIC_COST}크레딧`}</button>`}
+    <div class="tb-money"><button data-open="shopping"><b>쇼핑 커넥트</b><span>상품 소개 글로 수수료 받기</span></button><button data-open="travel"><b>여행 커넥트</b><span>여행 상품 글로 수수료 받기</span></button></div>
+    ${list.length ? `<button class="tb-again" id="tb-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '고르는 중…' : `다른 글감 추천 · ${TOPIC_COST}크레딧`}</button>` : ''}`;
+}
+document.addEventListener('click', async e => {
+  const open = e.target.closest('[data-open]'), use = e.target.closest('[data-use]'), ask = e.target.closest('#tb-ask');
+  if (open && $('#topic-board')?.contains(open)) return openTopicModal(open.dataset.open);
+  if (use) { const t = savedTopics()[+use.dataset.use]; if (t) openTopicModal('blog', t); return; }
+  if (ask) {
+    try { const list = await askTopics('blog'); store.set(topicStoreKey(), JSON.stringify({ date: todayKey(), topics: list })); paintTopics(); }
+    catch (err) { if (err.code === 'no_credits') $('#credits').click(); else toast(err.message || '추천을 받지 못했어요.', 4500); }
+  }
+});
+
+// --- 글감 추가하기 창 ---
+function openTopicModal(tab, preset) {
+  const d = $('#topic-dlg'); T.tab = tab || 'blog';
+  if (preset) { $('#tp-title').value = preset.title; T.keywords = (preset.keywords || []).slice(0, 5); $('#tp-emph').value = ''; }
+  paintModal(); if (!d.open) d.showModal();
+}
+function paintModal() {
+  $$('#tp-tabs button').forEach(b => { const on = b.dataset.tab === T.tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+  $('#tp-blog').hidden = T.tab !== 'blog'; $('#tp-aff').hidden = T.tab === 'blog';
+  $('#tp-kw-chips').innerHTML = T.keywords.map((k, i) => `<span class="tp-chip">${esc(k)}<button data-kdel="${i}" aria-label="${esc(k)} 지우기">✕</button></span>`).join('');
+  if (T.tab !== 'blog') {
+    const k = T.tab, list = T.money[k];
+    $('#tp-aff-intro').innerHTML = `<b>${AFF_NAME[k]}</b> ${k === 'shopping' ? '상품 소개 글로 수수료를 받아보세요. 내 글로 판매가 일어나면 수익이 생겨요.' : '여행 상품 소개 글로 수수료를 받아보세요. 내 글로 예약이 일어나면 수익이 생겨요.'}`;
+    $('#tp-money').innerHTML = list.length ? list.map(t => `<div class="tp-money-item"><div><b>${esc(t.title)}</b>${t.why ? `<span>${esc(t.why)}</span>` : ''}</div>${t.search ? `<button data-copy="${esc(t.search)}">‘${esc(t.search)}’ 복사</button>` : ''}</div>`).join('') + `<p class="tp-note">검색어를 복사해 <a href="https://brandconnect.naver.com/" target="_blank" rel="noopener">브랜드커넥트</a>의 상품 찾기에서 상품을 고르고 링크를 발급해 아래에 붙여 넣어 주세요.</p>`
+      : `<button class="tp-money-ask" id="tp-money-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '고르는 중이에요…' : `돈 버는 글감 추천받기 · ${TOPIC_COST}크레딧`}</button>`;
+    $('#tp-link').placeholder = `${AFF_NAME[k]} 링크를 입력해 주세요`;
+    $('#tp-gen').textContent = `${AFF_NAME[k]} 글 생성 · ${COST}크레딧`;
+  } else $('#tp-gen').textContent = `글 생성 · ${COST}크레딧`;
+}
+function titleKeywords(title) {
+  const stop = /^(방법|후기|정리|추천|이유|가지|총정리|완벽|솔직|진짜|그리고|하는|있는|좋은|위한|에서|으로)$/;
+  return [...new Set(title.replace(/[\[\]()【】"'“”‘’!?.,·|/~:]/g, ' ').split(/\s+/).map(w => w.replace(/(은|는|이|가|을|를|의|에|와|과|로|으로|에서|까지|부터|도|만)$/, '')).filter(w => w.length >= 2 && !stop.test(w)))].slice(0, 5);
+}
+function addKeyword(raw) { const k = String(raw || '').trim().replace(/^#/, ''); if (!k || T.keywords.includes(k)) return; if (T.keywords.length >= 5) return toast('키워드는 5개까지 넣을 수 있어요.'); T.keywords.push(k); paintModal(); }
+function topicPrompt(t, selection) {
+  return `네이버 블로그 정보 글을 써 줘. 사람이 직접 쓴 것처럼 자연스럽게.
+[주제] ${t.title}
+[키워드] ${t.keywords.join(', ') || '(제목에서 골라)'}
+${t.emphasis ? `[꼭 넣을 내용 — 내가 적은 사실]\n${t.emphasis}\n` : ''}[사진·영상] ${S.media.length}개${S.media.length ? ' (1번부터. 글 흐름에 맞는 것만 골라 넣어)' : ' (없으면 media 블록 없이 글만)'}
+규칙:
+- [꼭 넣을 내용]에 없는 내 경험(방문, 구매, 사용, 먹어 봄, 함께 간 사람)은 지어내지 마. 경험이 없으면 정보·방법·체크리스트 글로 써.
+- 일반적인 설명은 써도 되지만, 가격·영업시간·수치·날짜·순위·통계는 [꼭 넣을 내용]에 있는 것만 써. 확인이 필요한 정보는 checks에 적어.
+- 제목 10개는 키워드를 앞쪽에, 20~32자. 과장("1위","무조건") 금지.
+- 첫 문단에 "결론부터 말하면"으로 핵심 답. 질문형 소제목, 끝에 FAQ 3개(답이 확실한 것만).
+${TONE[selection.tone]}
+길이: ${LEN[selection.len]}
+답은 JSON 하나:
+{"hook":"독자가 멈출 핵심 한 줄","titles":["제목 10개"],"card":{"name":"","tagline":"","address":"","transit":"","open":"","tel":"","price":"","etc":""},"intro":"도입","sections":[{"heading":"소제목","blocks":[{"text":"글"},{"media":[1],"layout":"single"}]}],"videos":[],"tip":"","faq":[{"q":"","a":""}],"recommend":"누구에게 도움이 되는지","outro":"짧은 마무리","tags":["태그 8~10개"],"checks":["확인할 내용"]}`;
+}
+function setDirect(direct) {
+  S.direct = direct;
+  const chip = $('#direct-chip');
+  if (chip) { chip.hidden = !direct; chip.querySelector('b').textContent = direct ? direct.label : ''; }
+  renderBar();
+}
+async function generateFromModal() {
+  if (S.busy || topicBusy) return toast('진행 중인 작업이 끝난 뒤 눌러 주세요.');
+  if (T.tab === 'blog') {
+    const title = $('#tp-title').value.trim(); if (!title) return toast('글 제목을 적어 주세요.');
+    if (!T.keywords.length) T.keywords = titleKeywords(title);
+    setDirect({ type: 'topic', label: '글감 · ' + title, topic: { title, keywords: T.keywords.slice(), emphasis: $('#tp-emph').value.trim().slice(0, 300) } });
+  } else {
+    const kind = T.tab, link = $('#tp-link').value.trim(), info = $('#tp-info').value.trim();
+    try { window.CuttoryAutomation.helpers.safeHttps(link); } catch (e) { return toast(`${AFF_NAME[kind]}에서 발급받은 https 링크를 그대로 붙여 넣어 주세요.`, 4500); }
+    if (info.length < 10) return toast('상품 페이지에서 상품명과 특징을 복사해 붙여 넣어 주세요. 그 내용을 바탕으로만 써요.', 5000);
+    if (!$('#tp-own').checked) return toast('내 계정에서 발급한 링크인지 확인해 주세요.');
+    const subject = info.split('\n').map(s => s.trim()).find(Boolean).slice(0, 60);
+    setDirect({ type: 'affiliate', label: AFF_NAME[kind] + ' · ' + subject, affiliate: { version: 1, kind, subject, affiliateUrl: link, sourceUrl: '', facts: info.slice(0, 1500), verifiedAt: todayKey(), angle: '구매·예약 전에 확인할 정보', keywords: titleKeywords(subject), rightsConfirmed: true, linkConfirmed: true, disclosure: AFF_NOTICE[kind] } });
+  }
+  $('#topic-dlg').close();
+  $('#paper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await write();
+}
+function initTopics() {
+  paintTopics();
+  $('#tp-tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { T.tab = b.dataset.tab; paintModal(); } });
+  $('#tp-kw').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addKeyword(e.target.value); e.target.value = ''; } });
+  $('#tp-kw-auto').onclick = () => { const t = $('#tp-title').value.trim(); if (!t) return toast('먼저 글 제목을 적어 주세요.'); T.keywords = titleKeywords(t); paintModal(); };
+  $('#topic-dlg').addEventListener('click', async e => {
+    const del = e.target.closest('[data-kdel]'), copy = e.target.closest('[data-copy]');
+    if (del) { T.keywords.splice(+del.dataset.kdel, 1); paintModal(); }
+    if (copy) copyText(copy.dataset.copy, '검색어를 복사했어요. 브랜드커넥트 상품 찾기에 붙여 넣어 주세요.');
+    if (e.target.closest('#tp-money-ask')) { const kind = T.tab; try { T.money[kind] = await askTopics(kind); } catch (err) { if (err.code === 'no_credits') $('#credits').click(); else toast(err.message || '추천을 받지 못했어요.', 4500); } paintModal(); }
+    if (e.target === e.currentTarget) e.currentTarget.close();
+  });
+  $('#tp-close').onclick = () => $('#topic-dlg').close();
+  $('#tp-gen').onclick = () => generateFromModal().catch(e => toast(e.message || '글을 쓰지 못했어요.', 5000));
+  $('#direct-clear').onclick = () => setDirect(null);
+  window.addEventListener('cuttory:account-change', () => { setDirect(null); T.money = { shopping: [], travel: [] }; paintTopics(); });
+  window.addEventListener('cuttory:blog-style-ready', paintTopics);
+}
+
+function blogEstimatedCost(){const affiliate=!!S.direct;const url=$('#url').value.trim();return COST+(!affiliate&&url&&!srcCache[url]&&!DEMO?placePages(url).length*LINK_COST:0);}
 function setBlogWriteControls(disabled){for(const id of ['memo','url','info','place','area','file'])$('#'+id).disabled=disabled;for(const b of $$('#tone button, #len button'))b.disabled=disabled;}
 window.addEventListener('cuttory:blog-style-ready',automationContextChanged);
 function syncBlogSegment(selector,value){$$(selector+' button').forEach(b=>{const selected=b.dataset.v===value;b.classList.toggle('on',selected);b.setAttribute('aria-pressed',String(selected));});}
