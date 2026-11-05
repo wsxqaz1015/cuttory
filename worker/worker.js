@@ -1,6 +1,6 @@
 // 컷토리 서버 (Cloudflare Workers)
 // 필요한 설정: 비밀 값 OPENAI_API_KEY, ADMIN_KEY / KV 바인딩 KV / (선택) ALLOWED_ORIGIN, TEXT_MODEL, IMAGE_MODEL, GOOGLE_CLIENT_ID(구글 로그인)
-const COST = { blogstyle: 5, gen: 10, video: 15, link: 3, person: 5, titles: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
+const COST = { blogstyle: 5, gen: 10, video: 15, link: 3, person: 5, titles: 2, topics: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
 const START_CREDITS = 100;
 const NEW_USERS_PER_IP_PER_DAY = 3;
 const SYNC_APPS = ['office', 'portfolio', 'video', 'cardnews'];
