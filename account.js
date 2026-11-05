@@ -105,7 +105,7 @@
   async function config() {
     if (cfg && typeof cfg.google === 'string' && cfg.google) return cfg;
     try { cfg = JSON.parse(sessionStorage.getItem('ct-config-v2') || 'null'); } catch {}
-    if (cfg) return cfg;
+    if (cfg && typeof cfg.google === 'string' && cfg.google) return cfg;
     try { const r = await fetch(API + '/api/config'); if(!r.ok) throw new Error('서버 로그인 설정을 확인하지 못했어요.'); cfg = await r.json(); if(typeof cfg.google !== 'string') throw new Error('서버 로그인 코드 업데이트가 필요해요.'); sessionStorage.setItem('ct-config-v2', JSON.stringify(cfg)); } catch { cfg = { unavailable: true }; }
     return cfg;
   }
