@@ -686,12 +686,12 @@ async function speechRoute(req, user, env) {
 
 // ===== 실시간 인기 검색어 (Google 트렌드 대한민국, 무료 공개 RSS · 10분 캐시) =====
 async function trendsKR() {
-  const cache = caches.default, key = new Request('https://cuttory.internal/trends-kr-v1');
+  const cache = caches.default, key = new Request('https://cuttory.internal/trends-kr-v2');
   const hit = await cache.match(key); if (hit) return await hit.json();
   const r = await fetch('https://trends.google.com/trending/rss?geo=KR', { headers: { 'user-agent': 'Mozilla/5.0 (compatible; CuttoryBot/1.0)' } });
   if (!r.ok) throw err('trends_failed', '실시간 인기 검색어를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.', 502);
   const x = await r.text();
-  const pick = (b, t) => decode(((b.match(new RegExp('<' + t + '>([\\s\\S]*?)</' + t + '>')) || [])[1] || '').replace(/<!\[CDATA\[|\]\]>/g, '')).trim();
+  const pick = (b, t) => decode(decode(((b.match(new RegExp('<' + t + '>([\\s\\S]*?)</' + t + '>')) || [])[1] || '').replace(/<!\[CDATA\[|\]\]>/g, ''))).replace(/&apos;/g, "'").trim();
   const items = [...x.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m => ({ keyword: pick(m[1], 'title'), traffic: pick(m[1], 'ht:approx_traffic'), at: pick(m[1], 'pubDate'), news: pick(m[1], 'ht:news_item_title'), newsSource: pick(m[1], 'ht:news_item_source') })).filter(i => i.keyword).slice(0, 20);
   const out = { source: 'Google 트렌드 · 대한민국', fetchedAt: new Date().toISOString(), items };
   await cache.put(key, new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=600' } }));
