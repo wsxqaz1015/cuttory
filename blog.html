@@ -11,10 +11,10 @@
 <script src="account.js?v=blog-profile-v2" defer></script>
 <script src="blog-style.js?v=personal-style-v2" defer></script>
 <link rel="stylesheet" href="blog-style.css?v=personal-style-v2">
-<link rel="stylesheet" href="blog-topics.css?v=simple-v1">
-<link rel="stylesheet" href="blog-video.css?v=simple-v1">
-<script src="automation.js?v=simple-v1" defer></script>
-<script src="blog-video.js?v=simple-v1" defer></script>
+<link rel="stylesheet" href="blog-topics.css?v=simple-v2">
+<link rel="stylesheet" href="blog-video.css?v=simple-v2">
+<script src="automation.js?v=simple-v2" defer></script>
+<script src="blog-video.js?v=simple-v2" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
@@ -275,6 +275,7 @@
   <div class="layout">
     <div class="inputs">
       <div id="topic-board"></div>
+      <div id="draft-board" hidden></div>
       <div id="direct-chip" hidden><span>지금 쓰는 글감</span><b></b><button id="direct-clear">해제</button></div>
       <section class="card">
         <h2><span class="step">01</span>사진·영상 넣기</h2>
@@ -439,7 +440,7 @@ const H = {
     if (!r.ok) throw { code: j.code || 'error', message: j.message || '서버가 제대로 답하지 못했어요.' };
     return j;
   },
-  setCredits(n) { if (n == null) return; this.credits = n; $('#credits').textContent = '✨ ' + n.toLocaleString(); },
+  setCredits(n) { if (n == null) return; this.credits = n; $('#credits').textContent = n >= 900000 ? '✨ 무제한' : '✨ ' + n.toLocaleString(); },
 };
 
 
@@ -823,7 +824,7 @@ async function write() {
     S.post = DEMO ? shape(j) : applyAutomationPost(shape(j),automationRequest,automationAccountKey); S.post._personalTone = personalThisWrite; C.list = []; renderPaper();
     if (!$('#cards-view').hidden) makeCards();
     if (!DEMO) { await betterTitles(S.post,writeContext); assertBlogContext(writeContext); S.post=applyAutomationPost(S.post,automationRequest,automationAccountKey); renderPaper(); }
-    toast('글을 다 썼어요. 글자를 눌러 바로 고칠 수 있어요.');
+    saveDraft(S.post); toast('글을 다 썼어요. 글자를 눌러 바로 고칠 수 있어요. 아래 ‘만든 글’에서 숏폼도 만들 수 있어요.');
   } catch (e) {
     if(e.name==='AbortError'||e.code==='account_changed'){e=blogAccountChanged();S.post=null;C.list=[];$('#mode').hidden=true;$('#post-how').hidden=true;$('#cards-view').hidden=true;$('#pv-actions').hidden=true;}
     $('#paper').innerHTML = `<div class="empty"><div class="big">😢</div><b>글을 쓰지 못했어요</b>${esc(e.message || '잠시 뒤 다시 해 주세요.')}</div>`;
@@ -1620,19 +1621,70 @@ async function askTopics(mode) {
 }
 
 // --- 홈 카드 ---
+const TB = { tab: 'today', trends: null, trendsErr: '', trendsLoading: false };
+async function loadTrends() {
+  if (TB.trendsLoading) return; TB.trendsLoading = true; TB.trendsErr = ''; paintTopics();
+  try { const r = await fetch(API + '/api/trends'); const j = await r.json(); if (!r.ok) throw new Error(j.message || '불러오지 못했어요.'); TB.trends = j; }
+  catch (e) { TB.trendsErr = e.message || '실시간 인기 검색어를 불러오지 못했어요.'; }
+  finally { TB.trendsLoading = false; paintTopics(); }
+}
+function trendTime(j) { try { return new Date(j.fetchedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준'; } catch { return ''; } }
+
+// 만든 글 (판다랭크의 'AI 초안' 목록처럼): 계정별로 최근 10개
+const draftKey = () => 'cuttory_drafts_' + (blogAccountKey() || 'guest');
+function savedDrafts() { try { const v = JSON.parse(store.get(draftKey()) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } }
+function saveDraft(post) {
+  if (!post) return;
+  const list = savedDrafts().filter(d => d.title !== post.title);
+  list.unshift({ id: Date.now().toString(36), title: post.title, at: Date.now(), kind: post._automationRequest?.kind || (S.direct?.type === 'topic' ? 'topic' : 'review'), post: JSON.parse(JSON.stringify(post)) });
+  try { store.set(draftKey(), JSON.stringify(list.slice(0, 10))); } catch {}
+  paintDrafts();
+}
+function paintDrafts() {
+  const box = $('#draft-board'); if (!box) return;
+  const list = savedDrafts();
+  box.hidden = !list.length;
+  const label = { shopping: '쇼핑 커넥트', travel: '여행 커넥트', topic: '글감', review: '후기' };
+  box.innerHTML = `<div class="tb-sub" style="margin-top:0"><b>만든 글</b><span>${list.length}개 · 이 브라우저에 보관해요</span></div>` + list.map(d => `<div class="db-item"><div class="tb-txt"><small>${esc(label[d.kind] || '글')} · ${new Date(d.at).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</small><b>${esc(d.title)}</b></div><div class="db-act"><button data-dview="${esc(d.id)}">초안 확인하기</button><button class="db-short" data-dshort="${esc(d.id)}">▶ 숏폼 만들기</button></div></div>`).join('');
+}
+function loadDraft(id) {
+  const d = savedDrafts().find(x => x.id === id); if (!d) return false;
+  if (S.busy) { toast('글을 쓰는 중에는 바꿀 수 없어요.'); return false; }
+  if (S.post !== d.post && S.post?.title !== d.title) { S.post = JSON.parse(JSON.stringify(d.post)); renderPaper(); automationContextChanged(); }
+  return true;
+}
+document.addEventListener('click', e => {
+  const box = $('#draft-board'); if (!box || !box.contains(e.target)) return;
+  const v = e.target.closest('[data-dview]'), s = e.target.closest('[data-dshort]');
+  if (v && loadDraft(v.dataset.dview)) $('#paper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (s && loadDraft(s.dataset.dshort)) window.CuttoryBlogVideo?.open();
+});
+
 function paintTopics() {
   const box = $('#topic-board'); if (!box) return;
-  const list = savedTopics();
-  box.innerHTML = `<div class="tb-head"><div><h2>오늘의 글감</h2><p>내 블로그 글을 보고 AI가 쓸 만한 주제를 골라요.</p></div><button class="tb-add" data-open="blog">+ 직접 입력</button></div>
-    ${list.length ? `<div class="tb-list">${list.map((t, i) => `<div class="tb-item"><div class="tb-txt"><b>${esc(t.title)}</b>${t.why ? `<span>${esc(t.why)}</span>` : ''}</div><button class="tb-use" data-use="${i}">이 글감으로 쓰기</button></div>`).join('')}</div>`
-      : `<button class="tb-ask" id="tb-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '글감을 고르는 중이에요…' : `✦ AI 글감 추천받기 · ${TOPIC_COST}크레딧`}</button>`}
-    <div class="tb-money"><button data-open="shopping"><b>쇼핑 커넥트</b><span>상품 소개 글로 수수료 받기</span></button><button data-open="travel"><b>여행 커넥트</b><span>여행 상품 글로 수수료 받기</span></button></div>
-    ${list.length ? `<button class="tb-again" id="tb-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '고르는 중…' : `다른 글감 추천 · ${TOPIC_COST}크레딧`}</button>` : ''}`;
+  const mine = savedTopics();
+  const tabs = `<div class="tb-tabs" role="tablist"><button role="tab" data-tbtab="today" class="${TB.tab === 'today' ? 'on' : ''}">오늘의 글감</button><button role="tab" data-tbtab="money" class="${TB.tab === 'money' ? 'on' : ''}">돈 버는 글감</button></div>`;
+  if (TB.tab === 'money') {
+    box.innerHTML = tabs + `<div class="tb-money tb-money-big"><button data-open="shopping"><b>쇼핑 커넥트</b><span>상품 소개 글로 판매 수수료 받기</span></button><button data-open="travel"><b>여행 커넥트</b><span>여행 상품 글로 예약 수수료 받기</span></button></div>`;
+    return;
+  }
+  const trendList = TB.trendsLoading && !TB.trends ? '<p class="tb-empty">실시간 인기 검색어를 불러오고 있어요…</p>'
+    : TB.trendsErr ? `<p class="tb-empty">${esc(TB.trendsErr)} <button class="tb-link" id="tb-trend-retry">다시 불러오기</button></p>`
+    : TB.trends ? `<ol class="tb-rank">${TB.trends.items.slice(0, 10).map((t, i) => `<li><span class="tb-no">${i + 1}</span><div class="tb-kw"><b>${esc(t.keyword)}</b>${t.news ? `<span>${esc(t.news)}</span>` : ''}</div>${t.traffic ? `<em>${esc(t.traffic)}</em>` : ''}<button class="tb-gen" data-trend="${i}">글 생성</button></li>`).join('')}</ol>` : '';
+  box.innerHTML = tabs + `
+    <div class="tb-row"><button class="tb-pill" data-open="blog">+ 주제 직접 입력</button><button class="tb-pill tb-ai" id="tb-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '고르는 중이에요…' : '✦ 나만의 글감 추천'}</button></div>
+    ${mine.length ? `<div class="tb-sub"><b>내 블로그 맞춤</b><span>최근 글과 말투를 보고 골랐어요</span></div><div class="tb-list">${mine.map((t, i) => `<div class="tb-item"><div class="tb-txt"><b>${esc(t.title)}</b>${t.why ? `<span>${esc(t.why)}</span>` : ''}</div><button class="tb-gen" data-use="${i}">글 생성</button></div>`).join('')}</div>` : ''}
+    <div class="tb-sub"><b>실시간 인기</b><span>${TB.trends ? esc(TB.trends.source + ' · ' + trendTime(TB.trends)) : 'Google 트렌드 · 대한민국'}</span></div>
+    ${trendList}`;
 }
 document.addEventListener('click', async e => {
-  const open = e.target.closest('[data-open]'), use = e.target.closest('[data-use]'), ask = e.target.closest('#tb-ask');
-  if (open && $('#topic-board')?.contains(open)) return openTopicModal(open.dataset.open);
+  const box = $('#topic-board'); if (!box || !box.contains(e.target)) return;
+  const open = e.target.closest('[data-open]'), use = e.target.closest('[data-use]'), ask = e.target.closest('#tb-ask'), tab = e.target.closest('[data-tbtab]'), tr = e.target.closest('[data-trend]');
+  if (tab) { TB.tab = tab.dataset.tbtab; return paintTopics(); }
+  if (open) return openTopicModal(open.dataset.open);
+  if (e.target.closest('#tb-trend-retry')) return loadTrends();
   if (use) { const t = savedTopics()[+use.dataset.use]; if (t) openTopicModal('blog', t); return; }
+  if (tr) { const t = TB.trends?.items[+tr.dataset.trend]; if (t) openTopicModal('blog', { title: t.keyword, keywords: [t.keyword], emphasis: t.news ? `관련 뉴스: ${t.news}${t.newsSource ? ' (' + t.newsSource + ')' : ''}` : '' }); return; }
   if (ask) {
     try { const list = await askTopics('blog'); store.set(topicStoreKey(), JSON.stringify({ date: todayKey(), topics: list })); paintTopics(); }
     catch (err) { if (err.code === 'no_credits') $('#credits').click(); else toast(err.message || '추천을 받지 못했어요.', 4500); }
@@ -1642,7 +1694,7 @@ document.addEventListener('click', async e => {
 // --- 글감 추가하기 창 ---
 function openTopicModal(tab, preset) {
   const d = $('#topic-dlg'); T.tab = tab || 'blog';
-  if (preset) { $('#tp-title').value = preset.title; T.keywords = (preset.keywords || []).slice(0, 5); $('#tp-emph').value = ''; }
+  if (preset) { $('#tp-title').value = preset.title; T.keywords = (preset.keywords || []).slice(0, 5); $('#tp-emph').value = preset.emphasis || ''; }
   paintModal(); if (!d.open) d.showModal();
 }
 function paintModal() {
@@ -1669,6 +1721,7 @@ function topicPrompt(t, selection) {
 [키워드] ${t.keywords.join(', ') || '(제목에서 골라)'}
 ${t.emphasis ? `[꼭 넣을 내용 — 내가 적은 사실]\n${t.emphasis}\n` : ''}[사진·영상] ${S.media.length}개${S.media.length ? ' (1번부터. 글 흐름에 맞는 것만 골라 넣어)' : ' (없으면 media 블록 없이 글만)'}
 규칙:
+- 인물·사건·뉴스 관련 주제는 [꼭 넣을 내용]의 뉴스 제목 범위 안에서만 설명하고, 추측이나 루머를 쓰지 마.
 - [꼭 넣을 내용]에 없는 내 경험(방문, 구매, 사용, 먹어 봄, 함께 간 사람)은 지어내지 마. 경험이 없으면 정보·방법·체크리스트 글로 써.
 - 일반적인 설명은 써도 되지만, 가격·영업시간·수치·날짜·순위·통계는 [꼭 넣을 내용]에 있는 것만 써. 확인이 필요한 정보는 checks에 적어.
 - 제목 10개는 키워드를 앞쪽에, 20~32자. 과장("1위","무조건") 금지.
@@ -1703,7 +1756,7 @@ async function generateFromModal() {
   await write();
 }
 function initTopics() {
-  paintTopics();
+  paintTopics(); paintDrafts(); loadTrends();
   $('#tp-tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { T.tab = b.dataset.tab; paintModal(); } });
   $('#tp-kw').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); addKeyword(e.target.value); e.target.value = ''; } });
   $('#tp-kw-auto').onclick = () => { const t = $('#tp-title').value.trim(); if (!t) return toast('먼저 글 제목을 적어 주세요.'); T.keywords = titleKeywords(t); paintModal(); };
@@ -1717,7 +1770,7 @@ function initTopics() {
   $('#tp-close').onclick = () => $('#topic-dlg').close();
   $('#tp-gen').onclick = () => generateFromModal().catch(e => toast(e.message || '글을 쓰지 못했어요.', 5000));
   $('#direct-clear').onclick = () => setDirect(null);
-  window.addEventListener('cuttory:account-change', () => { setDirect(null); T.money = { shopping: [], travel: [] }; paintTopics(); });
+  window.addEventListener('cuttory:account-change', () => { setDirect(null); T.money = { shopping: [], travel: [] }; paintTopics(); paintDrafts(); });
   window.addEventListener('cuttory:blog-style-ready', paintTopics);
 }
 

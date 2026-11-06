@@ -39,3 +39,23 @@ textarea.tp-in{min-height:96px;resize:vertical}
 #direct-chip b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #direct-chip button{border:0;background:none;color:var(--muted);font-size:12.5px;text-decoration:underline}
 @media(max-width:520px){.tb-item{flex-direction:column;align-items:stretch}.tb-use{width:100%}.tp-body{max-height:64vh}}
+
+.tb-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);margin:-4px -4px 12px}
+.tb-tabs button{border:0;background:none;padding:10px 4px;font-weight:800;font-size:14.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tb-tabs button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.tb-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tb-pill{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px;font-weight:700;font-size:13.5px}
+.tb-ai{color:#6b4fd8}
+.tb-sub{display:flex;align-items:baseline;gap:8px;margin:16px 0 6px}.tb-sub b{font-size:14px}.tb-sub span{color:var(--muted);font-size:12px}
+.tb-rank{list-style:none;margin:0;padding:0;display:grid}
+.tb-rank li{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+.tb-no{width:22px;height:22px;flex:none;border-radius:6px;background:var(--sunk);display:grid;place-items:center;font-size:12px;font-weight:700}
+.tb-kw{flex:1;min-width:0}.tb-kw b{display:block;font-size:14px}.tb-kw span{display:block;color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-rank em{font-style:normal;color:#d1453b;font-size:11.5px;font-weight:700;white-space:nowrap}
+.tb-gen{border:0;background:var(--sunk);border-radius:10px;padding:7px 12px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.tb-empty{color:var(--muted);font-size:13px;padding:10px 0}.tb-link{border:0;background:none;text-decoration:underline;color:inherit;font-size:13px}
+.tb-money-big button{padding:18px 16px}
+#draft-board{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 16px}
+.db-item{padding:11px 0;border-bottom:1px solid var(--line)}.db-item:last-child{border-bottom:0}
+.db-item small{color:#2f8f4e;font-size:11.5px;font-weight:700}.db-item b{display:block;font-size:14px;margin:2px 0 8px}
+.db-act{display:grid;grid-template-columns:1fr 1fr;gap:6px}.db-act button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px;font-weight:700;font-size:12.5px}
