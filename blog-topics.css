@@ -59,3 +59,16 @@ textarea.tp-in{min-height:96px;resize:vertical}
 .db-item{padding:11px 0;border-bottom:1px solid var(--line)}.db-item:last-child{border-bottom:0}
 .db-item small{color:#2f8f4e;font-size:11.5px;font-weight:700}.db-item b{display:block;font-size:14px;margin:2px 0 8px}
 .db-act{display:grid;grid-template-columns:1fr 1fr;gap:6px}.db-act button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px;font-weight:700;font-size:12.5px}
+
+.tp-foot{align-items:center;gap:10px}.tp-manual-btn{margin-right:auto;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:700;font-size:12.5px;color:var(--muted)}
+#tp-issue-note{color:var(--muted);font-size:11.5px;max-width:240px;text-align:right}
+.hp-install{background:var(--sunk);border-radius:14px;padding:14px 16px;font-size:13px}.hp-install ol{margin:8px 0 0;padding-left:18px;line-height:1.8}.hp-install a{font-weight:800;color:var(--ink)}.hp-install code{background:var(--surface);padding:1px 5px;border-radius:5px}
+.hp-search{display:flex;gap:6px}.hp-search input{flex:1;border:0;border-radius:12px;background:var(--sunk);padding:12px 13px;font-size:14px}.hp-search button{border:0;border-radius:12px;background:var(--ink);color:var(--surface);padding:0 16px;font-weight:800}
+.hp-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.hp-chips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:12.5px}.hp-chips .hp-ai{color:#6b4fd8}
+.hp-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0}.hp-head b{font-size:13.5px}.hp-head span{display:flex;gap:8px}.hp-head span button{border:0;background:none;color:var(--muted);font-size:12px;padding:0}.hp-head span button.on{color:var(--ink);font-weight:800}
+.hp-list{display:grid;gap:8px}.hp-item{display:flex;gap:12px;align-items:center;padding:8px;border-radius:12px;border:1px solid transparent}.hp-item.on{border-color:var(--ink);background:var(--sunk)}
+.hp-item img{width:84px;height:84px;object-fit:cover;border-radius:10px;flex:none;background:var(--sunk)}
+.hp-info{flex:1;min-width:0}.hp-info b{display:block;font-size:13px;line-height:1.4;margin:3px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hp-rate{display:inline-block;background:#fff1e6;color:#e2621b;font-weight:800;font-size:11px;border-radius:5px;padding:2px 6px}.hp-badge{display:inline-block;margin-left:4px;background:#eaf6ee;color:#2f8f4e;font-size:11px;font-weight:700;border-radius:5px;padding:2px 6px}
+.hp-price{font-size:13px}.hp-price s{color:var(--muted);font-size:11.5px}.hp-price em{font-style:normal;color:#d1453b;font-size:12px;font-weight:700;margin-left:4px}.hp-info small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.hp-item>button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-weight:700;font-size:12.5px;white-space:nowrap}

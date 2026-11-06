@@ -11,10 +11,10 @@
 <script src="account.js?v=blog-profile-v2" defer></script>
 <script src="blog-style.js?v=personal-style-v2" defer></script>
 <link rel="stylesheet" href="blog-style.css?v=personal-style-v2">
-<link rel="stylesheet" href="blog-topics.css?v=simple-v2">
-<link rel="stylesheet" href="blog-video.css?v=simple-v2">
-<script src="automation.js?v=simple-v2" defer></script>
-<script src="blog-video.js?v=simple-v2" defer></script>
+<link rel="stylesheet" href="blog-topics.css?v=simple-v3">
+<link rel="stylesheet" href="blog-video.css?v=simple-v3">
+<script src="automation.js?v=simple-v3" defer></script>
+<script src="blog-video.js?v=simple-v3" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
@@ -369,13 +369,16 @@
     </div>
     <div id="tp-aff" hidden>
       <p id="tp-aff-intro"></p>
+      <div id="tp-helper"></div>
+      <div id="tp-manual">
       <div id="tp-money"></div>
       <label class="tp-f" for="tp-link" style="margin-top:12px">발급받은 링크</label><input class="tp-in" id="tp-link" type="url" autocomplete="off" spellcheck="false">
       <label class="tp-f" for="tp-info" style="margin-top:12px">상품 정보</label><textarea class="tp-in" id="tp-info" maxlength="1500" placeholder="상품 페이지에서 상품명·가격·특징을 복사해 붙여 넣어 주세요. 이 내용으로만 써요."></textarea>
       <label class="tp-own"><input type="checkbox" id="tp-own"> 내 계정에서 발급한 링크예요. 제목에 [광고], 본문 맨 위에 네이버 공식 고지 문구가 자동으로 들어가요.</label>
+      </div>
     </div>
   </div>
-  <div class="tp-foot"><button id="tp-gen">글 생성</button></div>
+  <div class="tp-foot"><button class="tp-manual-btn" id="tp-manual-toggle" hidden>URL 직접 입력</button><span id="tp-issue-note" hidden>글 생성을 누르면 선택한 상품의 링크를 내 브랜드커넥트 계정으로 발급해요.</span><button id="tp-gen">글 생성</button></div>
 </dialog>
 <dialog id="dlg-credit">
   <h3>크레딧</h3>
@@ -1584,6 +1587,105 @@ function initBlogAutomation() {
   automationContextChanged();
 }
 
+// ===== 컷토리 도우미 연결: 브랜드커넥트 쇼핑·여행 상품 목록 =====
+const HP = { ready: false, pending: {}, kind: null, list: [], loading: false, err: '', sel: null, sort: 'rec', label: '', manual: false, issuing: false };
+const HELPER_ZIP = 'helper/cuttory-helper.zip';
+window.addEventListener('message', e => {
+  if (e.source !== window || !e.data || e.data.source !== 'cuttory-helper') return;
+  const m = e.data;
+  if (m.type === 'ready') { const was = HP.ready; HP.ready = true; if (!was && $('#topic-dlg')?.open && T.tab !== 'blog') { HP.kind = null; paintModal(); } return; }
+  const p = HP.pending[m.id]; if (!p) return; delete HP.pending[m.id];
+  if (m.ok) p.res(m.data); else p.rej(Object.assign(new Error(m.error || '도우미 요청이 실패했어요.'), { code: m.code }));
+});
+function helperCall(type, payload) {
+  return new Promise((res, rej) => {
+    const id = Math.random().toString(36).slice(2);
+    HP.pending[id] = { res, rej };
+    window.postMessage({ source: 'cuttory', id, type, payload }, location.protocol === 'file:' ? '*' : location.origin);
+    setTimeout(() => { if (HP.pending[id]) { delete HP.pending[id]; rej(new Error('도우미가 응답하지 않아요. 페이지를 새로고침해 주세요.')); } }, 20000);
+  });
+}
+window.postMessage({ source: 'cuttory', type: 'ping' }, location.protocol === 'file:' ? '*' : location.origin);
+const won = n => (typeof n === 'number' ? n.toLocaleString('ko-KR') + '원' : '');
+const totalRate = p => (p.commissionRate || 0) + (p.promotionRate || 0);
+const expected = p => (typeof p.price === 'number' ? Math.round(p.price * totalRate(p) / 100) : null);
+async function loadProducts(kind, mode, query) {
+  HP.kind = kind; HP.loading = true; HP.err = ''; HP.sel = null; paintHelper();
+  try {
+    let list;
+    if (mode === 'search') { HP.label = `'${query}' 검색 결과`; list = await helperCall(kind + '.search', { query }); }
+    else if (kind === 'shopping') { HP.label = '요즘 인기 상품'; list = await helperCall('shopping.recommend'); }
+    else { HP.label = mode === 'PRICE_DROP' ? '가격 내린 여행 상품' : '인기 여행지 BEST'; list = await helperCall('travel.recommend', { section: mode }); }
+    if (T.tab !== kind) return;
+    HP.list = Array.isArray(list) ? list : [];
+  } catch (e) { HP.list = []; HP.err = e.message; }
+  finally { HP.loading = false; paintHelper(); }
+}
+function sortedList() {
+  const l = HP.list.slice();
+  if (HP.sort === 'rate') l.sort((a, b) => totalRate(b) - totalRate(a));
+  if (HP.sort === 'earn') l.sort((a, b) => (expected(b) || 0) - (expected(a) || 0));
+  return l;
+}
+function paintHelper() {
+  const box = $('#tp-helper'); if (!box) return;
+  const k = T.tab; if (k === 'blog') return;
+  $('#tp-manual').hidden = HP.ready && !HP.manual;
+  $('#tp-manual-toggle').textContent = HP.manual || !HP.ready ? (HP.ready ? '← 상품 목록으로' : '') : 'URL 직접 입력';
+  $('#tp-manual-toggle').hidden = !HP.ready;
+  if (!HP.ready) {
+    box.innerHTML = `<div class="hp-install"><b>컷토리 도우미를 설치하면 내 브랜드커넥트 상품이 여기에 바로 나와요</b>
+      <ol><li><a href="${HELPER_ZIP}" download>도우미 내려받기</a> 후 압축을 풀어요.</li><li>주소창에 <code>chrome://extensions</code> → 오른쪽 위 <b>개발자 모드</b> 켜기 → <b>압축해제된 확장 프로그램을 로드</b> → 푼 폴더 선택</li><li>이 페이지를 새로고침해요. 네이버에 로그인돼 있어야 해요.</li></ol>
+      <p class="tp-note">설치 전에는 아래에서 링크와 상품 정보를 직접 넣어 쓸 수 있어요.</p></div>`;
+    return;
+  }
+  if (HP.manual) { box.innerHTML = ''; return; }
+  if (HP.kind !== k && !HP.loading) { loadProducts(k, k === 'shopping' ? 'rec' : 'REGION_BEST'); return; }
+  const chips = k === 'shopping'
+    ? [['rec', '요즘 인기'], ...T.money.shopping.filter(t => t.search).map(t => ['q:' + t.search, t.search])]
+    : [['REGION_BEST', '인기 여행지'], ['PRICE_DROP', '가격 내린 상품'], ...['다낭', '오사카', '후쿠오카', '방콕', '괌', '파리'].map(c => ['q:' + c, c]), ...T.money.travel.filter(t => t.search).map(t => ['q:' + t.search, t.search])];
+  const items = sortedList();
+  box.innerHTML = `<form class="hp-search" id="hp-search"><input id="hp-q" placeholder="${k === 'shopping' ? '상품명 검색하기' : '여행지 검색하기'}" maxlength="40" autocomplete="off"><button aria-label="검색">검색</button></form>
+    <div class="hp-chips">${chips.map(([v, l]) => `<button data-hchip="${esc(v)}">${esc(l)}</button>`).join('')}<button class="hp-ai" id="tp-money-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '고르는 중…' : '✦ 내 블로그 맞춤 검색어'}</button></div>
+    <div class="hp-head"><b>${esc(HP.label)}${HP.loading ? '' : ` · 총 ${items.length}개`}</b><span>${[['rec', '추천순'], ['rate', '수수료율 높은 순'], ['earn', '예상 수익 높은 순']].map(([v, l]) => `<button data-hsort="${v}" class="${HP.sort === v ? 'on' : ''}">${l}</button>`).join('')}</span></div>
+    ${HP.loading ? '<p class="tb-empty">브랜드커넥트에서 불러오는 중이에요…</p>' : HP.err ? `<p class="tb-empty">${esc(HP.err)}</p>` : !items.length ? '<p class="tb-empty">상품이 없어요. 다른 검색어로 찾아보세요.</p>'
+      : `<div class="hp-list">${items.map(p => { const on = HP.sel && HP.sel.id === p.id; const ex = expected(p); return `<div class="hp-item${on ? ' on' : ''}"><img src="${esc(p.image)}" alt="" loading="lazy" referrerpolicy="no-referrer"><div class="hp-info"><span class="hp-rate">수수료 ${p.commissionRate}%${p.promotionRate ? ` +${p.promotionRate}%` : ''}</span>${p.badge ? `<span class="hp-badge">${esc(p.badge)}</span>` : ''}<b>${esc(p.name)}</b><div class="hp-price">${p.listPrice && p.price && p.listPrice > p.price ? `<s>${won(p.listPrice)}</s> ` : ''}<strong>${won(p.price)}</strong>${ex != null ? ` <em>예상 수익 ${won(ex)}</em>` : ''}</div>${p.kind === 'travel' ? `<small>${esc([p.duration, p.startDate && p.startDate + ' 출발', p.store].filter(Boolean).join(' · '))}</small>` : `<small>${esc([p.store, p.rating ? `★${p.rating} (${(p.reviews || 0).toLocaleString()})` : ''].filter(Boolean).join(' · '))}</small>`}</div><button data-hsel="${esc(p.id)}">${on ? '선택 취소' : '선택'}</button></div>`; }).join('')}</div>`}
+    <p class="tp-note">예상 수익은 지금 가격 × 수수료율로 계산한 값이에요. 실제 정산은 구매확정·이용완료 기준이에요.</p>`;
+}
+document.addEventListener('submit', e => { if (e.target.id !== 'hp-search') return; e.preventDefault(); const q = $('#hp-q').value.trim(); if (q) loadProducts(T.tab, 'search', q); });
+document.addEventListener('click', e => {
+  if (!$('#topic-dlg')?.contains(e.target)) return;
+  const chip = e.target.closest('[data-hchip]'), sort = e.target.closest('[data-hsort]'), sel = e.target.closest('[data-hsel]');
+  if (chip) { const v = chip.dataset.hchip; v.startsWith('q:') ? loadProducts(T.tab, 'search', v.slice(2)) : loadProducts(T.tab, v); }
+  if (sort) { HP.sort = sort.dataset.hsort; paintHelper(); }
+  if (sel) { const p = HP.list.find(x => x.id === sel.dataset.hsel); HP.sel = HP.sel && HP.sel.id === p?.id ? null : p || null; paintHelper(); paintGenLabel(); }
+  if (e.target.closest('#tp-manual-toggle')) { HP.manual = !HP.manual; paintHelper(); paintGenLabel(); }
+});
+function paintGenLabel() {
+  const b = $('#tp-gen'); if (!b || T.tab === 'blog') return;
+  const useList = HP.ready && !HP.manual;
+  b.textContent = HP.issuing ? '링크를 발급하고 있어요…' : `${AFF_NAME[T.tab]} 글 생성 · ${COST}크레딧`;
+  b.disabled = HP.issuing || (useList && !HP.sel);
+  $('#tp-issue-note').hidden = !useList;
+}
+function productFacts(p) {
+  const d = todayKey();
+  if (p.kind === 'travel') return [`상품명: ${p.name}`, p.store && `여행사: ${p.store}`, p.duration && `일정: ${p.duration}`, p.startDate && `출발일: ${p.startDate}`, p.places && `여행지: ${p.places}`, p.listPrice && `정상가: ${won(p.listPrice)}`, p.price && `할인가: ${won(p.price)}${p.discountRate ? ` (${p.discountRate}% 할인)` : ''}`, `(${d} 브랜드커넥트 기준, 가격·일정은 바뀔 수 있음)`].filter(Boolean).join('\n');
+  return [`상품명: ${p.name}`, p.store && `판매처: ${p.store}`, p.listPrice && `정가: ${won(p.listPrice)}`, p.price && `판매가: ${won(p.price)}${p.discountRate ? ` (${p.discountRate}% 할인)` : ''}`, p.rating && `리뷰: 평점 ${p.rating}, ${(p.reviews || 0).toLocaleString()}개`, `(${d} 브랜드커넥트 기준, 가격은 바뀔 수 있음)`].filter(Boolean).join('\n');
+}
+async function affiliateFromList(kind) {
+  const p = HP.sel; if (!p) throw new Error('글로 쓸 상품을 선택해 주세요.');
+  let link = p.shortenUrl;
+  if (!link) {
+    HP.issuing = true; paintGenLabel();
+    try { link = (await helperCall(kind + '.issue', kind === 'shopping' ? { id: p.id } : { url: p.productUrl })).shortenUrl; p.shortenUrl = link; }
+    finally { HP.issuing = false; paintGenLabel(); }
+  }
+  window.CuttoryAutomation.helpers.safeHttps(link);
+  const subject = p.name.slice(0, 60);
+  return { version: 1, kind, subject, affiliateUrl: link, sourceUrl: p.productUrl || '', facts: productFacts(p), verifiedAt: todayKey(), angle: kind === 'travel' ? '예약 전에 확인할 일정·포함 사항' : '구매 전에 확인할 정보', keywords: titleKeywords(subject), rightsConfirmed: true, linkConfirmed: true, disclosure: AFF_NOTICE[kind] };
+}
+
 // ===== 오늘의 글감 · 글감 추가하기 (판다랭크식 간단 흐름) =====
 const TOPIC_COST = 2;
 const AFF_NOTICE = { shopping: '이 포스팅은 네이버 쇼핑 커넥트 활동의 일환으로, 판매 발생 시 수수료를 제공받습니다.', travel: '이 포스팅은 네이버 여행 커넥트 활동의 일환으로, 예약 발생 시 수수료를 제공받습니다.' };
@@ -1707,8 +1809,8 @@ function paintModal() {
     $('#tp-money').innerHTML = list.length ? list.map(t => `<div class="tp-money-item"><div><b>${esc(t.title)}</b>${t.why ? `<span>${esc(t.why)}</span>` : ''}</div>${t.search ? `<button data-copy="${esc(t.search)}">‘${esc(t.search)}’ 복사</button>` : ''}</div>`).join('') + `<p class="tp-note">검색어를 복사해 <a href="https://brandconnect.naver.com/" target="_blank" rel="noopener">브랜드커넥트</a>의 상품 찾기에서 상품을 고르고 링크를 발급해 아래에 붙여 넣어 주세요.</p>`
       : `<button class="tp-money-ask" id="tp-money-ask" ${topicBusy ? 'disabled' : ''}>${topicBusy ? '고르는 중이에요…' : `돈 버는 글감 추천받기 · ${TOPIC_COST}크레딧`}</button>`;
     $('#tp-link').placeholder = `${AFF_NAME[k]} 링크를 입력해 주세요`;
-    $('#tp-gen').textContent = `${AFF_NAME[k]} 글 생성 · ${COST}크레딧`;
-  } else $('#tp-gen').textContent = `글 생성 · ${COST}크레딧`;
+    paintHelper(); paintGenLabel();
+  } else { $('#tp-gen').textContent = `글 생성 · ${COST}크레딧`; $('#tp-gen').disabled = false; $('#tp-issue-note').hidden = true; $('#tp-manual-toggle').hidden = true; }
 }
 function titleKeywords(title) {
   const stop = /^(방법|후기|정리|추천|이유|가지|총정리|완벽|솔직|진짜|그리고|하는|있는|좋은|위한|에서|으로)$/;
@@ -1744,7 +1846,13 @@ async function generateFromModal() {
     if (!T.keywords.length) T.keywords = titleKeywords(title);
     setDirect({ type: 'topic', label: '글감 · ' + title, topic: { title, keywords: T.keywords.slice(), emphasis: $('#tp-emph').value.trim().slice(0, 300) } });
   } else {
-    const kind = T.tab, link = $('#tp-link').value.trim(), info = $('#tp-info').value.trim();
+    const kind = T.tab;
+    if (HP.ready && !HP.manual) {
+      let affiliate; try { affiliate = await affiliateFromList(kind); } catch (e) { return toast(e.code === 'login' ? e.message : (e.message || '링크를 발급하지 못했어요.'), 5000); }
+      setDirect({ type: 'affiliate', label: AFF_NAME[kind] + ' · ' + affiliate.subject, affiliate });
+      $('#topic-dlg').close(); $('#paper').scrollIntoView({ behavior: 'smooth', block: 'start' }); await write(); return;
+    }
+    const link = $('#tp-link').value.trim(), info = $('#tp-info').value.trim();
     try { window.CuttoryAutomation.helpers.safeHttps(link); } catch (e) { return toast(`${AFF_NAME[kind]}에서 발급받은 https 링크를 그대로 붙여 넣어 주세요.`, 4500); }
     if (info.length < 10) return toast('상품 페이지에서 상품명과 특징을 복사해 붙여 넣어 주세요. 그 내용을 바탕으로만 써요.', 5000);
     if (!$('#tp-own').checked) return toast('내 계정에서 발급한 링크인지 확인해 주세요.');
