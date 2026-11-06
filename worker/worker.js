@@ -2,6 +2,7 @@
 // 필요한 설정: 비밀 값 OPENAI_API_KEY, ADMIN_KEY / KV 바인딩 KV / (선택) ALLOWED_ORIGIN, TEXT_MODEL, IMAGE_MODEL, GOOGLE_CLIENT_ID(구글 로그인)
 const COST = { blogstyle: 5, gen: 10, video: 15, link: 3, person: 5, titles: 2, topics: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
 const START_CREDITS = 100;
+const UNLIMITED_IDS = ['u_d41c1b9b-08d'];
 const NEW_USERS_PER_IP_PER_DAY = 3;
 const SYNC_APPS = ['office', 'portfolio', 'video', 'cardnews'];
 const SYNC_MAX = 3 * 1024 * 1024;
@@ -37,6 +38,7 @@ export default {
       if (path === '/api/samples') return await samples(env, cors);
       if (path === '/api/models') { const m = await models(env).catch(e => ({ error: e.message })); return json({ text: m.text, image: m.image, all: m.all, error: m.error }, 200, cors); }
       if (path === '/api/config') return json({ version: 2, google: env.GOOGLE_CLIENT_ID || '', features: { blogStyle: true, blogVideo: true, speech: true }, speech: { cost: 2, voices: ['alloy','nova'], maxChars: 1800 }, blogStyle: { cost: COST.blogstyle, minPosts: 3, maxPosts: 5 } }, 200, cors);
+      if (path === '/api/trends') return json(await trendsKR(), 200, cors);
       if (path === '/api/session') return json(await newSession(req, env), 200, cors);
       if (path === '/api/login/google') return json(await loginGoogle(req, await req.json(), env), 200, cors);
       if (path.startsWith('/api/admin/')) return await admin(path, req, env, cors);
@@ -98,7 +100,10 @@ async function auth(req, env) {
   const t = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   if (!t || t.length < 40) return null;
   const raw = await env.KV.get('user:' + t);
-  return raw ? JSON.parse(raw) : null;
+  const u = raw ? JSON.parse(raw) : null;
+  // 운영자 본인 계정은 크레딧을 차감해도 매번 다시 채워요 (실제 OpenAI 사용료는 별도로 나가요).
+  if (u && UNLIMITED_IDS.includes(u.id) && u.credits < 900000) { u.credits = 999999; u.hist.unshift({ t: Date.now(), k: 'unlimited', n: 0 }); u.hist = u.hist.slice(0, 60); await save(env, u); }
+  return u;
 }
 async function charged(user, kind, env, fn) {
   const n = COST[kind];
@@ -677,4 +682,18 @@ async function speechRoute(req, user, env) {
     }
     return{audio:cached.audio,mimeType:cached.mimeType,credits:fresh.credits,cached:false};
   });
+}
+
+// ===== 실시간 인기 검색어 (Google 트렌드 대한민국, 무료 공개 RSS · 10분 캐시) =====
+async function trendsKR() {
+  const cache = caches.default, key = new Request('https://cuttory.internal/trends-kr-v1');
+  const hit = await cache.match(key); if (hit) return await hit.json();
+  const r = await fetch('https://trends.google.com/trending/rss?geo=KR', { headers: { 'user-agent': 'Mozilla/5.0 (compatible; CuttoryBot/1.0)' } });
+  if (!r.ok) throw err('trends_failed', '실시간 인기 검색어를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.', 502);
+  const x = await r.text();
+  const pick = (b, t) => decode(((b.match(new RegExp('<' + t + '>([\\s\\S]*?)</' + t + '>')) || [])[1] || '').replace(/<!\[CDATA\[|\]\]>/g, '')).trim();
+  const items = [...x.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m => ({ keyword: pick(m[1], 'title'), traffic: pick(m[1], 'ht:approx_traffic'), at: pick(m[1], 'pubDate'), news: pick(m[1], 'ht:news_item_title'), newsSource: pick(m[1], 'ht:news_item_source') })).filter(i => i.keyword).slice(0, 20);
+  const out = { source: 'Google 트렌드 · 대한민국', fetchedAt: new Date().toISOString(), items };
+  await cache.put(key, new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=600' } }));
+  return out;
 }
