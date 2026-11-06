@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "컷토리 도우미",
+  "version": "1.0.0",
+  "description": "컷토리 블로그에서 내 네이버 브랜드커넥트 쇼핑·여행 상품을 찾고, 누를 때만 링크를 발급해요.",
+  "host_permissions": ["https://gw-brandconnect.naver.com/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["https://wsxqaz1015.github.io/cuttory/*"], "js": ["bridge.js"], "run_at": "document_start" }
+  ]
+}
