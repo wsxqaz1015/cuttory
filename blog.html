@@ -243,6 +243,7 @@
 <style id="site-connect-style">
 #tp-money{margin-top:14px}.connect-recommend{border:1px solid #ddd;background:#fff;color:#222;border-radius:24px;padding:11px 17px;font-size:14px;font-weight:700;cursor:pointer}.connect-ideas{display:grid;gap:8px;margin-top:12px}.connect-ideas button{text-align:left;border:1px solid #e5e6e9;border-radius:12px;padding:13px 15px;background:#fff;color:#202126;cursor:pointer}.connect-ideas button:hover{border-color:#222;background:#fafafa}.connect-ideas b,.connect-ideas span{display:block}.connect-ideas b{font-size:14px}.connect-ideas span{font-size:12px;color:#73757c;margin-top:4px}.connect-details{margin:18px 0 0;border-top:1px solid #ececf0;padding-top:14px}.connect-details summary{cursor:pointer;font-size:13px;color:#666;font-weight:600}.connect-details summary span{font-size:11px;font-weight:400;color:#888;margin-left:5px}.connect-details .tp-f{margin-top:12px}.connect-footnote{font-size:12px!important;color:#85878e!important}.connect-post{padding:16px 22px;margin:0;border-bottom:1px solid #ececf0}.connect-post .tp-in{margin-top:8px}.tp-foot #tp-gen{margin-left:auto}#tp-aff #tp-info{min-height:90px}#tp-aff-intro{line-height:1.65;margin:0 0 18px}.connect-details[hidden]{display:none!important}@media(max-width:600px){#topic-dlg{max-height:90dvh}.connect-ideas button{padding:11px 13px}.connect-post{padding:14px}}
 </style>
+<style id="connect-reader-style">.connect-naver{display:inline-block;font-size:13px;font-weight:650;color:#087c45;text-decoration:none;padding:9px 12px;background:#eef9f2;border-radius:9px}.connect-product{margin:15px 0;padding:15px;border:1px solid #dfe5df;border-radius:12px;background:#fbfdfb}.connect-product> b{display:block;font-size:16px;line-height:1.55}.connect-product details{font-size:12px;color:#555}.connect-product pre{white-space:pre-wrap;font:inherit;max-height:210px;overflow:auto;line-height:1.7}.connect-product-tag{font-size:11px;color:#147b43;margin-bottom:7px;font-weight:700}.connect-read-error{font-size:13px;color:#a33;line-height:1.65}#tp-read{margin-top:3px;font-size:12px;padding:8px 12px}.connect-product[hidden]{display:none!important}#tp-info{margin-top:10px}#tp-link{width:100%;min-width:0}</style>
 </head>
 <body class="ct-page">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -376,19 +377,20 @@
     </div>
     <div id="tp-aff" hidden>
       <p id="tp-aff-intro" class="tp-note"></p>
-      <label class="tp-f" id="tp-subject-label" for="tp-subject">어떤 상품을 소개할까요?</label>
-      <input class="tp-in" id="tp-subject" maxlength="100" autocomplete="off">
-      <div id="tp-money"></div>
-      <details id="tp-details" class="connect-details"><summary>상품 정보·수익 링크 추가 <span>선택</span></summary>
-        <label class="tp-f" for="tp-info">알고 있는 상품 정보</label><textarea class="tp-in" id="tp-info" maxlength="1500" placeholder="가격·사양·일정 등 확인한 내용만 적어 주세요. 없으면 일반적인 선택 기준으로 써요."></textarea>
-        <label class="tp-f" for="tp-link">내 브랜드커넥트 수익 링크</label><input class="tp-in" id="tp-link" type="url" autocomplete="off" placeholder="https://…  · 나중에 넣어도 돼요">
-        <label class="tp-own"><input type="checkbox" id="tp-own"> 내 계정에서 발급받은 링크예요. 광고 표시와 공식 고지를 자동으로 넣어요.</label>
-        <p class="tp-note">링크 발급은 <a href="https://brandconnect.naver.com/" target="_blank" rel="noopener">네이버 브랜드커넥트</a>에서 해 주세요. 컷토리는 링크를 그대로 사용하며 자동 발급하거나 방문하지 않아요.</p>
+      <a class="connect-naver" href="https://brandconnect.naver.com/" target="_blank" rel="noopener">네이버에서 상품 선택·내 링크 받기 ↗</a>
+      <label class="tp-f" for="tp-link" style="margin-top:18px">내 커넥트 수익 링크</label>
+      <input class="tp-in" id="tp-link" type="url" maxlength="2048" autocomplete="off" spellcheck="false">
+      <label class="tp-own"><input type="checkbox" id="tp-own"> 내 계정에서 발급한 링크예요. 이 링크를 열어 상품 정보를 읽는 데 동의해요.</label>
+      <button type="button" id="tp-read" class="connect-recommend" disabled>상품 정보 읽기 · 3크레딧</button>
+      <p class="tp-note">아래 버튼으로 읽기부터 글 만들기까지 한 번에 할 수 있어요. 읽기에 성공한 경우에만 3크레딧을 써요.</p>
+      <div id="tp-product" class="connect-product" hidden></div>
+      <details id="tp-info-details" class="connect-details"><summary>내 경험·추가 정보 <span>선택</span></summary>
+        <textarea class="tp-in" id="tp-info" maxlength="1500" placeholder="직접 써 본 경험이나 추가로 확인한 내용이 있다면 적어 주세요. 없으면 상품 상세 정보만으로 써요."></textarea>
       </details>
-      <p class="tp-note connect-footnote">설치 없이 바로 초안을 만들 수 있어요. 가격·사양·실제 경험은 입력하거나 확인한 내용만 사용해요.</p>
+      <p class="tp-note connect-footnote">발급된 링크를 원문 그대로 넣고 [광고] 제목과 공식 고지를 자동으로 붙여요. 목록 조회·새 링크 자동 발급은 현재 연결되지 않았어요.</p>
     </div>
   </div>
-  <div class="tp-foot"><button id="tp-gen">글·이미지 만들기</button></div>
+  <div class="tp-foot"><button id="tp-gen">링크 읽고 수익형 글 만들기</button></div>
 </dialog>
 <dialog id="dlg-credit">
   <h3>크레딧</h3>
@@ -1710,66 +1712,74 @@ function initBlogAutomation() {
   automationContextChanged();
 }
 
-// ===== 사이트 안에서 커넥트 글쓰기: 설치·자동 링크 발급 없음 =====
-const CONNECT_FORM = { shopping: { subject:'', info:'', link:'', own:false }, travel: { subject:'', info:'', link:'', own:false } };
+// ===== 커넥트 실제 상품 링크 → 공개 상세 읽기 → 수익형 원고 =====
+const CONNECT_FORM={shopping:{info:'',link:'',own:false,product:null,loading:false,error:''},travel:{info:'',link:'',own:false,product:null,loading:false,error:''}};
+let CONNECT_READ_CTX=null;
 function cacheConnectInput(){
   if(T.tab==='blog')return;
-  const f=CONNECT_FORM[T.tab];f.subject=$('#tp-subject').value;f.info=$('#tp-info').value;f.link=$('#tp-link').value;f.own=$('#tp-own').checked;
+  const f=CONNECT_FORM[T.tab],link=$('#tp-link').value.trim();
+  if(f.link!==link){f.product=null;f.error='';}
+  f.link=link;f.info=$('#tp-info').value;f.own=$('#tp-own').checked;
 }
 function paintConnectForm(){
-  const kind=T.tab,f=CONNECT_FORM[kind],travel=kind==='travel';
-  $('#tp-aff-intro').textContent=travel?'소개할 여행지나 여행 상품을 적어 주세요. 추천부터 글·이미지 만들기까지 여기서 해요.':'소개할 상품이나 상품 종류를 적어 주세요. 추천부터 글·이미지 만들기까지 여기서 해요.';
-  $('#tp-subject-label').textContent=travel?'어떤 여행을 소개할까요?':'어떤 상품을 소개할까요?';
-  $('#tp-subject').placeholder=travel?'예) 부모님과 가는 다낭 패키지':'예) 겨울 캠핑용 전기요';
-  $('#tp-subject').value=f.subject;$('#tp-info').value=f.info;$('#tp-link').value=f.link;$('#tp-own').checked=f.own;
-  $('#tp-details').open=!!(f.info||f.link);
-  const list=T.money[kind];
-  $('#tp-money').innerHTML=`<button class="connect-recommend" id="tp-money-ask" ${topicBusy?'disabled':''}>${topicBusy?'내 블로그에 맞춰 고르는 중…':'AI 글감 추천 · '+TOPIC_COST+'크레딧'}</button>`+
-    (list.length?`<div class="connect-ideas">${list.map((t,i)=>`<button type="button" data-connect-idea="${i}"><b>${esc(t.title)}</b>${t.why?`<span>${esc(t.why)}</span>`:''}</button>`).join('')}</div><p class="tp-note">내 블로그에 맞춘 글감이에요. 실제 판매 상품 목록·가격·수수료를 조회한 결과는 아니에요.</p>`:'');
+  const kind=T.tab,f=CONNECT_FORM[kind];
+  $('#tp-aff-intro').textContent='내 커넥트 링크에서 실제 상품 정보를 읽어 수익형 원고를 만들어요. 일반 글감이나 임의의 상품을 만들지 않아요.';
+  $('#tp-link').value=f.link;$('#tp-info').value=f.info;$('#tp-own').checked=f.own;
+  $('#tp-link').placeholder=kind==='travel'?'여행 커넥트에서 발급한 내 링크':'쇼핑 커넥트에서 발급한 내 링크';
+  $('#tp-read').disabled=S.busy||topicBusy||automationVoiceBusy||!f.link||!f.own;
+  $('#tp-read').textContent=f.loading?'실제 상품 정보를 읽고 있어요…':'상품 정보 읽기 · 3크레딧';
+  const box=$('#tp-product');
+  box.hidden=!f.product&&!f.error&&!f.loading;
+  if(f.loading)box.innerHTML='<p class="tp-note">상품 페이지를 한 번 열어 정보를 확인하고 있어요. 읽기를 막은 페이지는 임의로 채우지 않아요.</p>';
+  else if(f.error)box.innerHTML=`<p class="connect-read-error">${esc(f.error)}</p><p class="tp-note">상세 정보를 읽지 못해 글 생성을 막았어요. 상품명만으로 수익형 글을 만들지 않아요.</p>`;
+  else if(f.product){const p=f.product;box.innerHTML=`<div class="connect-product-tag">실제 링크에서 읽은 상품 정보</div><b>${esc(p.subject)}</b>${p.priceText?`<p>${esc(p.priceText)}</p>`:''}<p class="tp-note">${p.sourceGrade==='product-metadata'?'공개된 상품명·설명만 읽었어요. 상세 전체나 옵션별 가격을 확인한 것은 아니에요.':'공개 상품 상세에서 확인한 내용만 원고에 사용해요.'}</p><details><summary>읽어온 내용 확인</summary><pre>${esc(p.facts)}</pre><a href="${esc(p.sourceUrl)}" target="_blank" rel="noopener noreferrer">원본 상품 페이지</a></details>`;}
+  $('#tp-info-details').open=!!f.info;
   paintGenLabel();
 }
 function paintGenLabel(){
   const b=$('#tp-gen');if(!b)return;
-  b.textContent=`글·이미지 만들기 · 최대 ${blogEstimatedCost()}크레딧`;
-  b.disabled=S.busy||topicBusy||automationVoiceBusy||(T.tab!=='blog'&&!$('#tp-subject').value.trim());
+  const f=T.tab==='blog'?null:CONNECT_FORM[T.tab];
+  b.textContent=(f?(f.product?'수익형 글·이미지 만들기':'링크 읽고 수익형 글 만들기'):'글·이미지 만들기')+` · 최대 ${blogEstimatedCost()+(f&&!f.product?3:0)}크레딧`;
+  b.disabled=S.busy||topicBusy||automationVoiceBusy||!!(f&&(!f.own||!f.link));
 }
-function makeConnectRequest(kind,subject,info,link){
+function makeConnectRequest(kind,subject,info,link,product){
   window.CuttoryAutomation.helpers.safeHttps(link);
-  return {version:1,kind,subject,affiliateUrl:link,sourceUrl:'',facts:['사용자가 입력한 상품·여행 주제: '+subject,info||'추가로 확인된 상품 사양·가격·일정 자료 없음. 일반적인 선택 기준만 안내할 것.'].join('\n'),verifiedAt:todayKey(),angle:kind==='travel'?'예약 전에 확인할 조건과 선택 기준':'구매 전에 확인할 조건과 선택 기준',keywords:titleKeywords(subject),rightsConfirmed:false,linkConfirmed:true,disclosure:AFF_NOTICE[kind]};
+  return {version:1,kind,subject,affiliateUrl:link,sourceUrl:product?.sourceUrl||'',facts:[product?.facts||'사용자가 입력한 주제: '+subject,info?'사용자가 추가로 확인한 정보:\n'+info:''].filter(Boolean).join('\n\n'),verifiedAt:todayKey(),sourceFetchedAt:product?.fetchedAt||null,sourceGrade:product?.sourceGrade||'user-provided',angle:kind==='travel'?'공개 상품 상세에 근거한 일정·포함 조건과 예약 전 확인 사항':'공개 상품 상세에 근거한 특징·구성 및 구매 전 확인 사항',keywords:titleKeywords(subject),rightsConfirmed:false,linkConfirmed:true,disclosure:AFF_NOTICE[kind]};
+}
+async function readConnectProduct(){
+  if(T.tab==='blog'||S.busy||topicBusy||automationVoiceBusy)return;
+  cacheConnectInput();const kind=T.tab,f=CONNECT_FORM[kind],link=f.link;
+  if(!link)return toast('내 커넥트 수익 링크를 넣어 주세요.');
+  if(!f.own)return toast('내 계정의 링크인지 확인하고 상품 페이지 읽기에 동의해 주세요.');
+  let ctx;f.loading=true;f.error='';f.product=null;S.busy=true;setBlogWriteControls(true);paintConnectForm();renderBar('실제 커넥트 상품 정보를 읽고 있어요');
+  try{
+    ctx=await createBlogContext();CONNECT_READ_CTX=ctx;
+    const p=await H.call('/api/connect/read',{url:link,kind,consent:true,confirmedCost:3},ctx);assertBlogContext(ctx);
+    if(f.link!==link)throw new Error('링크가 바뀌었어요. 바뀐 링크를 다시 읽어 주세요.');
+    if(!p.subject||!p.facts||p.affiliateUrl!==link||!p.sourceUrl)throw new Error('실제 상품 정보를 확인하지 못했어요.');
+    f.product=p;
+  }catch(e){f.error=e.name==='AbortError'?'상품 정보 읽기를 취소했어요.':(e.message||'상품 페이지를 읽지 못했어요.');}
+  finally{if(activeBlogContext===ctx)activeBlogContext=null;if(CONNECT_READ_CTX===ctx)CONNECT_READ_CTX=null;f.loading=false;S.busy=false;setBlogWriteControls(false);renderBar();if(T.tab!=='blog')paintConnectForm();}
 }
 function paintConnectLinkPanel(){
-  const box=$('#connect-link-panel');if(!box)return;
-  const intent=S.post?._connectIntent;box.hidden=!intent||!!S.post?._automationRequest;
-  if(box.hidden)return;
-  $('#connect-link-status').textContent='지금은 제휴 링크가 없는 일반 초안이에요. 내 수익 링크를 연결하면 [광고] 제목과 공식 고지·링크를 자동으로 넣어요.';
+  const box=$('#connect-link-panel');if(!box)return;const intent=S.post?._connectIntent;box.hidden=!intent||Boolean(S.post?._automationRequest);if(box.hidden)return;
+  $('#connect-link-status').textContent='이전 일반 초안에는 수익 링크가 없어요. 내 수익 링크를 넣으면 광고 고지와 링크를 추가해요. 상품 상세를 기반으로 새로 쓰려면 쇼핑·여행 커넥트 탭에서 링크를 읽어 주세요.';
 }
 document.addEventListener('input',e=>{
-  if(['tp-subject','tp-info','tp-link'].includes(e.target.id)){cacheConnectInput();paintGenLabel();}
+  if(['tp-link','tp-info'].includes(e.target.id)){cacheConnectInput();if(e.target.id==='tp-link'){$('#tp-product').hidden=true;$('#tp-read').disabled=S.busy||!CONNECT_FORM[T.tab]?.link||!CONNECT_FORM[T.tab]?.own;}paintGenLabel();}
 });
-document.addEventListener('change',e=>{if(e.target.id==='tp-own')cacheConnectInput();});
+document.addEventListener('change',e=>{if(e.target.id==='tp-own'){cacheConnectInput();paintConnectForm();}});
 document.addEventListener('click',async e=>{
-  const idea=e.target.closest('[data-connect-idea]');
-  if(idea&&T.tab!=='blog'){
-    const t=T.money[T.tab][Number(idea.dataset.connectIdea)];if(!t)return;
-    CONNECT_FORM[T.tab].subject=t.title;$('#tp-subject').value=t.title;paintGenLabel();$('#tp-subject').focus();
-  }
+  if(e.target.closest('#tp-read'))await readConnectProduct();
   if(e.target.closest('#connect-link-apply')){
     if(S.busy||automationVoiceBusy||topicBusy)return toast('진행 중인 작업이 끝난 뒤 눌러 주세요.');
-    const intent=S.post?._connectIntent;if(!intent)return;
-    const link=$('#connect-issued-link').value.trim();
-    if(!link)return toast('내 브랜드커넥트에서 발급받은 링크를 붙여 넣어 주세요.');
-    if(!$('#connect-issued-own').checked)return toast('내 계정에서 발급한 링크인지 확인해 주세요.');
-    try{
-      const req=makeConnectRequest(intent.kind,intent.subject,intent.info,link);
-      S.post=applyAutomationPost(S.post,req,blogAccountKey());
-      setDirect({type:'affiliate',label:AFF_NAME[intent.kind]+' · '+intent.subject,affiliate:req});
-      C.list=[];renderPaper();automationContextChanged();await saveDraft(S.post);
-      toast('수익 링크와 공식 광고 고지를 넣었어요. 링크를 방문하거나 새로 발급하지는 않았어요.',6000);
-    }catch(err){toast(err.message||'https 링크를 확인해 주세요.',5000);}
+    const intent=S.post?._connectIntent;if(!intent)return;const link=$('#connect-issued-link').value.trim();
+    if(!link||!$('#connect-issued-own').checked)return toast('내 계정에서 발급받은 링크를 넣고 확인해 주세요.');
+    try{const req=makeConnectRequest(intent.kind,intent.subject,intent.info,link);S.post=applyAutomationPost(S.post,req,blogAccountKey());setDirect({type:'affiliate',label:AFF_NAME[intent.kind]+' · '+intent.subject,affiliate:req});C.list=[];renderPaper();automationContextChanged();await saveDraft(S.post);toast('기존 초안에 광고 고지와 링크를 넣었어요. 상품 상세를 읽은 것은 아니에요.',6000);}catch(err){toast(err.message||'https 링크를 확인해 주세요.',5000);}
   }
 });
 window.addEventListener('cuttory:account-change',()=>{
-  for(const kind of ['shopping','travel'])Object.assign(CONNECT_FORM[kind],{subject:'',info:'',link:'',own:false});
+  CONNECT_READ_CTX?.controller.abort();for(const kind of ['shopping','travel'])Object.assign(CONNECT_FORM[kind],{info:'',link:'',own:false,product:null,loading:false,error:''});
   $('#connect-issued-link').value='';$('#connect-issued-own').checked=false;paintConnectLinkPanel();
 });
 
@@ -1949,15 +1959,13 @@ async function generateFromModal() {
     if(!T.keywords.length)T.keywords=titleKeywords(title);
     setDirect({type:'topic',label:'글감 · '+title,topic:{title,keywords:T.keywords.slice(),emphasis:$('#tp-emph').value.trim().slice(0,300)}});
   }else{
-    cacheConnectInput();const kind=T.tab,f=CONNECT_FORM[kind],subject=f.subject.trim(),info=f.info.trim(),link=f.link.trim();
-    if(!subject)return toast(kind==='travel'?'소개할 여행지나 상품을 적어 주세요.':'소개할 상품이나 상품 종류를 적어 주세요.');
-    if(link){
-      if(!f.own)return toast('내 계정에서 발급한 수익 링크인지 확인해 주세요.');
-      let req;try{req=makeConnectRequest(kind,subject,info,link);}catch{return toast('발급받은 https 링크를 그대로 붙여 넣어 주세요.');}
-      setDirect({type:'affiliate',label:AFF_NAME[kind]+' · '+subject,affiliate:req});
-    }else{
-      setDirect({type:'topic',label:AFF_NAME[kind]+' 초안 · '+subject,topic:{title:subject,keywords:titleKeywords(subject),emphasis:info,connectKind:kind,connectSubject:subject}});
-    }
+    cacheConnectInput();const owner=blogAccountKey(),kind=T.tab,f=CONNECT_FORM[kind];
+    if(!f.link||!f.own)return toast('내 수익 링크를 넣고 정보 읽기에 동의해 주세요.');
+    if(!f.product||f.product.affiliateUrl!==f.link)await readConnectProduct();
+    if(owner!==blogAccountKey())throw blogAccountChanged();
+    if(!f.own||!f.product||f.product.affiliateUrl!==f.link||T.tab!==kind)return;
+    const req=makeConnectRequest(kind,f.product.subject,f.info.trim(),f.link,f.product);
+    setDirect({type:'affiliate',label:AFF_NAME[kind]+' · '+req.subject,affiliate:req});
   }
   $('#topic-dlg').close();$('#paper').scrollIntoView({behavior:'smooth',block:'start'});await write();
 }
@@ -1974,7 +1982,7 @@ function initTopics() {
     if (e.target.closest('#tp-money-ask')) { cacheConnectInput(); const kind=T.tab; try { const pending=askTopics(kind);paintConnectForm();T.money[kind]=await pending; }catch(err){if(err.code==='no_credits')$('#credits').click();else toast(err.message||'추천을 받지 못했어요.',4500);}paintModal(); }
     if (e.target === e.currentTarget) e.currentTarget.close();
   });
-  $('#tp-close').onclick = () => $('#topic-dlg').close();
+  $('#tp-close').onclick = () => {CONNECT_READ_CTX?.controller.abort();$('#topic-dlg').close();};
   $('#tp-gen').onclick = () => generateFromModal().catch(e => toast(e.message || '글을 쓰지 못했어요.', 5000));
   $('#direct-clear').onclick = () => setDirect(null);
   window.addEventListener('cuttory:account-change', () => { setDirect(null); T.money = { shopping: [], travel: [] }; paintTopics(); paintDrafts(); });
