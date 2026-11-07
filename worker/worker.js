@@ -62,6 +62,11 @@ export default {
       if (path === '/api/speech') return json(await speechRoute(req, user, env), 200, cors);
       if (path === '/api/product-image') return json(await productImage(req), 200, cors);
       if (path === '/api/speech-batch') return json(await speechBatchRoute(req, user, env), 200, cors);
+      if (path === '/api/connect/read') {
+        if(req.method!=='POST')throw err('method_not_allowed','POST 요청만 사용할 수 있어요.',405);
+        bsLogin(user);const b=await req.json();
+        return json(await charged(user,'link',env,()=>connectRead(b)),200,cors);
+      }
       if (path === '/api/image') {
         const b = await req.json();
         return json(await charged(user, 'image', env, () => image(b, env)), 200, cors);
@@ -883,4 +888,448 @@ async function productImage(req) {
   const bytes = new Uint8Array(await r.arrayBuffer()); if (bytes.length > 8 * 1024 * 1024) throw err('too_big', '이미지가 너무 커요.', 413);
   let bin = ''; for (let i = 0; i < bytes.length; i += 16384) bin += String.fromCharCode(...bytes.subarray(i, i + 16384));
   return { image: 'data:' + type + ';base64,' + btoa(bin) };
+}
+
+// connect-reader.inc.js
+// Standalone include. Needs only the host-provided COST (COST.link===3) and err(code,msg,status).
+// connectRead(b, opts?) reads ONE user-supplied, already-issued Naver Shopping/Travel Connect link
+// after an explicit click. It never issues links, never logs in, sends no cookies/credentials,
+// calls no paid provider and never generates facts. Nothing is eval'd; only JSON.parse is used.
+// opts (tests only): { fetch, perHopMs, totalMs }
+
+const CONNECT_MAX_REDIRECTS = 5;
+const CONNECT_HOP_MS = 10000;
+const CONNECT_TOTAL_MS = 60000;
+const CONNECT_MAX_BYTES = 2 * 1024 * 1024;
+const CONNECT_MAX_FACTS = 12000;
+
+function connectFail(code, msg, status) {
+  throw err(code, msg, status || 400);
+}
+
+// Strict URL gate. Returns URL object; throws Korean error. Raw string is never modified.
+function connectCheckUrl(raw, label) {
+  const bad = (m) => connectFail('connect_bad_url', m || '허용되지 않는 링크예요. 네이버에서 직접 발급받은 https 커넥트 링크만 읽을 수 있어요.', 400);
+  if (typeof raw !== 'string' || !raw || raw.length > 2048) bad();
+  if (/[\u0000-\u0020\u007f-\u009f\\]/.test(raw)) bad();
+  if (!/^https:\/\//.test(raw)) bad();
+  const auth = raw.slice(8).split(/[/?#]/)[0];
+  if (auth.includes('@') || auth.includes(':')) bad(); // credentials or any explicit port (incl. :443)
+  let u;
+  try { u = new URL(raw); } catch (e) { bad(); }
+  if (u.protocol !== 'https:' || u.username || u.password || u.port) bad();
+  const h = u.hostname.toLowerCase();
+  if (!(h === 'naver.me' || (h.endsWith('.naver.com') && h.length > '.naver.com'.length && !h.startsWith('.')))) {
+    bad(label === 'redirect' ? '리다이렉트 대상이 허용된 네이버 도메인이 아니라서 중단했어요.' : '네이버(naver.me, *.naver.com) 링크만 읽을 수 있어요.');
+  }
+  return u;
+}
+
+function connectRace(p, ms, onTimeout) {
+  let t;
+  const timer = new Promise((_, rej) => { t = setTimeout(() => rej(onTimeout()), Math.max(1, ms)); });
+  return Promise.race([p, timer]).finally(() => clearTimeout(t));
+}
+
+async function connectReadBody(res, deadline, hopMs) {
+  const mk = (code, msg) => () => { try { return err(code, msg, 504); } catch (e) { return e; } };
+  const tmo = mk('connect_timeout', '네이버 응답이 너무 오래 걸려서 중단했어요. 잠시 후 다시 시도해 주세요.');
+  const tooBig = () => connectFail('connect_too_large', '페이지가 너무 커서(2MB 초과) 읽지 않았어요.', 413);
+  const cl = Number(res.headers && res.headers.get && res.headers.get('content-length'));
+  if (cl && cl > CONNECT_MAX_BYTES) tooBig();
+  const budget = () => Math.min(hopMs, deadline - Date.now());
+  const chunks = [];
+  let total = 0;
+  if (res.body && typeof res.body.getReader === 'function') {
+    const reader = res.body.getReader();
+    try {
+      for (;;) {
+        if (budget() <= 0) throw tmo();
+        const { done, value } = await connectRace(reader.read(), budget(), tmo);
+        if (done) break;
+        total += value.byteLength;
+        if (total > CONNECT_MAX_BYTES) tooBig();
+        chunks.push(value);
+      }
+    } catch (e) {
+      try { reader.cancel(); } catch (_) {}
+      throw e;
+    }
+  } else if (typeof res.arrayBuffer === 'function') {
+    const ab = await connectRace(res.arrayBuffer(), budget(), tmo);
+    if (ab.byteLength > CONNECT_MAX_BYTES) tooBig();
+    chunks.push(new Uint8Array(ab));
+    total = ab.byteLength;
+  } else {
+    connectFail('connect_fetch_failed', '페이지 본문을 읽지 못했어요.', 502);
+  }
+  const buf = new Uint8Array(total);
+  let o = 0;
+  for (const c of chunks) { buf.set(c, o); o += c.byteLength; }
+  let cs = 'utf-8';
+  const ct = (res.headers.get('content-type') || '');
+  const m = /charset=([\w-]+)/i.exec(ct);
+  if (m) cs = m[1];
+  try { return new TextDecoder(cs).decode(buf); } catch (e) { return new TextDecoder('utf-8').decode(buf); }
+}
+
+// Fetch with manual redirects, each target whitelisted. Returns {html, finalUrl}.
+async function connectFetchChain(startUrl, f, hopMs, totalMs) {
+  const deadline = Date.now() + totalMs;
+  let url = startUrl;
+  for (let hop = 0; hop <= CONNECT_MAX_REDIRECTS; hop++) {
+    const left = deadline - Date.now();
+    if (left <= 0) connectFail('connect_timeout', '전체 읽기 시간(60초)을 넘겨서 중단했어요.', 504);
+    const ac = typeof AbortController === 'function' ? new AbortController() : null;
+    const ms = Math.min(hopMs, left);
+    const tmo = () => { try { ac && ac.abort(); } catch (_) {} try { return err('connect_timeout', '네이버 응답이 너무 오래 걸려서 중단했어요. 잠시 후 다시 시도해 주세요.', 504); } catch (e) { return e; } };
+    let res;
+    try {
+      res = await connectRace(Promise.resolve().then(() => f(url.href, {
+        method: 'GET',
+        redirect: 'manual',
+        credentials: 'omit',
+        headers: { accept: 'text/html,application/xhtml+xml', 'accept-language': 'ko-KR,ko;q=0.9,en;q=0.5', 'user-agent': 'Mozilla/5.0 (compatible; ConnectReader/1.0)' },
+        signal: ac ? ac.signal : undefined,
+      })), ms, tmo);
+    } catch (e) {
+      if (e && e.code) throw e;
+      connectFail('connect_fetch_failed', '네이버 페이지를 가져오지 못했어요. 링크가 맞는지 확인해 주세요.', 502);
+    }
+    const st = res.status;
+    if ([301, 302, 303, 307, 308].includes(st)) {
+      try { res.body && res.body.cancel && res.body.cancel(); } catch (_) {}
+      if (hop >= CONNECT_MAX_REDIRECTS) connectFail('connect_redirects', '리다이렉트가 너무 많아서(5회 초과) 중단했어요.', 502);
+      const loc = res.headers.get('location');
+      if (!loc || /[\u0000-\u0020\\]/.test(loc.trim()) ) connectFail('connect_bad_url', '리다이렉트 주소가 올바르지 않아 중단했어요.', 502);
+      let next;
+      try { next = new URL(loc.trim(), url.href).href; } catch (e) { connectFail('connect_bad_url', '리다이렉트 주소가 올바르지 않아 중단했어요.', 502); }
+      url = connectCheckUrl(next, 'redirect');
+      continue;
+    }
+    if (st === 401 || st === 403 || st === 407 || st === 418 || st === 429) {
+      try { res.body && res.body.cancel && res.body.cancel(); } catch (_) {}
+      connectFail('connect_blocked', '네이버가 자동 접근을 막았거나 로그인/보안 확인을 요구해서 상품 정보를 읽지 못했어요. 상품 내용을 직접 붙여넣어 주세요.', 422);
+    }
+    if (st < 200 || st >= 300) {
+      try { res.body && res.body.cancel && res.body.cancel(); } catch (_) {}
+      connectFail('connect_fetch_failed', `네이버 페이지가 정상 응답하지 않았어요 (${st}).`, 502);
+    }
+    const ct = (res.headers.get('content-type') || '').toLowerCase();
+    if (ct && !/html|xhtml/.test(ct)) connectFail('connect_not_html', 'HTML 상품 페이지가 아니라서 읽을 수 없어요.', 422);
+    const html = await connectReadBody(res, deadline, hopMs);
+    return { html, finalUrl: url };
+  }
+  connectFail('connect_redirects', '리다이렉트가 너무 많아서(5회 초과) 중단했어요.', 502);
+}
+
+// ---------- parsing helpers (no DOM, no eval) ----------
+function connectDecode(s) {
+  return String(s == null ? '' : s)
+    .replace(/&#x([0-9a-f]+);/gi, (m, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch (e) { return ''; } })
+    .replace(/&#(\d+);/g, (m, d) => { try { return String.fromCodePoint(parseInt(d, 10)); } catch (e) { return ''; } })
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+}
+function connectClean(s) { return connectDecode(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').replace(/\s+/g, ' ').trim(); }
+
+function connectMetas(html) {
+  const out = {};
+  const re = /<meta\b([^>]*)>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const a = {};
+    const ar = /([a-zA-Z:_-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+    let x;
+    while ((x = ar.exec(m[1]))) a[x[1].toLowerCase()] = x[2] != null ? x[2] : x[3];
+    const k = (a.property || a.name || '').toLowerCase();
+    if (k && a.content != null && out[k] == null) out[k] = connectClean(a.content);
+  }
+  return out;
+}
+
+const CONNECT_GENERIC_RE = /^(네이버|naver)(\s*(쇼핑|여행|플러스\s*스토어|스마트\s*스토어|스마트스토어|브랜드\s*스토어|브랜드스토어|커넥트|로그인))?(\s*(홈|메인))?$|^(쇼핑|여행|상품|홈|home|index|untitled|naver\.me|redirect|loading|상품 상세|상품상세)$/i;
+function connectStripSite(t) {
+  return connectClean(t).replace(/\s*[:|\-–—·]\s*(네이버\s*(쇼핑|여행|플러스\s*스토어|스마트스토어)?|NAVER(\s*Shopping)?)\s*$/i, '').trim();
+}
+function connectGoodName(t) {
+  const n = connectStripSite(t);
+  if (n.length < 3 || n.length > 300) return '';
+  if (!/[A-Za-z0-9가-힣]/.test(n)) return '';
+  if (CONNECT_GENERIC_RE.test(n)) return '';
+  return n;
+}
+const CONNECT_BLOCK_TITLE_RE = /로그인|log\s?in|sign\s?in|captcha|캡차|보안\s*확인|보안문자|접근.{0,6}(제한|차단)|비정상|are you (a )?human|just a moment|access denied|attention required|robot/i;
+const CONNECT_BLOCK_BODY_RE = /captcha|자동\s*입력\s*방지|보안\s*문자|비정상적인\s*접근|too many requests|access denied|로봇이\s*아닙니다|자동화된\s*접근|cf-challenge|challenge-platform/i;
+
+function connectJsonBlocks(html) {
+  const out = [];
+  const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const attrs = m[1];
+    const body = m[2];
+    if (/type\s*=\s*["']application\/ld\+json["']/i.test(attrs)) {
+      try { out.push({ kind: 'ld', data: JSON.parse(body.trim()) }); } catch (e) {}
+    } else if (/id\s*=\s*["']__NEXT_DATA__["']/i.test(attrs) || /type\s*=\s*["']application\/json["']/i.test(attrs)) {
+      try { out.push({ kind: 'pre', data: JSON.parse(body.trim()) }); } catch (e) {}
+    } else {
+      const pm = /(?:__PRELOADED_STATE__|__INITIAL_STATE__)\s*=\s*/.exec(body);
+      if (pm) {
+        const start = body.indexOf('{', pm.index + pm[0].length - 1);
+        if (start >= 0 && start - (pm.index + pm[0].length) < 3) {
+          let depth = 0, inStr = false, esc = false, end = -1;
+          for (let i = start; i < body.length && i - start < CONNECT_MAX_BYTES; i++) {
+            const c = body[i];
+            if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+            if (c === '"') inStr = true;
+            else if (c === '{') depth++;
+            else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+          }
+          if (end > 0) { try { out.push({ kind: 'pre', data: JSON.parse(body.slice(start, end + 1)) }); } catch (e) {} }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function connectFlattenLd(data, acc, depth) {
+  depth = depth || 0;
+  if (!data || depth > 6 || acc.length > 200) return acc;
+  if (Array.isArray(data)) { data.forEach((d) => connectFlattenLd(d, acc, depth + 1)); return acc; }
+  if (typeof data !== 'object') return acc;
+  acc.push(data);
+  if (data['@graph']) connectFlattenLd(data['@graph'], acc, depth + 1);
+  return acc;
+}
+function connectTypes(o) { const t = o['@type']; return (Array.isArray(t) ? t : [t]).filter((x) => typeof x === 'string'); }
+function connectStr(v) { return typeof v === 'string' ? connectClean(v) : (typeof v === 'number' ? String(v) : ''); }
+
+function connectFmtPrice(price, cur) {
+  const n = Number(String(price).replace(/,/g, ''));
+  if (!isFinite(n) || n <= 0) return '';
+  const c = String(cur || '').trim().toUpperCase();
+  const num = Number.isInteger(n) ? String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : String(n);
+  if (!c) return '금액 ' + num + ' (통화 미표시)'; // never assume a currency
+  if (c === 'KRW') return num + '원';
+  return `${num} ${c}`;
+}
+
+function connectCollectItinerary(v, out, depth) {
+  depth = depth || 0;
+  if (v == null || depth > 5 || out.length >= 40) return;
+  if (typeof v === 'string') { const s = connectClean(v); if (s.length >= 2) out.push(s.slice(0, 300)); return; }
+  if (Array.isArray(v)) { v.forEach((x) => connectCollectItinerary(x, out, depth + 1)); return; }
+  if (typeof v === 'object') {
+    const n = connectStr(v.name), d = connectStr(v.description);
+    if (n || d) out.push((n + (n && d ? ': ' : '') + d).slice(0, 400));
+    if (v.itemListElement) connectCollectItinerary(v.itemListElement, out, depth + 1);
+    if (v.item) connectCollectItinerary(v.item, out, depth + 1);
+    if (v.subTrip) connectCollectItinerary(v.subTrip, out, depth + 1);
+  }
+}
+
+function connectFromLd(blocks) {
+  for (const b of blocks) {
+    if (b.kind !== 'ld') continue;
+    for (const o of connectFlattenLd(b.data, [])) {
+      const ty = connectTypes(o);
+      const isP = ty.includes('Product'), isT = ty.includes('TouristTrip') || ty.includes('Trip');
+      if (!isP && !isT) continue;
+      const name = connectGoodName(connectStr(o.name));
+      if (!name) continue;
+      const desc = connectStr(o.description);
+      let priceText = '';
+      const offs = [].concat(o.offers || []);
+      for (const of of offs) {
+        if (!of || typeof of !== 'object') continue;
+        const p = of.price != null ? of.price : (of.lowPrice != null ? of.lowPrice : (of.priceSpecification && of.priceSpecification.price));
+        const cur = of.priceCurrency || (of.priceSpecification && of.priceSpecification.priceCurrency) || '';
+        priceText = connectFmtPrice(p, cur);
+        if (priceText) break;
+      }
+      const itin = [];
+      if (o.itinerary) connectCollectItinerary(o.itinerary, itin);
+      if (!itin.length && o.subTrip) connectCollectItinerary(o.subTrip, itin);
+      let brand = '';
+      if (o.brand) brand = connectStr(typeof o.brand === 'object' ? o.brand.name : o.brand);
+      if (!(priceText || desc.length >= 20 || itin.length)) continue; // name alone is not a detail
+      return { name, desc, priceText, itin, brand, category: connectStr(o.category), tourist: connectStr(Array.isArray(o.touristType) ? o.touristType.join(', ') : o.touristType) };
+    }
+  }
+  return null;
+}
+
+// Constrained known-key read of a safely parsed preload JSON. No guessing.
+function connectFromPreload(blocks) {
+  let nodes = 0;
+  const NAME = ['productName', 'productTitle', 'dispName'];
+  const PRICE = ['salePrice', 'discountedSalePrice', 'dispDiscountedSalePrice', 'representativePrice'];
+  function walk(v, depth) {
+    if (!v || typeof v !== 'object' || depth > 12 || ++nodes > 8000) return null;
+    if (!Array.isArray(v)) {
+      let nk = NAME.find((k) => typeof v[k] === 'string');
+      if (nk) {
+        const name = connectGoodName(v[nk]);
+        const pk = PRICE.find((k) => (typeof v[k] === 'number' || (typeof v[k] === 'string' && /^[\d,]+$/.test(v[k]))) && Number(String(v[k]).replace(/,/g, '')) > 0);
+        if (name && pk) {
+          const ck = ['priceCurrency', 'currencyCode', 'currency'].find((k) => typeof v[k] === 'string' && /^[A-Za-z]{3}$/.test(v[k].trim()));
+          return { name, desc: '', priceText: connectFmtPrice(v[pk], ck ? v[ck] : ''), itin: [], brand: typeof v.brandName === 'string' ? connectClean(v.brandName) : '', category: '', tourist: '' };
+        }
+      }
+    }
+    const vals = Array.isArray(v) ? v : Object.values(v);
+    for (const x of vals) { const r = walk(x, depth + 1); if (r) return r; }
+    return null;
+  }
+  for (const b of blocks) { if (b.kind === 'pre') { const r = walk(b.data, 0); if (r) return r; } }
+  return null;
+}
+
+const CONNECT_BOILER_RE = /로그인|회원가입|장바구니|고객센터|바로가기|이용약관|개인정보|사업자|쿠키|cookie|copyright|©|다운로드|앱 설치|공유하기|메뉴|검색|더보기|닫기|전체\s*카테고리/i;
+function connectMainText(html) {
+  const m = /<main\b[\s\S]*?<\/main>/i.exec(html) || /<article\b[\s\S]*?<\/article>/i.exec(html);
+  if (!m) return { blocks: [], h1: '' };
+  let s = m[0];
+  const h1m = /<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(s);
+  const h1 = h1m ? connectClean(h1m[1].replace(/<[^>]*>/g, ' ')) : '';
+  s = s.replace(/<(script|style|noscript|svg|nav|header|footer|aside|form|button|select|template)\b[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<\/?(p|div|li|ul|ol|br|tr|td|th|h[1-6]|section|dd|dt|dl|table)\b[^>]*>/gi, '\n')
+    .replace(/<[^>]*>/g, ' ');
+  const seen = new Set();
+  const blocks = [];
+  for (const line of connectDecode(s).split(/\n+/)) {
+    const t = line.replace(/\s+/g, ' ').trim();
+    if (t.length < 15 || t.length > 1500) continue;
+    if (CONNECT_BOILER_RE.test(t) && t.length < 60) continue;
+    if (seen.has(t)) continue;
+    seen.add(t);
+    blocks.push(t);
+  }
+  return { blocks, h1 };
+}
+
+// Recognized product-detail URL shapes (final URL). Blogs/news/home/search/category never match.
+function connectIsProductUrl(u) {
+  const h = u.hostname.toLowerCase();
+  if (!/^(m\.)?(smartstore|brand|shopping|travel|pkgtour)\.naver\.com$/.test(h)) return false;
+  return /\/(products|catalog|tour)\/[A-Za-z0-9_-]{3,}/.test(u.pathname) || (/^(m\.)?(smartstore|brand)\./.test(h) && /\/products\/\d+/.test(u.pathname));
+}
+
+// Known non-product pages: rejected unconditionally, even if Product JSON / preload is embedded.
+function connectIsNonProductUrl(u) {
+  const h = u.hostname.toLowerCase();
+  if (/(^|\.)(blog|news|cafe|kin|search|post|section)\.naver\.com$/.test(h) || /^(n|m)\.news\.naver\.com$/.test(h) || h === 'search.shopping.naver.com') return true;
+  if (/^(m\.)?(shopping|travel|pkgtour)\.naver\.com$/.test(h)) {
+    const p = u.pathname.replace(/\/+$/, '').toLowerCase();
+    if (p === '' || p === '/home' || p === '/main' || p === '/index.html') return true;
+    if (/^\/(category|categories|search|best|plan|plans|event|events|exhibition|curation|today)(\/|$)/.test(p)) return true;
+  }
+  return false;
+}
+const CONNECT_GATEWAY_RE = /^(m\.)?(shoppingconnect|travelconnect)\.naver\.com$/;
+
+function connectParse(html, finalUrl) {
+  const metas = connectMetas(html);
+  const tm = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+  const pageTitle = tm ? connectClean(tm[1].replace(/<[^>]*>/g, ' ')) : '';
+  const ogTitle = metas['og:title'] || '';
+  const ogDesc = metas['og:description'] || metas['description'] || '';
+  const blocksJson = connectJsonBlocks(html);
+
+  const host = finalUrl.hostname.toLowerCase();
+  const urlBlocked = /^(nid|nidlogin|id)\.naver\.com$/.test(host) || /(^|\/)(nidlogin|login|captcha|challenge)([./?]|$)/i.test(finalUrl.pathname);
+  const hasPw = /<input\b[^>]*type\s*=\s*["']?password/i.test(html);
+  const titleBlocked = [pageTitle, ogTitle].some((t) => t && t.length < 80 && CONNECT_BLOCK_TITLE_RE.test(t));
+  const ld = connectFromLd(blocksJson);
+  const pre = ld ? null : connectFromPreload(blocksJson);
+  const structured = ld || pre;
+  const bodyBlocked = !structured && CONNECT_BLOCK_BODY_RE.test(html.replace(/<script\b[\s\S]*?<\/script>/gi, ' ').slice(0, 200000));
+  if (urlBlocked || hasPw || titleBlocked || bodyBlocked) {
+    connectFail('connect_blocked', '네이버가 로그인 또는 보안 확인(캡차) 화면을 보여줘서 상품 정보를 읽지 못했어요. 로그인이나 우회는 하지 않아요. 상품 내용을 직접 붙여넣어 주세요.', 422);
+  }
+
+  if (connectIsNonProductUrl(finalUrl)) {
+    connectFail('connect_no_detail', '블로그/뉴스/검색/쇼핑·여행 홈이나 카테고리 같은 상품 상세가 아닌 페이지예요. 페이지에 추천 상품 정보가 들어 있어도 상품으로 보지 않아요.', 422);
+  }
+  if (structured && !connectIsProductUrl(finalUrl)) {
+    const tt = [pageTitle, ogTitle].map(connectStripSite).filter(Boolean);
+    const genericTitle = tt.some((t) => CONNECT_GENERIC_RE.test(t));
+    const gw = CONNECT_GATEWAY_RE.test(finalUrl.hostname.toLowerCase());
+    if (genericTitle || (gw && !(connectGoodName(ogTitle) || connectGoodName(pageTitle)))) {
+      connectFail('connect_no_detail', '페이지 제목이 일반 안내 화면이라 상품 상세로 확인하지 못했어요.', 422);
+    }
+  }
+
+  const main = connectMainText(html);
+  const metaName = connectGoodName(ogTitle) || connectGoodName(pageTitle) || connectGoodName(main.h1);
+  const ogOK = !!connectGoodName(ogTitle) && !CONNECT_GENERIC_RE.test(connectStripSite(ogDesc)) && !/^네이버(\s*쇼핑|\s*여행)?(은|는|에서|입니다)/.test(ogDesc);
+
+  let grade = '', name = '', desc = ogDesc, priceText = '', lines = [];
+  if (structured) {
+    grade = 'structured-product';
+    name = structured.name;
+    desc = structured.desc || ogDesc;
+    priceText = structured.priceText;
+    lines.push('상품명: ' + name);
+    if (structured.brand) lines.push('브랜드: ' + structured.brand);
+    if (priceText) lines.push('가격: ' + priceText);
+    if (structured.category) lines.push('분류: ' + structured.category);
+    if (structured.tourist) lines.push('여행 유형: ' + structured.tourist);
+    if (structured.desc) lines.push('설명: ' + structured.desc);
+    else if (ogOK && ogDesc) lines.push('설명: ' + ogDesc);
+    if (structured.itin.length) lines.push('일정/구성:\n' + structured.itin.map((x) => '- ' + x).join('\n'));
+  } else if (!connectIsProductUrl(finalUrl)) {
+    connectFail('connect_no_detail', '상품 상세 페이지로 확인되지 않는 링크예요(블로그/뉴스/홈/검색 등). 상품 스키마나 상품 상세 주소가 있어야 읽을 수 있어요.', 422);
+  } else if (metaName && main.blocks.join('\n').length >= 100) {
+    grade = 'product-detail';
+    name = metaName;
+    lines.push('상품명: ' + name);
+    if (ogOK && ogDesc) lines.push('설명: ' + ogDesc);
+    lines.push('상세 본문:\n' + main.blocks.join('\n'));
+  } else if (ogOK && ogDesc.replace(name || connectStripSite(ogTitle), '').trim().length >= 80 && ogDesc.length >= 80) {
+    grade = 'product-metadata';
+    name = connectGoodName(ogTitle);
+    lines.push('상품명: ' + name);
+    lines.push('설명: ' + ogDesc);
+  }
+  if (!grade) {
+    connectFail('connect_no_detail', '링크는 열렸지만 상품 상세 정보(상품명, 가격, 설명)를 찾지 못했어요. 쇼핑/여행 커넥트 홈이나 안내 페이지일 수 있어요. 상품 내용을 직접 붙여넣어 주세요.', 422);
+  }
+  let facts = lines.join('\n');
+  if (facts.length > CONNECT_MAX_FACTS) facts = facts.slice(0, CONNECT_MAX_FACTS);
+  const out = { name, desc, priceText, facts, grade };
+  return out;
+}
+
+async function connectRead(b, opts) {
+  opts = opts || {};
+  b = b || {};
+  if (b.consent !== true) connectFail('connect_consent', '상품 정보를 읽는 것에 동의해야 진행할 수 있어요.', 400);
+  if (b.confirmedCost !== COST.link) connectFail('connect_cost', `비용(${COST.link}크레딧) 확인이 필요해요.`, 400);
+  if (b.kind !== 'shopping' && b.kind !== 'travel') connectFail('connect_kind', '종류는 shopping 또는 travel 이어야 해요.', 400);
+  const startUrl = connectCheckUrl(b.url);
+  const f = opts.fetch || (typeof fetch === 'function' ? fetch : null);
+  if (!f) connectFail('connect_fetch_failed', '서버에서 네트워크를 사용할 수 없어요.', 500);
+  const { html, finalUrl } = await connectFetchChain(startUrl, f, opts.perHopMs || CONNECT_HOP_MS, opts.totalMs || CONNECT_TOTAL_MS);
+  if (finalUrl.hostname.toLowerCase() === 'naver.me') {
+    connectFail('connect_no_detail', '단축 링크 안내 화면에 머물러 있어 실제 상품 페이지를 확인하지 못했어요.', 422);
+  }
+  const p = connectParse(html, finalUrl);
+  const r = {
+    kind: b.kind,
+    affiliateUrl: b.url, // raw, byte-for-byte, never modified
+    sourceUrl: finalUrl.href,
+    subject: p.name,
+    facts: p.facts,
+    title: p.name,
+    description: p.desc,
+    fetchedAt: new Date().toISOString(),
+    sourceGrade: p.grade,
+    images: [],
+  };
+  if (p.priceText) r.priceText = p.priceText;
+  return r;
 }
