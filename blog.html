@@ -816,6 +816,7 @@ async function write() {
   const topicThisWrite=S.direct?.topic||null;
   const automationAccountKey=blogAccountKey();
   if (!S.media.length && !$('#memo').value.trim() && !automationRequest && !topicThisWrite) return toast('사진이나 메모를 넣거나, 위에서 글감을 골라 주세요.');
+  S.media = S.media.filter(m=>!m.generatedFor);renderThumbs();
   S.busy = true; setBlogWriteControls(true); renderBar(); automationContextChanged();
   $('#paper').innerHTML = `<div class="skel"><i style="width:70%;height:24px"></i><i></i><i style="width:85%"></i><i class="img"></i><i></i><i style="width:60%"></i></div>`;
   try {
@@ -1855,7 +1856,7 @@ function openBlogMediaDB(){return blogMediaDB ||= new Promise((resolve,reject)=>
 async function mediaRecord(key,value){const db=await openBlogMediaDB();return new Promise((resolve,reject)=>{const tx=db.transaction('media',value===undefined?'readonly':'readwrite');const r=value===undefined?tx.objectStore('media').get(key):tx.objectStore('media').put(value,key);let answer;r.onsuccess=()=>{answer=r.result;};tx.oncomplete=()=>resolve(answer);tx.onerror=()=>reject(tx.error);});}
 async function persistDraftMedia(post,owner){
  const ids=new Set(post.sections.flatMap(s=>s.blocks.flatMap(b=>b.ids||[])));
- const saved=[];for(const m of S.media.filter(m=>ids.has(m.id))){const file=m.kind==='photo'?new File([await new Promise(r=>render(m).toBlob(r,'image/png'))],m.id+'.png',{type:'image/png'}):m.file;await mediaRecord(owner+':'+m.id,{id:m.id,kind:m.kind,file,start:m.start,len:m.len});saved.push(m.id);}return saved;
+ const saved=[];for(const m of S.media.filter(m=>ids.has(m.id))){const file=m.kind==='photo'?new File([await new Promise(r=>render(m).toBlob(r,'image/png'))],m.id+'.png',{type:'image/png'}):m.file;await mediaRecord(owner+':'+m.id,{id:m.id,kind:m.kind,file,start:m.start,len:m.len,generatedFor:m.generatedFor});saved.push(m.id);}return saved;
 }
 async function saveDraft(post) {
   if (!post) return;const owner=blogAccountKey();let savedMedia=[];
@@ -1879,7 +1880,7 @@ async function loadDraft(id) {
   const owner=blogAccountKey();S.busy=true;setBlogWriteControls(true);renderBar('초안과 이미지를 불러오는 중이에요');
   try{
     const restored=[];const ids=d.mediaIds||d.post.sections.flatMap(s=>s.blocks.flatMap(b=>b.ids||[]));
-    for(const id of new Set(ids)){const present=S.media.find(m=>m.id===id);if(present){restored.push(present);continue;}const row=await mediaRecord(owner+':'+id);if(!row?.file)continue;let m;if(row.kind==='video'){m=await loadVideo(row.file);m.start=row.start||0;m.len=row.len||m.len;}else{const img=await decode(row.file);const w=img.width||img.naturalWidth,h=img.height||img.naturalHeight;m={kind:'photo',file:row.file,img,w,h,boxes:[],ops:[],thumb:thumbURL(img,w,h)};}m.id=id;restored.push(m);}
+    for(const id of new Set(ids)){const present=S.media.find(m=>m.id===id);if(present){restored.push(present);continue;}const row=await mediaRecord(owner+':'+id);if(!row?.file)continue;let m;if(row.kind==='video'){m=await loadVideo(row.file);m.start=row.start||0;m.len=row.len||m.len;}else{const img=await decode(row.file);const w=img.width||img.naturalWidth,h=img.height||img.naturalHeight;m={kind:'photo',file:row.file,img,w,h,boxes:[],ops:[],thumb:thumbURL(img,w,h)};}m.id=id;m.generatedFor=row.generatedFor;restored.push(m);}
     if(owner!==blogAccountKey())throw blogAccountChanged();
     S.media=restored;S.post=JSON.parse(JSON.stringify(d.post));renderThumbs();renderPaper();automationContextChanged();return true;
   }catch(e){toast(e.message||'초안을 불러오지 못했어요.',5000);return false;}finally{S.busy=false;setBlogWriteControls(false);renderBar();}
@@ -2087,7 +2088,7 @@ async function addPostImages(P, ctx) {
   if (generatedCount < want && S.imgSource !== 'design') toast(`AI 사진 ${generatedCount}장과 직접 제작 일러스트 ${want - generatedCount}장을 넣었어요.`, 7000);
   const before = new Set(S.media.map(m => m.id));
   await addFiles(files);
-  const ids = S.media.filter(m => !before.has(m.id)).map(m => m.id);
+  const ids = S.media.filter(m => !before.has(m.id)).map(m => {m.generatedFor=P.title;return m.id;});
   // 첫 이미지는 대표 사진(첫 블록), 나머지는 소제목마다 골고루
   const secs = P.sections.length ? P.sections : [P.sections[0] = { heading: '', blocks: [] }];
   ids.forEach((id, i) => {
