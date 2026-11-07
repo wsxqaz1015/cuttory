@@ -1,6 +1,6 @@
 // 컷토리 서버 (Cloudflare Workers)
 // 필요한 설정: 비밀 값 OPENAI_API_KEY, ADMIN_KEY / KV 바인딩 KV / (선택) ALLOWED_ORIGIN, TEXT_MODEL, IMAGE_MODEL, GOOGLE_CLIENT_ID(구글 로그인)
-const COST = { blogstyle: 5, gen: 10, video: 15, link: 3, person: 5, titles: 2, topics: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
+const COST = { blogstyle: 5, gen: 10, video: 15, link: 3, person: 5, titles: 2, topics: 2, script: 2, expand: 2, polish: 1, translate: 5, image: 20, transcribe: 10, pose: 15, sheet: 20 };
 const START_CREDITS = 100;
 const UNLIMITED_IDS = ['u_d41c1b9b-08d'];
 const NEW_USERS_PER_IP_PER_DAY = 3;
@@ -60,6 +60,8 @@ export default {
         return json(await charged(user, COST[b.kind] ? b.kind : 'gen', env, () => ai(blogStyleGeneration(b, user), env)), 200, cors);
       }
       if (path === '/api/speech') return json(await speechRoute(req, user, env), 200, cors);
+      if (path === '/api/product-image') return json(await productImage(req), 200, cors);
+      if (path === '/api/speech-batch') return json(await speechBatchRoute(req, user, env), 200, cors);
       if (path === '/api/image') {
         const b = await req.json();
         return json(await charged(user, 'image', env, () => image(b, env)), 200, cors);
@@ -105,13 +107,42 @@ async function auth(req, env) {
   if (u && UNLIMITED_IDS.includes(u.id) && u.credits < 900000) { u.credits = 999999; u.hist.unshift({ t: Date.now(), k: 'unlimited', n: 0 }); u.hist = u.hist.slice(0, 60); await save(env, u); }
   return u;
 }
+// Isolate-local only: KV has no compare-and-swap. Cross-isolate atomic billing needs a Durable Object.
+// Keep this separate from bsLock: blog analysis already holds bsLock when it calls charged().
+const chargeLocks = new Map();
+async function chargeLock(id, fn) {
+  const previous = chargeLocks.get(id) || Promise.resolve();
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  const current = previous.catch(() => {}).then(() => gate); chargeLocks.set(id, current);
+  await previous.catch(() => {});
+  try { return await fn(); } finally { release(); if (chargeLocks.get(id) === current) chargeLocks.delete(id); }
+}
+async function chargeCurrent(user, env) {
+  const fresh = JSON.parse(await env.KV.get('user:' + user.token) || 'null');
+  if (!fresh || fresh.id !== user.id || fresh.token !== user.token || fresh.google?.sub !== user.google?.sub)
+    throw err('unauthorized', '로그인 계정을 다시 확인해 주세요.', 401);
+  return fresh;
+}
 async function charged(user, kind, env, fn) {
-  const n = COST[kind];
-  if (user.credits < n) throw err('no_credits', `크레딧이 모자라요. ${n} 크레딧이 필요하고 ${user.credits} 크레딧 남았어요.`, 402);
-  const out = await fn();
-  user.credits -= n; user.hist.unshift({ t: Date.now(), k: kind, n: -n }); user.hist = user.hist.slice(0, 60);
-  await save(env, user);
-  return { ...out, credits: user.credits };
+  return chargeLock(user.id, async () => {
+    const n = COST[kind];
+    let fresh = await chargeCurrent(user, env);
+    if (!Number.isFinite(n) || !Number.isFinite(fresh.credits)) throw err('setup', '크레딧 설정을 확인해 주세요.', 503);
+    if (fresh.credits < n) throw err('no_credits', '크레딧이 모자라요.', 402);
+    Object.assign(user, fresh);
+    const beforeProfile = JSON.stringify(fresh.blogProfile);
+    const out = await fn();
+    fresh = await chargeCurrent(user, env);
+    if (!Number.isFinite(fresh.credits) || fresh.credits < n) throw err('no_credits', '남은 크레딧을 다시 확인해 주세요.', 402);
+    // Blog analysis deliberately changes this field in fn(); preserve that change, not a stale user snapshot.
+    if (JSON.stringify(user.blogProfile) !== beforeProfile) {
+      if (JSON.stringify(fresh.blogProfile) !== beforeProfile) throw err('profile_changed', '분석 중 계정 설정이 바뀌었어요.', 409);
+      fresh.blogProfile = user.blogProfile;
+    }
+    fresh.credits -= n; fresh.hist.unshift({ t: Date.now(), k: kind, n: -n }); fresh.hist = fresh.hist.slice(0, 60);
+    await save(env, fresh); Object.assign(user, fresh);
+    return { ...out, credits: fresh.credits };
+  });
 }
 // ===== 구글 로그인 · 계정별 저장 =====
 // 구글이 준 ID 토큰을 구글 서버에 물어서 확인하고, 구글 계정(sub)마다 컷토리 사용자 한 명을 연결해요.
@@ -262,12 +293,20 @@ async function models(env) {
   return MODELS = { at: Date.now(), text, image, all: ids.filter(id => /^(gpt|dall-e)/.test(id)).slice(0, 80) };
 }
 async function openai(env, path, body, isForm) {
+  const controller = new AbortController();
+  const timeout = path.startsWith('/images/') ? 180000 : 120000;
+  let rejectTimeout;
+  const deadline = new Promise((_, reject) => { rejectTimeout = reject; });
+  const timer = setTimeout(() => { controller.abort(); rejectTimeout(err('ai_timeout', 'AI 응답 시간이 초과됐어요. 크레딧은 차감하지 않았어요.', 504)); }, timeout);
+  try {
+    return await Promise.race([deadline, (async () => {
   const r = await fetch('https://api.openai.com/v1' + path, {
     method: 'POST',
     headers: isForm ? { authorization: 'Bearer ' + env.OPENAI_API_KEY } : { authorization: 'Bearer ' + env.OPENAI_API_KEY, 'content-type': 'application/json' },
     body: isForm ? body : JSON.stringify(body),
+    signal: controller.signal,
   });
-  const j = await r.json().catch(() => ({}));
+  const j = await r.json().catch(e => { if (controller.signal.aborted) throw e; return {}; });
   if (!r.ok) {
     const m = (j.error && j.error.message) || 'OpenAI 오류', c = (j.error && j.error.code) || '';
     if (c === 'insufficient_quota') throw err('no_quota', 'OpenAI 계정에 잔액이 없어요. platform.openai.com 결제 페이지에서 충전해 주세요.', 502);
@@ -275,16 +314,24 @@ async function openai(env, path, body, isForm) {
     throw err('ai_error', 'AI가 답하지 못했어요: ' + m.slice(0, 160), 502);
   }
   return j;
+    })()]);
+  } catch (e) {
+    if (controller.signal.aborted && e.code !== 'ai_timeout') throw err('ai_timeout', 'AI 응답 시간이 초과됐어요. 크레딧은 차감하지 않았어요.', 504);
+    throw e;
+  } finally { clearTimeout(timer); }
 }
 async function ai(b, env) {
   const prompt = String(b.prompt || '').slice(0, 60000);
   const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 6).filter(u => /^data:image\//.test(u));
   const content = [{ type: 'text', text: prompt }, ...imgs.map(u => ({ type: 'image_url', image_url: { url: u, detail: 'low' } }))];
-  const j = await openai(env, '/chat/completions', {
-    model: env.TEXT_MODEL || (await models(env)).text || 'gpt-4o-mini',
-    messages: [{ role: 'system', content: b.json ? 'Reply with one valid JSON object only.' : 'You are a helpful Korean copywriter.' }, { role: 'user', content }],
-    ...(b.json ? { response_format: { type: 'json_object' } } : {}),
-  });
+  // 글·대본은 더 좋은 모델로 쓰고, 실패하면 기본 모델로 다시 시도해요.
+  const base = env.TEXT_MODEL || (await models(env)).text || 'gpt-4o-mini';
+  const strong = ['gen', 'script', 'expand'].includes(b.kind) ? (env.GEN_MODEL || 'gpt-5.4-mini') : '';
+  const messages = [{ role: 'system', content: b.json ? 'Reply with one valid JSON object only.' : 'You are a helpful Korean copywriter.' }, { role: 'user', content }];
+  const req = (model) => openai(env, '/chat/completions', { model, messages, ...(b.json ? { response_format: { type: 'json_object' } } : {}), ...(/^gpt-5/.test(model) ? { reasoning_effort: 'low' } : {}) });
+  let j;
+  if (strong) { try { j = await req(strong); } catch (e) { if (e.code === 'no_quota') throw e; j = await req(base); } }
+  else j = await req(base);
   const text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
   if (!b.json) return { text };
   try { return { json: JSON.parse(text) }; } catch { throw err('ai_error', 'AI 답을 읽지 못했어요. 다시 해 주세요.', 502); }
@@ -296,7 +343,7 @@ async function image(b, env) {
   if (!model) throw err('ai_error', '이 OpenAI 계정에서 쓸 수 있는 그림 모델이 없어요. OpenAI 조직 인증(Verify Organization)을 해 주세요.', 502);
   const body = model.startsWith('dall-e')
     ? { model, prompt: prompt.slice(0, 3900), size: '1024x1792', response_format: 'b64_json', n: 1 }
-    : { model, prompt, size: '1024x1536', quality: b.quality === 'high' ? 'high' : 'medium', n: 1 };
+    : { model, prompt, size: b.size === 'landscape' ? '1536x1024' : b.size === 'square' ? '1024x1024' : '1024x1536', quality: b.quality === 'high' ? 'high' : b.quality === 'low' ? 'low' : 'medium', n: 1 };
   const j = await openai(env, '/images/generations', body);
   const d = j.data && j.data[0];
   if (!d || !d.b64_json) throw err('ai_error', '그림을 받지 못했어요.', 502);
@@ -696,4 +743,116 @@ async function trendsKR() {
   const out = { source: 'Google 트렌드 · 대한민국', fetchedAt: new Date().toISOString(), items };
   await cache.put(key, new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=600' } }));
   return out;
+}
+
+// ===== 영상 장면별 음성 (장면마다 따로 만들어 자막과 정확히 맞춰요) =====
+const SPEECH_VOICES_2 = ['coral', 'nova', 'alloy', 'ash', 'sage', 'echo', 'onyx', 'shimmer'];
+// Timers race even mocked/non-cooperative fetch and body readers; abort also cancels real network work.
+async function speechBatchAudio(env, payload, parentSignal) {
+  const controller = new AbortController();
+  let rejectTimeout;
+  const deadline = new Promise((_, reject) => { rejectTimeout = reject; });
+  const cancel = () => { controller.abort(); rejectTimeout(err('speech_failed', '음성 생성 시간이 초과됐어요. 차감하지 않았어요.', 502)); };
+  parentSignal.addEventListener('abort', cancel, { once: true });
+  const timer = setTimeout(cancel, 60000);
+  try {
+    if (parentSignal.aborted) cancel();
+    return await Promise.race([deadline, (async () => {
+      const r = await fetch('https://api.openai.com/v1/audio/speech', { method: 'POST', headers: { authorization: 'Bearer ' + env.OPENAI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal });
+      if (!r.ok) { await r.body?.cancel().catch(() => {}); throw err('speech_failed', '음성을 만들지 못했어요. 크레딧은 차감하지 않았어요.', 502); }
+      if ((r.headers.get('content-type') || '').split(';')[0].trim().toLowerCase() !== 'audio/mpeg') { await r.body?.cancel().catch(() => {}); throw err('speech_failed', '올바른 MP3 음성을 받지 못했어요.', 502); }
+      const max = 8 * 1024 * 1024;
+      if (Number(r.headers.get('content-length')) > max) { await r.body?.cancel().catch(() => {}); throw err('speech_failed', '음성 파일이 너무 커요.', 502); }
+      const reader = r.body?.getReader(); if (!reader) throw err('speech_failed', '음성 파일이 비어 있어요.', 502);
+      const chunks = []; let size = 0;
+      try {
+        for (;;) { const part = await reader.read(); if (part.done) break; size += part.value.byteLength; if (size > max) throw err('speech_failed', '음성 파일이 너무 커요.', 502); chunks.push(part.value); }
+      } catch (e) { await reader.cancel().catch(() => {}); throw e; } finally { reader.releaseLock(); }
+      if (!size) throw err('speech_failed', '음성 파일이 비어 있어요.', 502);
+      const bytes = new Uint8Array(size); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+      let bin = ''; for (let i = 0; i < bytes.length; i += 16384) bin += String.fromCharCode(...bytes.subarray(i, i + 16384));
+      return btoa(bin);
+    })()]);
+  } catch (e) { controller.abort(); if (e.code === 'speech_failed') throw e; throw err('speech_failed', '음성 서비스에 연결하지 못했어요. 차감하지 않았어요.', 502); }
+  finally { clearTimeout(timer); parentSignal.removeEventListener('abort', cancel); }
+}
+async function speechBatchRoute(req, user, env) {
+  if (req.method !== 'POST') throw err('method_not_allowed', 'POST 요청만 사용할 수 있어요.', 405);
+  if (!user.google?.sub) throw err('login_required', '구글 로그인 후 AI 목소리를 만들 수 있어요.', 403);
+  const b = await req.json();
+  if (!b || !Array.isArray(b.texts) || b.texts.some(t => typeof t !== 'string')) throw err('bad_request', '장면 대본은 문자열 배열이어야 해요.');
+  const texts = b.texts.map(t => t.trim());
+  if (!texts.length || texts.length > 12 || texts.some(t => !t || t.length > 300) || texts.join('').length > 1800) throw err('bad_request', '장면 대본은 1~12개, 장면당 300자, 전체 1,800자까지예요.');
+  const n = texts.length, cost = SPEECH_COST * n;
+  if (b.consent !== true || b.confirmedCost !== cost) throw err('confirmation_required', '정확한 AI 목소리 크레딧 사용에 동의해 주세요.');
+  const voice = b.voice === undefined ? 'coral' : b.voice;
+  if (typeof voice !== 'string' || !SPEECH_VOICES_2.includes(voice)) throw err('bad_request', '지원하는 목소리를 선택해 주세요.');
+  const speed = b.speed === undefined ? 1.2 : b.speed;
+  if (typeof speed !== 'number' || !Number.isFinite(speed) || ![1, 1.2, 1.35].includes(speed)) throw err('bad_request', '음성 속도는 1, 1.2, 1.35 중에서 선택해 주세요.');
+  const requestId = b.requestId; if (typeof requestId !== 'string' || !/^[a-zA-Z0-9_-]{12,80}$/.test(requestId)) throw err('bad_request', '음성 요청 번호가 올바르지 않아요.');
+  const fp = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({ voice, speed, texts })))), v => v.toString(16).padStart(2, '0')).join('');
+  return bsLock(user.id, () => chargeLock(user.id, async () => {
+    let fresh = await chargeCurrent(user, env);
+    const key = 'speechb:' + user.id + ':' + requestId, histId = 'speechb:' + requestId;
+    const receiptKey = 'speechb-paid:' + user.id + ':' + requestId;
+    // No TTL on paid receipts. Debit and last receipt are one user-record write, then mirrored separately.
+    // Repair a failed mirror before processing another request. KV writes/locks are NOT globally atomic.
+    if (fresh.lastSpeechBatchReceipt) {
+      const last = fresh.lastSpeechBatchReceipt;
+      await env.KV.put('speechb-paid:' + user.id + ':' + last.requestId, JSON.stringify(last));
+    }
+    let receipt = JSON.parse(await env.KV.get(receiptKey) || 'null');
+    let cached = JSON.parse(await env.KV.get(key) || 'null');
+    if ((receipt && receipt.fp !== fp) || (cached && cached.fp !== fp)) throw err('request_reused', '같은 요청 번호로 다른 대본을 요청할 수 없어요.', 409);
+    const legacyPaid = fresh.hist.some(h => h.requestId === histId);
+    if (receipt || legacyPaid) {
+      if (!cached) throw err('request_expired', '이미 처리된 음성이 만료됐어요. 새 요청 번호를 사용해 주세요.', 409);
+      if (!receipt) { receipt = { requestId, fp, cost, paidAt: Date.now() }; await env.KV.put(receiptKey, JSON.stringify(receipt)); }
+      return { audios: cached.audios.map(audio => ({ audio, mimeType: cached.mimeType })), credits: fresh.credits, cached: true };
+    }
+    if (!Number.isFinite(fresh.credits) || fresh.credits < cost) throw err('no_credits', 'AI 목소리에 필요한 크레딧이 부족해요.', 402);
+    if (!cached) {
+      // Shared with single-speech usage. Reserve scene attempts up front; failures also consume daily allowance.
+      // The unlimited owner is explicitly exempt from this daily cap (provider charges still apply).
+      if (!UNLIMITED_IDS.includes(user.id)) {
+        const dayKey = 'speechday:' + user.id + ':' + new Date().toISOString().slice(0, 10);
+        const daily = Number(await env.KV.get(dayKey) || 0);
+        if (!Number.isFinite(daily) || daily + n > 30) throw err('rate_limited', '하루에 AI 목소리는 30개 장면까지 만들 수 있어요.', 429);
+        await env.KV.put(dayKey, String(daily + n), { expirationTtl: 172800 });
+      }
+      const pace = speed >= 1.3 ? '아주 빠르게(약 1.35배)' : speed >= 1.15 ? '빠르게(약 1.2배)' : '자연스러운 속도로';
+      const instructions = '한국어 쇼츠 내레이션이에요. 밝고 생동감 있는 톤으로, ' + pace + ' 또렷하게 말해 주세요. 문장 사이 쉼은 짧게 해 주세요.';
+      const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 180000);
+      const audios = [];
+      try {
+        for (let i = 0; i < n; i += 3) audios.push(...await Promise.all(texts.slice(i, i + 3).map(input => speechBatchAudio(env, { model: env.TTS_MODEL || 'gpt-4o-mini-tts', voice, input, instructions, response_format: 'mp3', speed }, controller.signal))));
+      } finally { clearTimeout(timer); controller.abort(); }
+      cached = { fp, audios, mimeType: 'audio/mpeg', at: Date.now() };
+      await env.KV.put(key, JSON.stringify(cached), { expirationTtl: 3600 });
+    }
+    fresh = await chargeCurrent(user, env);
+    if (!fresh.google?.sub) throw err('unauthorized', '로그인 계정을 다시 확인해 주세요.', 401);
+    if (!Number.isFinite(fresh.credits) || fresh.credits < cost) throw err('no_credits', '남은 크레딧을 다시 확인해 주세요. 음성 요청은 보관했어요.', 402);
+    receipt = { requestId, fp, cost, paidAt: Date.now() };
+    fresh.credits -= cost; fresh.hist.unshift({ t: Date.now(), k: 'speech', n: -cost, requestId: histId }); fresh.hist = fresh.hist.slice(0, 60);
+    fresh.lastSpeechBatchReceipt = receipt;
+    await save(env, fresh);
+    await env.KV.put(receiptKey, JSON.stringify(receipt));
+    return { audios: cached.audios.map(audio => ({ audio, mimeType: cached.mimeType })), credits: fresh.credits, cached: false };
+  }));
+}
+
+// 브랜드커넥트 상품 이미지(네이버 이미지 서버)만 받아서 글에 넣을 수 있게 전달해요.
+async function productImage(req) {
+  const b = await req.json();
+  if (b.rightsConfirmed !== true) throw err('rights_required', '이미지 사용 허가를 먼저 확인해 주세요.');
+  let u; try { u = new URL(String(b.url || '')); } catch { throw err('bad_request', '이미지 주소가 올바르지 않아요.'); }
+  if (u.protocol !== 'https:' || u.username || u.password || u.port || /[:@]/.test((String(b.url).match(/^https:\/\/([^/?#]+)/i) || [])[1] || '') || !/^(shop|pkgtour|shopping|brandconnect)-phinf\.pstatic\.net$/.test(u.hostname)) throw err('bad_request', '네이버 상품 이미지만 가져올 수 있어요.');
+  const r = await fetch(u.toString(), { redirect: 'manual', headers: { 'user-agent': 'Mozilla/5.0', referer: 'https://brandconnect.naver.com/' } });
+  if (!r.ok) throw err('fetch_failed', '상품 이미지를 받지 못했어요.', 502);
+  const type = (r.headers.get('content-type') || '').split(';')[0];
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(type)) throw err('fetch_failed', '이미지 파일이 아니에요.', 502);
+  const bytes = new Uint8Array(await r.arrayBuffer()); if (bytes.length > 8 * 1024 * 1024) throw err('too_big', '이미지가 너무 커요.', 413);
+  let bin = ''; for (let i = 0; i < bytes.length; i += 16384) bin += String.fromCharCode(...bytes.subarray(i, i + 16384));
+  return { image: 'data:' + type + ';base64,' + btoa(bin) };
 }
