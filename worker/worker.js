@@ -732,16 +732,44 @@ async function speechRoute(req, user, env) {
 }
 
 // ===== 실시간 인기 검색어 (Google 트렌드 대한민국, 무료 공개 RSS · 10분 캐시) =====
+// 한국 지역 RSS에서도 외국어 검색어가 섞일 수 있어 한국어 기사로 확인되는 글감만 선별해요.
+const KR_TREND_SOURCE = 'https://trends.google.com/trending/rss?geo=KR';
+function trendXMLText(value) {
+  let s=String(value||'').replace(/<!\[CDATA\[|\]\]>/g,'');
+  for(let i=0;i<2;i++)s=s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_,n)=>{const cp=n[0].toLowerCase()==='x'?parseInt(n.slice(1),16):Number(n);return cp>0&&cp<=0x10ffff&&!(cp>=0xd800&&cp<=0xdfff)?String.fromCodePoint(cp):'';}).replace(/&(amp|lt|gt|quot|apos|nbsp);/g,(_,n)=>({amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '})[n]);
+  return s.replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+}
+function trendPick(block,tag) { return trendXMLText((String(block).match(new RegExp('<'+tag+'>([\\s\\S]*?)</'+tag+'>'))||[])[1]); }
+function isKoreanTrendItem(item,now=Date.now()) {
+  if(!item||typeof item.keyword!=='string'||typeof item.news!=='string'||!/[가-힣]/.test(item.keyword)||!/[가-힣]/.test(item.news))return false;
+  const at=Date.parse(item.at);if(!Number.isFinite(at)||now-at>48*3600000||at-now>600000)return false;
+  try{const u=new URL(item.newsUrl);if(!['https:','http:'].includes(u.protocol)||u.username||u.password)return false;}catch{return false;}
+  return true;
+}
+function parseKRTrendFeed(xml,now=Date.now()) {
+  const self=(String(xml).match(/<atom:link\b[^>]*\bhref=["']([^"']+)["']/i)||[])[1]||(String(xml).match(/<channel>[\s\S]*?<link>([^<]+)<\/link>/i)||[])[1];
+  let location;try{location=new URL(trendXMLText(self));}catch{throw err('trends_region','한국 지역 글감 데이터를 확인하지 못했어요.',502);}
+  if(location.hostname!=='trends.google.com'||location.pathname!=='/trending/rss'||location.searchParams.get('geo')!=='KR')throw err('trends_region','한국 지역이 아닌 데이터는 표시하지 않아요.',502);
+  const seen=new Set(),items=[];
+  for(const m of String(xml).matchAll(/<item>([\s\S]*?)<\/item>/g)){
+    const block=m[1],keyword=trendPick(block,'title');
+    const articles=[...block.matchAll(/<ht:news_item>([\s\S]*?)<\/ht:news_item>/g)].map(n=>({news:trendPick(n[1],'ht:news_item_title'),newsSource:trendPick(n[1],'ht:news_item_source'),newsUrl:trendPick(n[1],'ht:news_item_url')}));
+    const article=articles.find(a=>/[가-힣]/.test(a.news));if(!article)continue;
+    const item={keyword,traffic:trendPick(block,'ht:approx_traffic'),at:trendPick(block,'pubDate'),...article};
+    const key=keyword.toLocaleLowerCase('ko-KR');if(seen.has(key)||!isKoreanTrendItem(item,now))continue;seen.add(key);items.push(item);
+  }
+  items.sort((a,b)=>Date.parse(b.at)-Date.parse(a.at));
+  if(!items.length)throw err('trends_empty','지금 확인 가능한 한국어 글감이 없어요. 잠시 뒤 다시 확인해 주세요.',502);
+  return {source:'Google 트렌드(KR) · 한국어 뉴스 선별',sourceUrl:KR_TREND_SOURCE,region:'KR',language:'ko',selection:'korean-news-v3',fetchedAt:new Date(now).toISOString(),items:items.slice(0,10)};
+}
 async function trendsKR() {
-  const cache = caches.default, key = new Request('https://cuttory.internal/trends-kr-v2');
-  const hit = await cache.match(key); if (hit) return await hit.json();
-  const r = await fetch('https://trends.google.com/trending/rss?geo=KR', { headers: { 'user-agent': 'Mozilla/5.0 (compatible; CuttoryBot/1.0)' } });
-  if (!r.ok) throw err('trends_failed', '실시간 인기 검색어를 불러오지 못했어요. 잠시 뒤 다시 해 주세요.', 502);
-  const x = await r.text();
-  const pick = (b, t) => decode(decode(((b.match(new RegExp('<' + t + '>([\\s\\S]*?)</' + t + '>')) || [])[1] || '').replace(/<!\[CDATA\[|\]\]>/g, ''))).replace(/&apos;/g, "'").trim();
-  const items = [...x.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(m => ({ keyword: pick(m[1], 'title'), traffic: pick(m[1], 'ht:approx_traffic'), at: pick(m[1], 'pubDate'), news: pick(m[1], 'ht:news_item_title'), newsSource: pick(m[1], 'ht:news_item_source') })).filter(i => i.keyword).slice(0, 20);
-  const out = { source: 'Google 트렌드 · 대한민국', fetchedAt: new Date().toISOString(), items };
-  await cache.put(key, new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=600' } }));
+  const cache=caches.default,key=new Request('https://cuttory.internal/trends-kr-korean-news-v3');
+  const hit=await cache.match(key);
+  if(hit){const data=await hit.json().catch(()=>null);if(data?.region==='KR'&&data.language==='ko'&&data.selection==='korean-news-v3'&&data.sourceUrl===KR_TREND_SOURCE&&Array.isArray(data.items)&&data.items.length&&data.items.every(i=>isKoreanTrendItem(i)))return data;}
+  const r=await fetch(KR_TREND_SOURCE,{headers:{'user-agent':'Mozilla/5.0 (compatible; CuttoryBot/1.0)'},signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw err('trends_failed','한국어 글감을 불러오지 못했어요. 잠시 뒤 다시 해 주세요.',502);
+  const out=parseKRTrendFeed(await r.text());
+  await cache.put(key,new Response(JSON.stringify(out),{headers:{'content-type':'application/json','cache-control':'max-age=300'}}));
   return out;
 }
 
